@@ -42,6 +42,28 @@ export const DEFAULT_SPLIT_BRAND_BPS = 7000;
 export const DEFAULT_SPLIT_TENANT_BPS = 3000;
 export const BPS_DENOMINATOR = 10000;
 
+/**
+ * CORS allowlist — P0 audit fix #3.
+ * Production origins only. Dev (localhost) is added at module init below.
+ */
+export const CORS_ALLOWLIST: string[] = [
+  "https://kongsian.app",
+  "https://www.kongsian.app",
+  // *.kongsian-web.pages.dev handled by regex in apps/api/src/index.ts
+];
+
+/** OTP rate limit — max 5 requests per phone per rolling hour. P0 #1. */
+export const OTP_MAX_PER_HOUR = 5;
+
+/** R2 photo bucket constraints for Titip/Tarik foto bukti. */
+export const R2_MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
+export const R2_ALLOWED_MIME = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+] as const;
+
 /** Settlement: Sunday 23:59 WIB triggers weekly settlement generation. */
 export const SETTLEMENT_CRON_DAY = 0; // Sunday
 export const SETTLEMENT_CRON_HOUR_UTC = 16; // 23:59 WIB = 16:59 UTC

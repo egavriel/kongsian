@@ -1,0 +1,177 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../../lib/api";
+const title = `Partnerships — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:14px; }
+      h1 { font-size:20px; margin:0; }
+      main { padding:20px; }
+      .card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:16px; margin-bottom:20px; }
+      .card h2 { margin:0 0 12px; font-size:15px; color:#fbbf24; }
+      label { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:13px; }
+      .lbl { font-weight:600; }
+      input {
+        background:#0b1220; border:1px solid #1e293b; color:#f1f5f9;
+        padding:12px; border-radius:10px; font-size:15px; font-family:inherit; width:100%;
+      }
+      input:focus { outline:none; border-color:#fbbf24; }
+      .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:14px; }
+      .btn-primary { background:#fbbf24; color:#0b1220; }
+      .btn-primary:hover { background:#f59e0b; }
+      .btn:disabled { opacity:.5; cursor:not-allowed; }
+      .list { display:flex; flex-direction:column; gap:10px; }
+      .row { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+      .name { font-weight:600; }
+      .meta { font-size:12px; color:#94a3b8; }
+      .badge { font-size:11px; padding:4px 10px; border-radius:999px; font-weight:700; letter-spacing:0.04em; }
+      .badge.active { background:rgba(52,211,153,.15); color:#34d399; }
+      .badge.pending { background:rgba(251,191,36,.15); color:#fbbf24; }
+      .badge.suspended { background:rgba(251,113,133,.15); color:#fb7185; }
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .actions { display:flex; gap:6px; flex-wrap:wrap; }
+      .btn-sm { padding:6px 10px; font-size:12px; }
+      .btn-ghost { background:transparent; color:#f1f5f9; border-color:#1e293b; }
+      .btn-ghost:hover { border-color:#94a3b8; }
+      .dev-code { font-family:ui-monospace,monospace; font-size:14px; background:#0b1220; border:1px dashed #fbbf24; padding:8px 12px; border-radius:8px; color:#fbbf24; margin-top:8px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand">← Brand</a>
+        <h1>Cafe Partner</h1>
+        <span></span>
+      </header>
+      <main>
+        <div class="card">
+          <h2>Invite Cafe Baru</h2>
+          <div id="err" class="err" style="display:none"></div>
+          <div id="ok" class="ok" style="display:none"></div>
+          <form id="invite-form">
+            <label>
+              <span class="lbl">Nama Cafe</span>
+              <input id="cafe" name="cafe" maxlength="60" placeholder="Cafe Barista" required />
+            </label>
+            <div class="row2">
+              <label>
+                <span class="lbl">No. HP PIC (+62)</span>
+                <input id="phone" name="phone" type="tel" placeholder="+628****1234" pattern="^\+[1-9]\d{7,14}$" required />
+              </label>
+              <label>
+                <span class="lbl">Alamat (opsional)</span>
+                <input id="address" name="address" maxlength="100" placeholder="Jl. ..." />
+              </label>
+            </div>
+            <button class="btn btn-primary" type="submit" style="width:100%">Kirim Invite</button>
+          </form>
+        </div>
+
+        <h2 style="font-size:15px;color:#94a3b8;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.06em">Daftar Partnership</h2>
+        <div class="list" id="list">
+          <div class="empty">Memuat…</div>
+        </div>
+      </main>
+    </div>
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+      async function jpost(p,b) { return (await fetch(API+p, { method:"POST", headers:authH, body:JSON.stringify(b) })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const okEl = document.getElementById("ok");
+      const showErr = m => { errEl.textContent = m; errEl.style.display="block"; okEl.style.display="none"; };
+      const showOk = (m, extra) => {
+        okEl.innerHTML = m + (extra || "");
+        okEl.style.display="block"; errEl.style.display="none";
+      };
+
+      async function load() {
+        const me = await jget("/v1/brands/me");
+        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
+        const brandId = me.data.brandId;
+        const b = await jget(`/v1/brands/${brandId}`);
+        const list = document.getElementById("list");
+        if (!b.ok || !b.data) { list.innerHTML = `<div class="empty">Gagal memuat.</div>`; return; }
+        const ps = b.data.partnerships || [];
+        if (ps.length === 0) {
+          list.innerHTML = `<div class="empty">Belum ada partnership. Invite cafe pertama di atas.</div>`;
+          return;
+        }
+        list.innerHTML = ps.map(p => `
+          <div class="row">
+            <div>
+              <div class="name">${p.tenant?.name || "(?)"}</div>
+              <div class="meta">PIC: ${p.tenant?.picPhoneE164 || "-"} · split ${(p.revenueSplitBrandBps/100).toFixed(0)}/${(p.revenueSplitTenantBps/100).toFixed(0)}</div>
+            </div>
+            <div class="actions">
+              <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
+              ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}">Aktifkan</button>` : ""}
+              ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}">Suspend</button>` : ""}
+            </div>
+          </div>
+        `).join("");
+        list.querySelectorAll("button[data-act]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const id = btn.dataset.id;
+            if (btn.dataset.act === "activate") {
+              const r = await jpost(`/v1/partnerships/${id}/activate`, {});
+              if (!r.ok) showErr("Gagal aktifkan: " + (r.error?.code || "?"));
+              else { showOk("Partnership diaktifkan."); load(); }
+            } else if (btn.dataset.act === "suspend") {
+              if (!confirm("Suspend partnership ini?")) return;
+              const r = await jpost(`/v1/partnerships/${id}/suspend`, {});
+              if (!r.ok) showErr("Gagal suspend: " + (r.error?.code || "?"));
+              else { showOk("Partnership disuspend."); load(); }
+            }
+          });
+        });
+      }
+
+      document.getElementById("invite-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errEl.style.display = "none"; okEl.style.display = "none";
+        const cafe = document.getElementById("cafe").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const address = document.getElementById("address").value.trim();
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Format HP harus +62xxx."); return; }
+        const me = await jget("/v1/brands/me");
+        const r = await jpost("/v1/partnerships/invite", { brandId: me.data.brandId, phone, cafeName: cafe, address: address || undefined });
+        if (!r.ok) {
+          const c = r.error?.code;
+          if (c === "INVITE_RATE_LIMITED") showErr("Kebanyakan invite ke nomor itu. Coba ~1 jam.");
+          else showErr("Gagal invite: " + (c || "?"));
+          return;
+        }
+        let extra = "";
+        if (r.data?.invite?.devCode) {
+          extra = `<div class="dev-code">DEV OTP: ${r.data.invite.devCode}</div>`;
+        }
+        showOk(`Invite terkirim ke ${phone}. Tenant: <b>${r.data.tenant.name}</b> (${r.data.isNewTenant ? "baru" : "existing"}). ${extra}`, extra);
+        document.getElementById("invite-form").reset();
+        load();
+      });
+
+      load();
+    </script>
+  </body>
+</html>

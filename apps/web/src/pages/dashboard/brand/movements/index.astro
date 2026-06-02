@@ -1,0 +1,178 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../../lib/api";
+const title = `Movements — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:14px; }
+      h1 { font-size:20px; margin:0; }
+      main { padding:20px; }
+      .filter { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+      .filter button { background:#0f172a; border:1px solid #1e293b; color:#f1f5f9; padding:6px 12px; border-radius:999px; cursor:pointer; font-size:13px; }
+      .filter button.active { background:#fbbf24; color:#0b1220; border-color:#fbbf24; }
+      .partner-pick { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+      .partner-pick button { background:#0f172a; border:1px solid #1e293b; color:#f1f5f9; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px; }
+      .partner-pick button.active { border-color:#fbbf24; }
+      .new-btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+      .new-btns a { background:#0f172a; border:1px solid #1e293b; color:#f1f5f9; border-radius:10px; padding:12px; text-align:center; font-size:14px; font-weight:600; }
+      .new-btns a:hover { border-color:#fbbf24; text-decoration:none; }
+      .list { display:flex; flex-direction:column; gap:8px; }
+      .mv { background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; align-items:center; gap:12px; }
+      .kind { font-size:11px; padding:3px 8px; border-radius:6px; font-weight:700; letter-spacing:0.04em; min-width:64px; text-align:center; }
+      .kind.TITIP { background:rgba(52,211,153,.15); color:#34d399; }
+      .kind.TARIK { background:rgba(251,113,133,.15); color:#fb7185; }
+      .kind.TERJUAL_OPENING, .kind.TERJUAL_CORRECTION { background:rgba(251,191,36,.15); color:#fbbf24; }
+      .kind.ADJUSTMENT { background:rgba(56,189,248,.15); color:#38bdf8; }
+      .info { flex:1; }
+      .info .sku { font-weight:600; }
+      .info .meta { font-size:12px; color:#94a3b8; }
+      .qty { font-weight:700; font-size:18px; min-width:50px; text-align:right; }
+      .qty.pos { color:#34d399; }
+      .qty.neg { color:#fb7185; }
+      .thumb { width:48px; height:48px; border-radius:8px; background:#1e293b; overflow:hidden; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:20px; }
+      .thumb img { width:100%; height:100%; object-fit:cover; }
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand">← Brand</a>
+        <h1>Movements</h1>
+        <span></span>
+      </header>
+      <main>
+        <div class="new-btns">
+          <a href="/dashboard/brand/movements/new-titip">+ Titip</a>
+          <a href="/dashboard/brand/movements/new-tarik">+ Tarik</a>
+        </div>
+
+        <div id="partner-pick" class="partner-pick"></div>
+        <div class="filter">
+          <button data-filter="ALL" class="active">Semua</button>
+          <button data-filter="TITIP">Titip</button>
+          <button data-filter="TARIK">Tarik</button>
+          <button data-filter="TERJUAL">Terjual</button>
+        </div>
+        <div class="list" id="list">
+          <div class="empty">Memuat…</div>
+        </div>
+      </main>
+    </div>
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+
+      const state = { partnerships: [], skus: [], activePartner: null, filter: "ALL" };
+      const pickEl = document.getElementById("partner-pick");
+      const listEl = document.getElementById("list");
+
+      function fmtDate(s) {
+        const d = new Date(s);
+        return new Intl.DateTimeFormat("id-ID", { weekday:"short", day:"2-digit", month:"short" }).format(d);
+      }
+      function fmtDateTime(unix) {
+        return new Date(unix * 1000).toLocaleString("id-ID", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+      }
+
+      function applyFilter() {
+        document.querySelectorAll(".filter button").forEach(b => {
+          b.classList.toggle("active", b.dataset.filter === state.filter);
+        });
+        render();
+      }
+
+      document.querySelectorAll(".filter button").forEach(b => {
+        b.addEventListener("click", () => {
+          state.filter = b.dataset.filter;
+          applyFilter();
+        });
+      });
+
+      function render() {
+        if (!state.activePartner) {
+          listEl.innerHTML = `<div class="empty">Pilih partnership di atas untuk lihat history.</div>`;
+          return;
+        }
+        const all = state._movements || [];
+        const skuMap = new Map(state.skus.map(s => [s.id, s]));
+        const filtered = all.filter(m => {
+          if (state.filter === "ALL") return true;
+          if (state.filter === "TERJUAL") return m.kind.startsWith("TERJUAL");
+          return m.kind === state.filter;
+        });
+        if (filtered.length === 0) {
+          listEl.innerHTML = `<div class="empty">Belum ada movement untuk filter ini.</div>`;
+          return;
+        }
+        listEl.innerHTML = filtered.map(m => {
+          const sku = skuMap.get(m.skuId);
+          const pos = m.qty > 0;
+          const sign = pos ? "+" : "";
+          const foto = m.fotoR2Key
+            ? `<div class="thumb" title="ada foto"><img src="https://${(m.fotoR2Key.startsWith('http')?m.fotoR2Key: '')}" alt="foto" onerror="this.parentElement.textContent='📷'"/></div>`
+            : `<div class="thumb">📦</div>`;
+          return `
+            <div class="mv">
+              <span class="kind ${m.kind}">${m.kind.replace("TERJUAL_","")}</span>
+              <div class="info">
+                <div class="sku">${sku ? sku.code + " · " + sku.name : "(?)"}</div>
+                <div class="meta">${fmtDate(m.movementDate)} · ${fmtDateTime(m.submittedAt)}</div>
+              </div>
+              ${foto}
+              <div class="qty ${pos?"pos":"neg"}">${sign}${m.qty}</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      async function loadMovements(pid) {
+        state.activePartner = pid;
+        const r = await jget(`/v1/movements?partnershipId=${pid}`);
+        state._movements = r.ok ? (r.data || []) : [];
+        render();
+      }
+
+      async function init() {
+        const me = await jget("/v1/brands/me");
+        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
+        const b = await jget(`/v1/brands/${me.data.brandId}`);
+        if (!b.ok) { listEl.innerHTML = `<div class="empty">Gagal memuat brand.</div>`; return; }
+        state.partnerships = b.data.partnerships || [];
+        state.skus = b.data.skus || [];
+        if (state.partnerships.length === 0) {
+          listEl.innerHTML = `<div class="empty">Belum ada partnership. <a href="/dashboard/brand/partnerships">Invite cafe dulu</a>.</div>`;
+          return;
+        }
+        pickEl.innerHTML = state.partnerships.map(p => `
+          <button data-pid="${p.id}" class="${p.id === state.activePartner ? "active" : ""}">${p.tenant?.name || "?"}</button>
+        `).join("");
+        pickEl.querySelectorAll("button").forEach(btn => {
+          btn.addEventListener("click", () => {
+            pickEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            loadMovements(btn.dataset.pid);
+          });
+        });
+        await loadMovements(state.partnerships[0].id);
+      }
+      init();
+    </script>
+  </body>
+</html>

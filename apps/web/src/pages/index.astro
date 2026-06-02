@@ -1,21 +1,100 @@
 ---
-import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@kongsian/shared/constants";
-import Layout from "../layouts/Layout.astro";
-import Hero from "../components/Hero.astro";
-import ValueProp from "../components/ValueProp.astro";
-import Audiences from "../components/Audiences.astro";
-import DashboardPreview from "../components/DashboardPreview.astro";
-import Cta from "../components/Cta.astro";
-import Footer from "../components/Footer.astro";
-
+import { APP_NAME, APP_TAGLINE } from "@kongsian/shared/constants";
 const title = `${APP_NAME} — ${APP_TAGLINE}`;
-const description = APP_DESCRIPTION;
+const description = "Konsinyasi untuk brand F&B dan cafe. Titip, Terjual, Settle — otomatis.";
 ---
-<Layout title={title} description={description}>
-  <Hero />
-  <ValueProp />
-  <Audiences />
-  <DashboardPreview />
-  <Cta />
-  <Footer />
-</Layout>
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #0b1220;
+        color: #f1f5f9;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: #38bdf8; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .wrap { max-width: 480px; margin: 0 auto; padding: 64px 20px 80px; }
+      .eyebrow {
+        display: inline-block;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #fbbf24;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+      h1 { font-size: clamp(36px, 8vw, 48px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em; }
+      h1 .brand { color: #fbbf24; }
+      p.lead { font-size: 17px; color: #94a3b8; max-width: 32em; margin: 0 0 32px; }
+      .cta { display: flex; flex-direction: column; gap: 12px; }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 14px 20px; border-radius: 10px; font-weight: 600;
+        border: 1px solid transparent; cursor: pointer; font-size: 16px;
+        text-decoration: none;
+      }
+      .btn-primary { background: #fbbf24; color: #0b1220; }
+      .btn-primary:hover { background: #f59e0b; text-decoration: none; }
+      .btn-ghost   { background: transparent; color: #f1f5f9; border-color: #1e293b; }
+      .btn-ghost:hover { border-color: #94a3b8; text-decoration: none; }
+      .features { margin-top: 56px; display: grid; gap: 16px; }
+      .feat {
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 14px;
+        padding: 20px;
+      }
+      .feat h3 { margin: 0 0 6px; font-size: 16px; color: #fbbf24; }
+      .feat p { margin: 0; color: #94a3b8; font-size: 14px; }
+      .login-link {
+        margin-top: 32px; font-size: 14px; color: #94a3b8;
+        border-top: 1px solid #1e293b; padding-top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <span class="eyebrow">For brand↔cafe partnerships</span>
+      <h1>{APP_NAME}.<br/><span class="brand">{APP_TAGLINE}.</span></h1>
+      <p class="lead">
+        Konsinyasi untuk brand F&amp;B dan cafe. Catat Titip, jual harian, tutup minggu otomatis.
+        Tanpa chat panjang. Tanpa spreadsheet. Tanpa drama akhir bulan.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="/login">Masuk via WhatsApp</a>
+        <a class="btn btn-ghost" href="#cara-kerja">Cara kerja</a>
+      </div>
+
+      <section id="cara-kerja" class="features">
+        <div class="feat">
+          <h3>1. Titip</h3>
+          <p>Brand catat Titip + foto struk. Cafe lihat stok real-time.</p>
+        </div>
+        <div class="feat">
+          <h3>2. Terjual</h3>
+          <p>Cafe tutup kasir harian. Terjual + Sisa Fisik per SKU.</p>
+        </div>
+        <div class="feat">
+          <h3>3. Settle</h3>
+          <p>Setiap Minggu otomatis: split 70/30, transparan, ada audit.</p>
+        </div>
+      </section>
+
+      <p class="login-link">
+        Sudah punya akun? <a href="/login">Login di sini</a>.
+        Mau demo langsung? <a href="/dashboard/brand">Lihat dashboard brand</a>.
+      </p>
+    </main>
+  </body>
+</html>

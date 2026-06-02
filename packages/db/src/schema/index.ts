@@ -15,3 +15,4 @@ export * from "./otps";
 export * from "./sessions";
 export * from "./audit-log";
 export * from "./disputes";
+export * from "./otp-rate-limits";
