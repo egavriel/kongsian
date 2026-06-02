@@ -116,7 +116,7 @@ const title = `Daftar — ${APP_NAME}`;
         <div id="err" class="err" style="display:none"></div>
         <div id="info" class="info" style="display:none"></div>
 
-        <form id="otp-form">
+        <form id="otp-form" novalidate>
           <label>
             <span class="lbl">Nomor HP (format +62)</span>
             <input
@@ -142,11 +142,11 @@ const title = `Daftar — ${APP_NAME}`;
           <p class="small">OTP dikirim ke <span id="otp-phone" class="muted"></span>. Berlaku 5 menit.</p>
           <div id="dev-code" class="dev-code" style="display:none"></div>
 
-          <form id="verify-form">
+          <form id="verify-form" novalidate>
             <label>
               <span class="lbl">6-digit kode OTP</span>
               <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
-                     pattern="\d{6}" maxlength="6" placeholder="123456" required />
+                     maxlength="6" placeholder="123456" required />
             </label>
 
             <label>
