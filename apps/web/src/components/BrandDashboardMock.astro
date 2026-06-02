@@ -1,0 +1,20 @@
+---
+const rows = [
+  { sku: "Original", titip: 50, jual: 30, sisa: 20 },
+  { sku: "Pandan",   titip: 40, jual: 18, sisa: 22 },
+  { sku: "Cokelat",  titip: 30, jual: 12, sisa: 18 },
+];
+---
+<div class="title">Kopi A — Cafe B</div>
+<div class="small">2024-W47 (Senin–Minggu)</div>
+<div style="margin-top:10px">
+  <div class="row header"><span>SKU</span><span>Stok</span></div>
+  {rows.map((r) => (
+    <div class="row">
+      <span>{r.sku}</span>
+      <span class="pos">{r.sisa}</span>
+    </div>
+  ))}
+  <div class="row total"><span>Total</span><span>60</span></div>
+  <div class="small" style="margin-top:8px">+1 dispute open</div>
+</div>

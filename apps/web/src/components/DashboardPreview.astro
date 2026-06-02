@@ -1,0 +1,49 @@
+---
+import BrandDashboardMock from "./BrandDashboardMock.astro";
+import TenantDashboardMock from "./TenantDashboardMock.astro";
+import SettlementMock from "./SettlementMock.astro";
+
+const cards = [
+  { tag: "Brand view", title: "Stok & sell-out real-time", body: "Brand lihat Titip, Terjual, dan Sisa Fisik di semua cafe sekaligus. Tidak perlu WA satu-satu.", mock: "brand" as const },
+  { tag: "Cafe view", title: "Input hari ini, satu tap", body: "Cafe PIC cuma lihat tombol “Catat Terjual Hari Ini”. Tidak ada dashboard yang harus dipelajari.", mock: "tenant" as const },
+  { tag: "Settlement", title: "Tutup minggu otomatis", body: "Setiap Minggu 23:59 WIB, settlement di-generate. Brand approve, bayar, upload bukti. Audit log lengkap.", mock: "settlement" as const },
+];
+---
+<section class="container">
+  <span class="eyebrow">Preview</span>
+  <h2>Tiga dashboard, satu cerita</h2>
+  <p class="lead">Mock-up aktual. Production build menyusul di Week 2–4.</p>
+  <div class="grid grid-3" style="margin-top:40px">
+    {cards.map((c) => (
+      <div class="card">
+        <span class="tag">{c.tag}</span>
+        <h3>{c.title}</h3>
+        <p class="muted">{c.body}</p>
+        <div class="mock">
+          {c.mock === "brand" && <BrandDashboardMock />}
+          {c.mock === "tenant" && <TenantDashboardMock />}
+          {c.mock === "settlement" && <SettlementMock />}
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .mock {
+    margin-top: 8px;
+    background: #0b1220;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--fg-muted);
+    line-height: 1.7;
+  }
+  .mock :global(.row) { display: flex; justify-content: space-between; }
+  .mock :global(.pos) { color: var(--good); }
+  .mock :global(.neg) { color: var(--bad); }
+  .mock :global(.neu) { color: var(--fg); }
+  .mock :global(.small) { color: var(--fg-muted); font-size: 11px; }
+</style>

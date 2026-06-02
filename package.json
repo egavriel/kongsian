@@ -1,0 +1,33 @@
+{
+  "name": "kongsian",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kongsian MVP - Titip stock management for brand↔cafe partnerships in Indonesia",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "dev:web": "pnpm --filter @kongsian/web dev",
+    "dev:api": "pnpm --filter @kongsian/api dev",
+    "build": "pnpm -r --filter './apps/*' build",
+    "build:web": "pnpm --filter @kongsian/web build",
+    "build:api": "pnpm --filter @kongsian/api build",
+    "deploy": "pnpm run deploy:web && pnpm run deploy:api",
+    "deploy:web": "pnpm --filter @kongsian/web deploy",
+    "deploy:api": "pnpm --filter @kongsian/api deploy",
+    "db:generate": "pnpm --filter @kongsian/db generate",
+    "db:migrate:local": "pnpm --filter @kongsian/db migrate:local",
+    "db:migrate:remote": "pnpm --filter @kongsian/db migrate:remote",
+    "db:studio": "pnpm --filter @kongsian/db studio",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r exec rm -rf node_modules dist .astro .wrangler && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

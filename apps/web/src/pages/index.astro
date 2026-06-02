@@ -1,0 +1,21 @@
+---
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@kongsian/shared/constants";
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import ValueProp from "../components/ValueProp.astro";
+import Audiences from "../components/Audiences.astro";
+import DashboardPreview from "../components/DashboardPreview.astro";
+import Cta from "../components/Cta.astro";
+import Footer from "../components/Footer.astro";
+
+const title = `${APP_NAME} — ${APP_TAGLINE}`;
+const description = APP_DESCRIPTION;
+---
+<Layout title={title} description={description}>
+  <Hero />
+  <ValueProp />
+  <Audiences />
+  <DashboardPreview />
+  <Cta />
+  <Footer />
+</Layout>

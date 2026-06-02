@@ -1,0 +1,30 @@
+{
+  "name": "@kongsian/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate:local": "wrangler d1 execute kongsian-db --local --file=./migrations/0000_init.sql",
+    "migrate:remote": "wrangler d1 execute kongsian-db --remote --file=./migrations/0000_init.sql",
+    "migrate:apply:local": "wrangler d1 migrations apply kongsian-db --local",
+    "migrate:apply:remote": "wrangler d1 migrations apply kongsian-db --remote",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "drizzle-kit": "^0.28.1",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.0.0"
+  }
+}

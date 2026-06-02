@@ -1,0 +1,27 @@
+{
+  "name": "@kongsian/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler pages deploy ./dist --project-name=kongsian-web --commit-dirty=true",
+    "typecheck": "astro check",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/cloudflare": "^11.1.0",
+    "@kongsian/db": "workspace:*",
+    "@kongsian/shared": "workspace:*",
+    "astro": "^4.16.18",
+    "drizzle-orm": "^0.36.4",
+    "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^4.0.0"
+  }
+}

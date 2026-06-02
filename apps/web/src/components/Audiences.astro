@@ -1,0 +1,91 @@
+---
+/**
+ * AUDIENCES — "For Brands" + "For Cafes" side-by-side panels.
+ * Two-column on desktop, stacked on mobile.
+ */
+const brandBullets = [
+  "Lihat Titip, Terjual, dan Sisa di semua cafe dalam satu layar.",
+  "Settlement mingguan auto-generate, audit log per baris.",
+  "Brand approve settlement di HP, transfer & upload bukti dari app.",
+  "Dispute flow jelas: selisih > 0 langsung jadi tiket, bukan WA panjang.",
+];
+const cafeBullets = [
+  "Login pakai nomor HP, OTP via WhatsApp. Tidak ada password.",
+  "Tombol 'Catat Terjual Hari Ini' cuma itu yang perlu dikerjain.",
+  "Sync offline — kalau sinyal hilang, antrian lokal upload sendiri.",
+  "Liat settlement sendiri kapan aja, transfer history jelas.",
+];
+---
+
+<section class="container" id="audiences">
+  <span class="eyebrow">Siapa yang pakai</span>
+  <h2>Satu alat, dua peran</h2>
+  <p class="lead">
+    Brand dan Cafe lihat hal yang beda di app yang sama.
+    Yang penting: <strong>datanya satu sumber</strong>, jadi akhir bulan tidak ada debat.
+  </p>
+
+  <div class="audience-grid" style="margin-top:40px">
+    <div class="card audience-card brand">
+      <span class="tag">For Brands</span>
+      <h3>Brand owner / finance</h3>
+      <p class="muted">
+        Satu brand, banyak cafe. Kamu butuh jawaban cepat:
+        "Stok kopi A di cafe B minggu ini berapa, dan duitnya kapan masuk?"
+      </p>
+      <ul>
+        {brandBullets.map((b) => <li>{b}</li>)}
+      </ul>
+      <a class="btn btn-ghost" href="#signup">Daftar sebagai brand →</a>
+    </div>
+
+    <div class="card audience-card cafe">
+      <span class="tag">For Cafes</span>
+      <h3>Cafe PIC / owner</h3>
+      <p class="muted">
+        Satu cafe, banyak brand. Kamu butuh hal simpel:
+        "Mau catat penjualan hari ini, beres."
+      </p>
+      <ul>
+        {cafeBullets.map((b) => <li>{b}</li>)}
+      </ul>
+      <a class="btn btn-ghost" href="#signup">Daftar sebagai cafe →</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .audience-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 800px) {
+    .audience-grid { grid-template-columns: 1fr; }
+  }
+  .audience-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .audience-card li {
+    position: relative;
+    padding-left: 24px;
+    color: var(--fg);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .audience-card li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--brand);
+    font-weight: 700;
+  }
+  .audience-card .btn { align-self: flex-start; margin-top: 8px; }
+  .audience-card.brand { border-color: rgba(251, 191, 36, 0.3); }
+  .audience-card.cafe  { border-color: rgba(56, 189, 248, 0.3); }
+</style>

@@ -1,0 +1,25 @@
+---
+import { APP_NAME, APP_TAGLINE } from "@kongsian/shared/constants";
+---
+<header class="container hero">
+  <span class="eyebrow">For brand↔cafe partnerships in Indonesia</span>
+  <h1>{APP_NAME}. <br/>{APP_TAGLINE}.</h1>
+  <p class="lead">
+    Konsinyasi untuk brand F&amp;B dan cafe. Catat Titip, jual harian, tutup minggu otomatis.
+    Tanpa chat panjang. Tanpa spreadsheet. Tanpa drama akhir bulan.
+  </p>
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="#signup">Daftar via WhatsApp</a>
+    <a class="btn btn-ghost" href="#how">Cara kerja</a>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:24px">
+    Week 1 build · monorepo: apps/web (Astro on Cloudflare Pages) + apps/api (Hono on Workers) + D1.
+  </p>
+</header>
+
+<style>
+  .hero { padding: 96px 24px 64px; }
+  .hero h1 { color: var(--fg); }
+  .hero h1 :global(br) + * { color: var(--brand); }
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+</style>

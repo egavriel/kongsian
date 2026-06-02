@@ -7,25 +7,22 @@ dist/
 build/
 .astro/
 .wrangler/
-*.tsbuildinfo
+.next/
+.turbo/
 
-# Env
+# Environment
 .env
 .env.local
 .env.*.local
-.dev.vars
+!.env.example
 
-# Cloudflare / D1 local DB
-.wrangler/state/
-.mf/
-.wrangler.jsonc.local
-*.sqlite
-*.sqlite-journal
-.d1/
-
-# IDE / OS
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
 
@@ -34,6 +31,13 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 
-# Misc
-.cache/
+# Coverage
 coverage/
+.nyc_output/
+
+# Drizzle metadata
+drizzle/meta/_journal.json.bak
+
+# Wrangler
+.dev.vars
+.mf/

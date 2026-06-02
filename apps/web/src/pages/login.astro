@@ -1,0 +1,156 @@
+---
+import { APP_NAME, APP_TAGLINE } from "@kongsian/shared/constants";
+import Layout from "../layouts/Layout.astro";
+import Footer from "../components/Footer.astro";
+
+const title = `Masuk — ${APP_NAME}`;
+const description = `Login ${APP_NAME} via WhatsApp OTP. Tidak pakai password.`;
+---
+<Layout title={title} description={description}>
+  <main class="container login-wrap">
+    <a class="back" href="/">← Kembali</a>
+    <div class="card login-card">
+      <span class="eyebrow">Sign in</span>
+      <h1>Masuk ke {APP_NAME}</h1>
+      <p class="lead">
+        Masukin nomor HP kamu. Kami kirim OTP via WhatsApp.
+        6 digit, 5 menit, beres.
+      </p>
+
+      <form id="otp-form" class="login-form" novalidate>
+        <label class="field">
+          <span class="field-label">Nomor HP (format +62)</span>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="+6281234567890"
+            required
+            pattern="^\+[1-9]\d{7,14}$"
+            aria-describedby="phone-help"
+          />
+          <small id="phone-help" class="muted">
+            Contoh: +6281234567890 (Indonesia).
+          </small>
+        </label>
+
+        <button class="btn btn-primary submit-btn" type="submit">
+          Kirim OTP via WhatsApp
+        </button>
+
+        <p class="muted small">
+          Belum punya akun?
+          <a href="#signup">Daftar dulu</a> — prosesnya &lt; 10 menit.
+        </p>
+      </form>
+
+      <div id="otp-step" class="otp-step" hidden>
+        <span class="eyebrow">Step 2 of 2</span>
+        <h2>Masukin kode OTP</h2>
+        <p class="muted small">
+          Dikirim ke <span id="otp-phone" class="kbd"></span>.
+          Berlaku 5 menit.
+        </p>
+        <form class="login-form" novalidate>
+          <label class="field">
+            <span class="field-label">6-digit kode</span>
+            <input
+              id="code"
+              name="code"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="\d{6}"
+              maxlength="6"
+              placeholder="123456"
+              required
+            />
+          </label>
+          <button class="btn btn-primary submit-btn" type="submit">
+            Verifikasi
+          </button>
+          <button class="btn btn-ghost" type="button" id="resend">
+            Kirim ulang
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  // Stub behavior — backend wiring di Week 2.
+  const form = document.getElementById("otp-form") as HTMLFormElement | null;
+  const otpStep = document.getElementById("otp-step") as HTMLElement | null;
+  const otpPhone = document.getElementById("otp-phone") as HTMLElement | null;
+  const phoneInput = document.getElementById("phone") as HTMLInputElement | null;
+
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const phone = phoneInput?.value.trim();
+    if (!phone || !/^\+[1-9]\d{7,14}$/.test(phone)) {
+      phoneInput?.focus();
+      return;
+    }
+    if (otpPhone) otpPhone.textContent = phone;
+    if (otpStep) otpStep.hidden = false;
+    form.hidden = true;
+  });
+</script>
+
+<style>
+  .login-wrap {
+    padding: 48px 24px 80px;
+    max-width: 520px;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--fg-muted);
+    font-size: 14px;
+  }
+  .login-card {
+    padding: 32px;
+    gap: 16px;
+  }
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .field input {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--fg);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    width: 100%;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  }
+  .submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .small { font-size: 14px; }
+  .otp-step { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+</style>

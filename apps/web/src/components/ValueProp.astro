@@ -1,0 +1,30 @@
+---
+const features = [
+  {
+    title: "Titip, bukan utang",
+    body: "Setiap Titip masuk jadi baris stok yang ditandatangani PIC cafe. Tidak ada lagi “kok cuma 30, harusnya 50?” di akhir bulan.",
+  },
+  {
+    title: "Terjual harian, online atau offline",
+    body: "Cafe PIC catat penjualan dari HP — sekali tap. Kalau sinyal hilang, antrian IndexedDB sync otomatis saat online lagi.",
+  },
+  {
+    title: "Settle tiap Minggu",
+    body: "Settlement di-generate otomatis tiap Minggu 23:59 WIB. Brand approve, transfer, upload bukti. Cafe lihat statusnya. Selesai.",
+  },
+];
+---
+<section class="container" id="how">
+  <span class="eyebrow">Cara kerja</span>
+  <h2>Dari Titip sampai settle, satu loop</h2>
+  <p class="lead">Tiga hal yang harus benar di konsinyasi: <strong>apa yang dititipkan</strong>, <strong>apa yang terjual</strong>, <strong>berapa yang harus dibayar</strong>. Sisanya noise.</p>
+  <div class="grid grid-3" style="margin-top:40px">
+    {features.map((f) => (
+      <div class="card">
+        <span class="tag">Loop</span>
+        <h3>{f.title}</h3>
+        <p class="muted">{f.body}</p>
+      </div>
+    ))}
+  </div>
+</section>
