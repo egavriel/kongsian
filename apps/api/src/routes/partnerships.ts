@@ -223,9 +223,8 @@ router.post("/invite", async (c) => {
   } else {
     tenantId = crypto.randomUUID();
     // Slug: derive from cafe name; ensure uniqueness by suffixing random hex.
-    const baseSlug =
-      parsed.data.cafeSlug ?? cafeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30) ||
-      "cafe";
+    const slugifiedName = cafeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+    const baseSlug = parsed.data.cafeSlug || slugifiedName || "cafe";
     const slug = `${baseSlug}-${tenantId.slice(0, 6)}`;
     await db.insert(tenants).values({
       id: tenantId,
