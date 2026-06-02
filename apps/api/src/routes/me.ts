@@ -25,6 +25,8 @@ router.get("/me", authMiddleware, async (c) => {
       phoneE164: user.phoneE164,
       name: user.name,
       globalRole: user.globalRole,
+      onboardingRole: user.onboardingRole,
+      verificationStatus: user.verificationStatus,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,
     },

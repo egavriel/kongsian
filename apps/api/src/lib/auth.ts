@@ -50,7 +50,7 @@ export const authMiddleware: MiddlewareHandler<{
     );
   }
   c.set("auth", { userId: session.userId, sessionId: session.id });
-  await next();
+  return await next();
 };
 
 /** Optional auth — populates context when Bearer is present, otherwise no-op. */

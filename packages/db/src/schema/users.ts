@@ -5,6 +5,14 @@ import { sql } from "drizzle-orm";
  * USERS
  * Single user table, role derived from brands/tenants at request time (I10).
  * Phone in E.164 format, unique. globalRole only for platform admins.
+ *
+ * verification_status: admin-gate for onboarding.
+ *   - PENDING_VERIFICATION  → just registered, awaiting admin approval
+ *   - VERIFIED              → approved, can use the dashboard
+ *   - REJECTED              → admin rejected
+ *
+ * onboarding_role: the role chosen at register time (BRAND or TENANT).
+ *   Stored on first registration; subsequent OTP verifies (login) do NOT update it.
  */
 export const users = sqliteTable(
   "users",
@@ -15,6 +23,12 @@ export const users = sqliteTable(
     globalRole: text("global_role", { enum: ["USER", "PLATFORM_ADMIN"] })
       .notNull()
       .default("USER"),
+    onboardingRole: text("onboarding_role", { enum: ["BRAND", "TENANT"] }),
+    verificationStatus: text("verification_status", {
+      enum: ["PENDING_VERIFICATION", "VERIFIED", "REJECTED"],
+    })
+      .notNull()
+      .default("PENDING_VERIFICATION"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),
@@ -22,6 +36,7 @@ export const users = sqliteTable(
   },
   (t) => ({
     idxPhone: uniqueIndex("idx_users_phone").on(t.phoneE164),
+    idxVerification: index("idx_users_verification").on(t.verificationStatus),
   })
 );
 

@@ -6,6 +6,12 @@
 export type UserRole = "BRAND" | "TENANT" | "ADMIN";
 export type GlobalRole = "USER" | "PLATFORM_ADMIN";
 
+/** Role the user picked when they first registered (immutable after first OTP verify). */
+export type OnboardingRole = "BRAND" | "TENANT";
+
+/** Admin gate on first-time registration. */
+export type VerificationStatus = "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED";
+
 export type PartnershipStatus = "PENDING" | "ACTIVE" | "SUSPENDED" | "ENDED";
 export type StockMovementKind =
   | "TITIP"
@@ -52,6 +58,8 @@ export type AuditAction =
   | "OTP_VERIFIED"
   | "LOGIN_SUCCESS"
   | "LOGOUT"
+  | "USER_VERIFICATION_APPROVED"
+  | "USER_VERIFICATION_REJECTED"
   | "BRAND_CREATED"
   | "BRAND_UPDATED"
   | "TENANT_CREATED"

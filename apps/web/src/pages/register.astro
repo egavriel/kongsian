@@ -1,9 +1,7 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../lib/api";
-const title = `Masuk — ${APP_NAME}`;
-// ?registered=1 banner shown when user just registered
-const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
+const title = `Daftar — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
@@ -23,7 +21,7 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
         line-height: 1.55;
       }
       a { color: #38bdf8; text-decoration: none; }
-      .wrap { max-width: 460px; margin: 0 auto; padding: 32px 20px 80px; }
+      .wrap { max-width: 480px; margin: 0 auto; padding: 32px 20px 80px; }
       .back { font-size: 14px; color: #94a3b8; }
       .card {
         background: #0f172a;
@@ -34,7 +32,8 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
       }
       .eyebrow { color: #fbbf24; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
       h1 { margin: 8px 0 12px; font-size: 28px; line-height: 1.15; }
-      p { color: #94a3b8; margin: 0 0 24px; }
+      h2 { margin: 8px 0 12px; font-size: 22px; line-height: 1.2; }
+      p { color: #94a3b8; margin: 0 0 20px; }
       label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
       .lbl { font-size: 13px; font-weight: 600; }
       input {
@@ -79,24 +78,40 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
         padding: 12px 16px; border-radius: 10px;
         text-align: center; color: #fbbf24; margin: 8px 0 16px;
       }
-      .step2 { margin-top: 28px; padding-top: 24px; border-top: 1px solid #1e293b; display: none; }
+      .step2 { display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid #1e293b; }
       .step2.show { display: block; }
       .small { font-size: 13px; color: #94a3b8; }
       .muted { color: #94a3b8; }
+      .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+      .role-card {
+        background: #0b1220;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 16px 14px;
+        cursor: pointer;
+        transition: all .15s ease;
+        text-align: left;
+        color: #f1f5f9;
+        font-family: inherit;
+      }
+      .role-card:hover { border-color: #fbbf24; }
+      .role-card.selected {
+        border-color: #fbbf24;
+        background: rgba(251, 191, 36, 0.08);
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, .15);
+      }
+      .role-card .emoji { font-size: 24px; display: block; margin-bottom: 6px; }
+      .role-card .label { font-weight: 700; font-size: 15px; display: block; }
+      .role-card .sub { color: #94a3b8; font-size: 12px; display: block; margin-top: 4px; }
     </style>
   </head>
   <body>
     <main class="wrap">
       <a class="back" href="/">← Kembali</a>
       <div class="card">
-        {showRegisteredBanner && (
-          <div class="info" style="margin-bottom:16px">
-            <strong>Akun kamu sedang diverifikasi admin.</strong> Kami akan kabari via WA max 1x24 jam. Untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.
-          </div>
-        )}
-        <span class="eyebrow">Masuk</span>
-        <h1>Selamat datang kembali</h1>
-        <p>Masukin nomor WhatsApp kamu. Kami kirim OTP 6 digit.</p>
+        <span class="eyebrow">Sign up</span>
+        <h1>Daftar di {APP_NAME}</h1>
+        <p>Gratis untuk brand &amp; cafe. Masukin nomor HP, pilih peran, jadi.</p>
 
         <div id="err" class="err" style="display:none"></div>
         <div id="info" class="info" style="display:none"></div>
@@ -117,23 +132,46 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
           </label>
           <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
           <p class="small" style="margin-top:16px">
-            Belum punya akun? Prosesnya &lt; 10 menit — kami auto-create akun pas verifikasi pertama.
+            Sudah punya akun? <a href="/login">Masuk di sini</a>.
           </p>
         </form>
 
         <div id="step2" class="step2">
           <span class="eyebrow">Step 2 of 2</span>
-          <h2>Masukin kode OTP</h2>
-          <p class="small">Dikirim ke <span id="otp-phone" class="muted"></span>. Berlaku 5 menit.</p>
+          <h2>Verifikasi &amp; lengkapi profil</h2>
+          <p class="small">OTP dikirim ke <span id="otp-phone" class="muted"></span>. Berlaku 5 menit.</p>
           <div id="dev-code" class="dev-code" style="display:none"></div>
+
           <form id="verify-form">
             <label>
-              <span class="lbl">6-digit kode</span>
+              <span class="lbl">6-digit kode OTP</span>
               <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
                      pattern="\d{6}" maxlength="6" placeholder="123456" required />
             </label>
-            <button class="btn btn-primary" type="submit" id="verify-btn">Verifikasi</button>
-            <button class="btn btn-ghost" type="button" id="resend" style="margin-top:8px">Kirim ulang</button>
+
+            <label>
+              <span class="lbl">Nama kamu</span>
+              <input id="name" name="name" type="text" minlength="2" maxlength="80"
+                     placeholder="Contoh: Hanniel Salim" required />
+            </label>
+
+            <div class="lbl" style="margin-bottom:8px">Daftar sebagai:</div>
+            <div class="role-grid">
+              <button type="button" class="role-card" data-role="BRAND">
+                <span class="emoji">🏷️</span>
+                <span class="label">Brand owner</span>
+                <span class="sub">Punya produk, mau titip di banyak cafe.</span>
+              </button>
+              <button type="button" class="role-card" data-role="TENANT">
+                <span class="emoji">☕</span>
+                <span class="label">Cafe / tenant PIC</span>
+                <span class="sub">Punya cafe, mau jual produk brand.</span>
+              </button>
+            </div>
+            <input type="hidden" id="role" name="role" value="" />
+
+            <button class="btn btn-primary" type="submit" id="verify-btn" disabled>Verifikasi &amp; daftar</button>
+            <button class="btn btn-ghost" type="button" id="resend" style="margin-top:8px">Kirim ulang OTP</button>
           </form>
         </div>
       </div>
@@ -148,6 +186,33 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
       const hideMsg = () => { err.style.display = "none"; info.style.display = "none"; };
 
       let lastPhone = "";
+      let chosenRole = "";
+
+      // Role card selection
+      document.querySelectorAll(".role-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          document.querySelectorAll(".role-card").forEach((c) => c.classList.remove("selected"));
+          card.classList.add("selected");
+          chosenRole = card.getAttribute("data-role");
+          $("#role").value = chosenRole;
+          // Re-evaluate verify button
+          const code = $("#code").value.trim();
+          const name = $("#name").value.trim();
+          $("#verify-btn").disabled = !(chosenRole && /^\d{6}$/.test(code) && name.length >= 2);
+        });
+      });
+
+      // Verify button enable/disable
+      function recheckVerify() {
+        const code = $("#code").value.trim();
+        const name = $("#name").value.trim();
+        const ok = chosenRole && /^\d{6}$/.test(code) && name.length >= 2;
+        $("#verify-btn").disabled = !ok;
+      }
+      ["#code", "#name"].forEach((sel) => {
+        const el = $(sel);
+        el && el.addEventListener("input", recheckVerify);
+      });
 
       $("#otp-form").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -164,14 +229,12 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
             const code = json?.error?.code;
-            if (code === "OTP_RATE_LIMITED") {
-              showErr("Kebanyakan percobaan. Coba lagi ~1 jam.");
-            } else {
-              showErr("Gagal kirim OTP. Coba lagi.");
-            }
+            if (code === "OTP_RATE_LIMITED") showErr("Kebanyakan percobaan. Coba lagi ~1 jam.");
+            else showErr("Gagal kirim OTP. Coba lagi.");
             return;
           }
           lastPhone = phone;
+          try { localStorage.setItem("kongsian_register_phone", phone); } catch {}
           $("#otp-phone").textContent = phone;
           $("#step2").classList.add("show");
           $("#otp-form").style.display = "none";
@@ -179,10 +242,11 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
             $("#dev-code").textContent = json.data.devCode;
             $("#dev-code").style.display = "block";
             $("#code").value = json.data.devCode;
-            showInfo("Dev mode: kode OTP sudah diisi otomatis di bawah.");
+            showInfo("Dev mode: kode OTP sudah diisi otomatis. Pilih peran lalu klik daftar.");
           } else {
             showInfo("OTP dikirim. Cek WhatsApp kamu.");
           }
+          recheckVerify();
         } catch (e) {
           showErr("Tidak bisa konek ke server. Coba lagi.");
         } finally {
@@ -194,13 +258,16 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
         e.preventDefault();
         hideMsg();
         const code = $("#code").value.trim();
+        const name = $("#name").value.trim();
         if (!/^\d{6}$/.test(code)) { showErr("Kode harus 6 digit angka."); return; }
+        if (name.length < 2) { showErr("Nama minimal 2 karakter."); return; }
+        if (!chosenRole) { showErr("Pilih peran: Brand atau Cafe."); return; }
         const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = "Memverifikasi…";
         try {
           const res = await fetch(`${API}/v1/auth/otp/verify`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ phone: lastPhone, code, purpose: "LOGIN" }),
+            body: JSON.stringify({ phone: lastPhone, code, purpose: "LOGIN", name, role: chosenRole }),
           });
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
@@ -208,30 +275,34 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
             if (c === "OTP_INVALID") showErr("Kode salah. Coba lagi.");
             else if (c === "OTP_EXPIRED") showErr("Kode sudah kadaluarsa. Kirim ulang.");
             else if (c === "OTP_TOO_MANY_ATTEMPTS") showErr("Terlalu banyak percobaan. Kirim OTP baru.");
+            else if (c === "REGISTRATION_REQUIRED") showErr("Nama + peran wajib untuk pendaftaran pertama.");
             else showErr("Verifikasi gagal. Coba lagi.");
             return;
           }
           const token = json.data?.sessionToken;
+          const user = json.data?.user;
           if (token) {
-            localStorage.setItem("kongsian_session", token);
-            showInfo("Berhasil! Mengarahkan ke dashboard…");
-            setTimeout(() => {
-              // Route by role from /v1/brands/me
-              fetch(`${API}/v1/brands/me`, { headers: { Authorization: `Bearer ${token}` }})
-                .then(r => r.json()).then(j => {
-                  const role = j?.data?.role;
-                  if (role === "BRAND" || role === "BOTH") window.location.href = "/dashboard/brand";
-                  else if (role === "TENANT") window.location.href = "/dashboard/tenant";
-                  else window.location.href = "/dashboard/brand";
-                }).catch(() => { window.location.href = "/dashboard/brand"; });
-            }, 400);
+            try { localStorage.setItem("kongsian_session", token); } catch {}
+            // Route by role
+            const vs = user?.verificationStatus;
+            const role = chosenRole; // BRAND | TENANT — chosen at registration
+            if (vs === "PENDING_VERIFICATION" || vs === "PENDING_VERIFIED") {
+              showInfo("Berhasil! Akun kamu menunggu verifikasi admin (~1x24 jam)…");
+              setTimeout(() => { window.location.href = "/login?registered=1"; }, 1200);
+            } else {
+              showInfo("Berhasil! Mengarahkan ke dashboard…");
+              setTimeout(() => {
+                window.location.href = role === "BRAND" ? "/dashboard/brand" : "/dashboard/tenant";
+              }, 400);
+            }
           } else {
             showErr("Tidak ada session token. Coba lagi.");
           }
         } catch (e) {
           showErr("Tidak bisa konek ke server. Coba lagi.");
         } finally {
-          btn.disabled = false; btn.textContent = "Verifikasi";
+          recheckVerify();
+          btn.textContent = "Verifikasi & daftar";
         }
       });
 
@@ -239,6 +310,10 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
         $("#otp-form").style.display = "block";
         $("#step2").classList.remove("show");
         $("#verify-form").reset();
+        chosenRole = "";
+        document.querySelectorAll(".role-card").forEach((c) => c.classList.remove("selected"));
+        $("#role").value = "";
+        $("#verify-btn").disabled = true;
       });
     </script>
   </body>

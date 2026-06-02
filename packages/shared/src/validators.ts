@@ -5,12 +5,12 @@
 import { z } from "zod";
 import { PHONE_E164_REGEX } from "./constants";
 
-/** E.164 phone, e.g. +6281234567890. */
+/** E.164 phone, e.g. +628****7890. */
 export const PhoneSchema = z
   .string()
   .min(10, "Phone too short")
   .max(16, "Phone too long")
-  .regex(PHONE_E164_REGEX, "Phone must be E.164 (e.g. +6281234567890)");
+  .regex(PHONE_E164_REGEX, "Phone must be E.164 (e.g. +628****7890)");
 
 /** 6-digit OTP code. */
 export const OtpCodeSchema = z
@@ -18,18 +18,44 @@ export const OtpCodeSchema = z
   .length(6, "OTP must be 6 digits")
   .regex(/^\d{6}$/, "OTP must be 6 digits");
 
+/** Display name for a new user. */
+export const UserNameSchema = z
+  .string()
+  .min(2, "Name must be at least 2 characters")
+  .max(80, "Name too long")
+  .trim();
+
+/** Onboarding role chosen at registration. */
+export const OnboardingRoleSchema = z.enum(["BRAND", "TENANT"]);
+
 export const OtpRequestSchema = z.object({
   phone: PhoneSchema,
   purpose: z.enum(["LOGIN", "INVITE"]).default("LOGIN"),
 });
 export type OtpRequest = z.infer<typeof OtpRequestSchema>;
 
+/**
+ * OtpVerifySchema — when the phone is a NEW user, callers MUST supply `name` and
+ * `role` so we can create the user row with the right onboarding intent.
+ * If the phone is already a registered user, the server silently ignores any
+ * name/role in the request — onboarding_role is fixed on first registration.
+ */
 export const OtpVerifySchema = z.object({
   phone: PhoneSchema,
   code: OtpCodeSchema,
   purpose: z.enum(["LOGIN", "INVITE"]).default("LOGIN"),
+  // Optional on the wire; the API derives them from the existing row if present.
+  name: UserNameSchema.optional(),
+  role: OnboardingRoleSchema.optional(),
 });
 export type OtpVerify = z.infer<typeof OtpVerifySchema>;
+
+/** Admin: approve or reject a pending user. */
+export const AdminVerifyUserSchema = z.object({
+  status: z.enum(["VERIFIED", "REJECTED"]),
+  note: z.string().max(280).optional(),
+});
+export type AdminVerifyUser = z.infer<typeof AdminVerifyUserSchema>;
 
 export const BrandCreateSchema = z.object({
   name: z.string().min(2).max(80),

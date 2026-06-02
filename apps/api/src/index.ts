@@ -47,6 +47,8 @@ import { partnerships } from "./routes/partnerships";
 import { movements } from "./routes/movements";
 import { audit } from "./routes/audit";
 import { uploads } from "./routes/uploads";
+import { admin } from "./routes/admin";
+import { onCronTrigger } from "./cron";
 
 export type Bindings = {
   kongsian_db: D1Database;
@@ -120,5 +122,11 @@ app.route("/v1/partnerships", partnerships);
 app.route("/v1/movements", movements);
 app.route("/v1/audit", audit);
 app.route("/v1/uploads", uploads);
+app.route("/v1/admin", admin);
 
-export default app;
+// Workers Cron Trigger — runs every minute (configured in wrangler.toml).
+// Re-sends OTP codes via Meta WhatsApp Cloud API (or console.log stub).
+export default {
+  fetch: app.fetch,
+  scheduled: onCronTrigger,
+};

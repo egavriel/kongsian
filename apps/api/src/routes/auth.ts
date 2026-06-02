@@ -14,6 +14,7 @@ import type { Bindings } from "../index";
 import { generateOtpCode, hashOtpCode, generateSessionToken } from "../lib/crypto";
 import { authMiddleware, type AuthContext } from "../lib/auth";
 import { checkAndIncrementOtp, getOtpCountThisHour } from "../lib/rate-limit";
+import { enqueueOtp } from "../cron";
 
 const router = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 
@@ -71,8 +72,13 @@ router.post("/otp/request", async (c) => {
     expiresAt,
     attempts: 0,
     purpose,
+    waSent: 0,
     createdAt: now,
   });
+
+  // Queue the plaintext code for the WA-cron. In dev (no WA_TOKEN set) the
+  // cron stub will console.log it; in prod the cron will push to Meta.
+  enqueueOtp(phone, purpose, code, expiresAt, otpId);
 
   // Audit: OTP sent.
   // (We skip the audit row for OTP_SENT until a 'system' user exists. Week 3
@@ -186,12 +192,30 @@ router.post("/otp/verify", async (c) => {
   let user = userRows[0];
   let isNewUser = false;
   if (!user) {
+    // First-time registration: name + role are required.
+    const newName = parsed.data.name?.trim();
+    const newRole = parsed.data.role;
+    if (!newName || !newRole) {
+      return c.json(
+        {
+          ok: false,
+          error: {
+            code: "REGISTRATION_REQUIRED",
+            message:
+              "First-time sign-in requires `name` (>=2 chars) and `role` (BRAND|TENANT).",
+          },
+        },
+        400
+      );
+    }
     const id = crypto.randomUUID();
     await db.insert(users).values({
       id,
       phoneE164: phone,
-      name: phone,
+      name: newName,
       globalRole: "USER",
+      onboardingRole: newRole,
+      verificationStatus: "PENDING_VERIFICATION",
       createdAt: now,
       lastLoginAt: now,
     });
@@ -199,6 +223,7 @@ router.post("/otp/verify", async (c) => {
     userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
     user = userRows[0];
   } else {
+    // Existing user login: do NOT silently overwrite name or role.
     await db.update(users).set({ lastLoginAt: now }).where(eq(users.id, user.id));
   }
 
@@ -224,7 +249,12 @@ router.post("/otp/verify", async (c) => {
       entityType: "user",
       entityId: user.id,
       beforeJson: null,
-      afterJson: JSON.stringify({ phone, globalRole: "USER" }),
+      afterJson: JSON.stringify({
+        phone,
+        name: user.name,
+        onboardingRole: user.onboardingRole,
+        verificationStatus: user.verificationStatus,
+      }),
       ip: c.req.header("cf-connecting-ip") ?? null,
       userAgent: c.req.header("user-agent") ?? null,
       createdAt: now,
@@ -263,11 +293,14 @@ router.post("/otp/verify", async (c) => {
       sessionToken,
       sessionId,
       expiresAt: now + ttl,
+      isNewUser,
       user: {
         id: user.id,
         phoneE164: user.phoneE164,
         name: user.name,
         globalRole: user.globalRole,
+        onboardingRole: user.onboardingRole,
+        verificationStatus: user.verificationStatus,
       },
     },
   });

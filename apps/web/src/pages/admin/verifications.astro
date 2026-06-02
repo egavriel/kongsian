@@ -1,0 +1,171 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../lib/api";
+const title = `Verifikasi Pengguna — ${APP_NAME} Admin`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #0b1220;
+        color: #f1f5f9;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+      }
+      .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
+      h1 { font-size: 24px; margin: 8px 0 24px; }
+      .eyebrow { color: #fbbf24; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; background: #0f172a; border-radius: 12px; overflow: hidden; }
+      th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #1e293b; font-size: 14px; }
+      th { background: #0b1220; color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; }
+      tr:last-child td { border-bottom: none; }
+      .actions { display: flex; gap: 8px; }
+      .btn {
+        padding: 8px 14px; border-radius: 8px; font-weight: 600; border: 1px solid transparent;
+        cursor: pointer; font-size: 13px; font-family: inherit;
+      }
+      .btn-approve { background: #22c55e; color: #052e16; }
+      .btn-approve:hover { background: #16a34a; }
+      .btn-reject { background: transparent; color: #f87171; border-color: #f87171; }
+      .btn-reject:hover { background: rgba(248, 113, 113, .1); }
+      .empty { padding: 40px; text-align: center; color: #94a3b8; }
+      .back { color: #38bdf8; text-decoration: none; font-size: 14px; }
+      .toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+        opacity: 0; transition: opacity .2s; pointer-events: none;
+      }
+      .toast.show { opacity: 1; }
+      .toast.ok { background: #22c55e; color: #052e16; }
+      .toast.err { background: #ef4444; color: #fef2f2; }
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+      .badge-brand { background: rgba(251, 191, 36, .15); color: #fbbf24; }
+      .badge-tenant { background: rgba(56, 189, 248, .15); color: #38bdf8; }
+      .denied { padding: 60px 20px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="back" href="/">← Beranda</a>
+      <span class="eyebrow">Admin</span>
+      <h1>Verifikasi Pengguna Baru</h1>
+
+      <div id="denied" class="denied" style="display:none">
+        <h2>403 — Akses ditolak</h2>
+        <p>Hanya <strong>PLATFORM_ADMIN</strong> yang bisa akses halaman ini. <a class="back" href="/login">Login sebagai admin</a></p>
+      </div>
+
+      <div id="content" style="display:none">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>WhatsApp</th>
+              <th>Role</th>
+              <th>Daftar</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </main>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const token = localStorage.getItem("kongsian_session");
+      const $ = (s) => document.querySelector(s);
+
+      function showToast(msg, ok) {
+        const t = $("#toast");
+        t.textContent = msg;
+        t.className = "toast show " + (ok ? "ok" : "err");
+        setTimeout(() => { t.className = "toast"; }, 2500);
+      }
+
+      function fmtDate(epoch) {
+        if (!epoch) return "—";
+        const d = new Date(epoch * 1000);
+        return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+      }
+
+      async function loadList() {
+        if (!token) { $("#denied").style.display = "block"; return; }
+        try {
+          const meRes = await fetch(API + "/v1/me", { headers: { Authorization: "Bearer *** + token } });
+          if (!meRes.ok) { $("#denied").style.display = "block"; return; }
+          const meJson = await meRes.json();
+          if (meJson.data.globalRole !== "PLATFORM_ADMIN") { $("#denied").style.display = "block"; return; }
+          $("#content").style.display = "block";
+
+          const listRes = await fetch(API + "/v1/admin/users?status=PENDING_VERIFICATION", {
+            headers: { Authorization: "Bearer *** + token }
+          });
+          const listJson = await listRes.json();
+          const users = listJson.data || [];
+          const tbody = $("#rows");
+
+          if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty">Tidak ada pengajuan tertunda. 🎉</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = users.map((u) => `
+            <tr data-uid="${u.id}">
+              <td><strong>${u.name || "—"}</strong></td>
+              <td>${u.phoneE164}</td>
+              <td>${u.onboardingRole === "BRAND" ? '<span class="badge badge-brand">BRAND</span>' : u.onboardingRole === "TENANT" ? '<span class="badge badge-tenant">TENANT</span>' : "—"}</td>
+              <td>${fmtDate(u.createdAt)}</td>
+              <td>
+                <div class="actions">
+                  <button class="btn btn-approve" data-act="VERIFIED">✓ Approve</button>
+                  <button class="btn btn-reject" data-act="REJECTED">✗ Reject</button>
+                </div>
+              </td>
+            </tr>
+          `).join("");
+
+          tbody.querySelectorAll("button").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const tr = btn.closest("tr");
+              const uid = tr.dataset.uid;
+              const status = btn.dataset.act;
+              btn.disabled = true;
+              try {
+                const r = await fetch(API + "/v1/admin/users/" + uid + "/verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: "Bearer *** + token },
+                  body: JSON.stringify({ status }),
+                });
+                if (!r.ok) throw new Error("HTTP " + r.status);
+                showToast(status === "VERIFIED" ? "✓ Disetujui" : "✗ Ditolak", true);
+                tr.remove();
+                if (tbody.children.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="5" class="empty">Tidak ada pengajuan tertunda. 🎉</td></tr>';
+                }
+              } catch (e) {
+                showToast("Error: " + e.message, false);
+                btn.disabled = false;
+              }
+            });
+          });
+        } catch (e) {
+          $("#denied").style.display = "block";
+        }
+      }
+
+      loadList();
+    </script>
+  </body>
+</html>
