@@ -1,156 +1,238 @@
 ---
-import { APP_NAME, APP_TAGLINE } from "@kongsian/shared/constants";
-import Layout from "../layouts/Layout.astro";
-import Footer from "../components/Footer.astro";
-
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../lib/api";
 const title = `Masuk — ${APP_NAME}`;
-const description = `Login ${APP_NAME} via WhatsApp OTP. Tidak pakai password.`;
 ---
-<Layout title={title} description={description}>
-  <main class="container login-wrap">
-    <a class="back" href="/">← Kembali</a>
-    <div class="card login-card">
-      <span class="eyebrow">Sign in</span>
-      <h1>Masuk ke {APP_NAME}</h1>
-      <p class="lead">
-        Masukin nomor HP kamu. Kami kirim OTP via WhatsApp.
-        6 digit, 5 menit, beres.
-      </p>
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #0b1220;
+        color: #f1f5f9;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+      }
+      a { color: #38bdf8; text-decoration: none; }
+      .wrap { max-width: 460px; margin: 0 auto; padding: 32px 20px 80px; }
+      .back { font-size: 14px; color: #94a3b8; }
+      .card {
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 14px;
+        padding: 28px;
+        margin-top: 24px;
+      }
+      .eyebrow { color: #fbbf24; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+      h1 { margin: 8px 0 12px; font-size: 28px; line-height: 1.15; }
+      p { color: #94a3b8; margin: 0 0 24px; }
+      label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+      .lbl { font-size: 13px; font-weight: 600; }
+      input {
+        background: #0b1220;
+        border: 1px solid #1e293b;
+        color: #f1f5f9;
+        padding: 14px 14px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-family: inherit;
+        width: 100%;
+      }
+      input:focus { outline: none; border-color: #fbbf24; box-shadow: 0 0 0 3px rgba(251, 191, 36, .15); }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 14px 20px; border-radius: 10px; font-weight: 600;
+        border: 1px solid transparent; cursor: pointer; font-size: 16px;
+        width: 100%;
+      }
+      .btn-primary { background: #fbbf24; color: #0b1220; }
+      .btn-primary:hover { background: #f59e0b; }
+      .btn-ghost { background: transparent; color: #f1f5f9; border-color: #1e293b; }
+      .btn:disabled { opacity: .5; cursor: not-allowed; }
+      .err {
+        background: rgba(251, 113, 133, .12);
+        color: #fb7185;
+        border: 1px solid rgba(251, 113, 133, .3);
+        padding: 10px 12px; border-radius: 10px;
+        font-size: 14px; margin-bottom: 16px;
+      }
+      .info {
+        background: rgba(56, 189, 248, .1);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, .3);
+        padding: 10px 12px; border-radius: 10px;
+        font-size: 14px; margin-bottom: 16px;
+      }
+      .dev-code {
+        font-family: ui-monospace, monospace;
+        font-size: 22px; letter-spacing: 4px;
+        background: #0b1220; border: 1px dashed #fbbf24;
+        padding: 12px 16px; border-radius: 10px;
+        text-align: center; color: #fbbf24; margin: 8px 0 16px;
+      }
+      .step2 { margin-top: 28px; padding-top: 24px; border-top: 1px solid #1e293b; display: none; }
+      .step2.show { display: block; }
+      .small { font-size: 13px; color: #94a3b8; }
+      .muted { color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="back" href="/">← Kembali</a>
+      <div class="card">
+        <span class="eyebrow">Sign in</span>
+        <h1>Masuk ke {APP_NAME}</h1>
+        <p>Masukin nomor HP kamu. Kami kirim OTP via WhatsApp. 6 digit, 5 menit, beres.</p>
 
-      <form id="otp-form" class="login-form" novalidate>
-        <label class="field">
-          <span class="field-label">Nomor HP (format +62)</span>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            inputmode="tel"
-            autocomplete="tel"
-            placeholder="+6281234567890"
-            required
-            pattern="^\+[1-9]\d{7,14}$"
-            aria-describedby="phone-help"
-          />
-          <small id="phone-help" class="muted">
-            Contoh: +6281234567890 (Indonesia).
-          </small>
-        </label>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="info" class="info" style="display:none"></div>
 
-        <button class="btn btn-primary submit-btn" type="submit">
-          Kirim OTP via WhatsApp
-        </button>
-
-        <p class="muted small">
-          Belum punya akun?
-          <a href="#signup">Daftar dulu</a> — prosesnya &lt; 10 menit.
-        </p>
-      </form>
-
-      <div id="otp-step" class="otp-step" hidden>
-        <span class="eyebrow">Step 2 of 2</span>
-        <h2>Masukin kode OTP</h2>
-        <p class="muted small">
-          Dikirim ke <span id="otp-phone" class="kbd"></span>.
-          Berlaku 5 menit.
-        </p>
-        <form class="login-form" novalidate>
-          <label class="field">
-            <span class="field-label">6-digit kode</span>
+        <form id="otp-form">
+          <label>
+            <span class="lbl">Nomor HP (format +62)</span>
             <input
-              id="code"
-              name="code"
-              type="text"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              pattern="\d{6}"
-              maxlength="6"
-              placeholder="123456"
+              id="phone"
+              name="phone"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              placeholder="+628****7890"
               required
+              pattern="^\+[1-9]\d{7,14}$"
             />
           </label>
-          <button class="btn btn-primary submit-btn" type="submit">
-            Verifikasi
-          </button>
-          <button class="btn btn-ghost" type="button" id="resend">
-            Kirim ulang
-          </button>
+          <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
+          <p class="small" style="margin-top:16px">
+            Belum punya akun? Prosesnya &lt; 10 menit — kami auto-create akun pas verifikasi pertama.
+          </p>
         </form>
+
+        <div id="step2" class="step2">
+          <span class="eyebrow">Step 2 of 2</span>
+          <h2>Masukin kode OTP</h2>
+          <p class="small">Dikirim ke <span id="otp-phone" class="muted"></span>. Berlaku 5 menit.</p>
+          <div id="dev-code" class="dev-code" style="display:none"></div>
+          <form id="verify-form">
+            <label>
+              <span class="lbl">6-digit kode</span>
+              <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                     pattern="\d{6}" maxlength="6" placeholder="123456" required />
+            </label>
+            <button class="btn btn-primary" type="submit" id="verify-btn">Verifikasi</button>
+            <button class="btn btn-ghost" type="button" id="resend" style="margin-top:8px">Kirim ulang</button>
+          </form>
+        </div>
       </div>
-    </div>
-  </main>
-  <Footer />
-</Layout>
+    </main>
 
-<script>
-  // Stub behavior — backend wiring di Week 2.
-  const form = document.getElementById("otp-form") as HTMLFormElement | null;
-  const otpStep = document.getElementById("otp-step") as HTMLElement | null;
-  const otpPhone = document.getElementById("otp-phone") as HTMLElement | null;
-  const phoneInput = document.getElementById("phone") as HTMLInputElement | null;
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const $ = (s) => document.querySelector(s);
+      const err = $("#err"), info = $("#info");
+      const showErr = (m) => { err.textContent = m; err.style.display = "block"; info.style.display = "none"; };
+      const showInfo = (m) => { info.textContent = m; info.style.display = "block"; err.style.display = "none"; };
+      const hideMsg = () => { err.style.display = "none"; info.style.display = "none"; };
 
-  form?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const phone = phoneInput?.value.trim();
-    if (!phone || !/^\+[1-9]\d{7,14}$/.test(phone)) {
-      phoneInput?.focus();
-      return;
-    }
-    if (otpPhone) otpPhone.textContent = phone;
-    if (otpStep) otpStep.hidden = false;
-    form.hidden = true;
-  });
-</script>
+      let lastPhone = "";
 
-<style>
-  .login-wrap {
-    padding: 48px 24px 80px;
-    max-width: 520px;
-  }
-  .back {
-    display: inline-block;
-    margin-bottom: 24px;
-    color: var(--fg-muted);
-    font-size: 14px;
-  }
-  .login-card {
-    padding: 32px;
-    gap: 16px;
-  }
-  .login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 8px;
-  }
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .field-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--fg);
-  }
-  .field input {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    color: var(--fg);
-    padding: 12px 14px;
-    border-radius: 10px;
-    font-size: 16px;
-    font-family: inherit;
-    width: 100%;
-  }
-  .field input:focus {
-    outline: none;
-    border-color: var(--brand);
-    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
-  }
-  .submit-btn {
-    width: 100%;
-    justify-content: center;
-  }
-  .small { font-size: 14px; }
-  .otp-step { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
-</style>
+      $("#otp-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideMsg();
+        const phone = $("#phone").value.trim();
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
+        const btn = $("#send-btn"); btn.disabled = true; btn.textContent = "Mengirim…";
+        try {
+          const res = await fetch(`${API}/v1/auth/otp/request`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone, purpose: "LOGIN" }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            const code = json?.error?.code;
+            if (code === "OTP_RATE_LIMITED") {
+              showErr("Kebanyakan percobaan. Coba lagi ~1 jam.");
+            } else {
+              showErr("Gagal kirim OTP. Coba lagi.");
+            }
+            return;
+          }
+          lastPhone = phone;
+          $("#otp-phone").textContent = phone;
+          $("#step2").classList.add("show");
+          $("#otp-form").style.display = "none";
+          if (json.data?.devCode) {
+            $("#dev-code").textContent = json.data.devCode;
+            $("#dev-code").style.display = "block";
+            $("#code").value = json.data.devCode;
+            showInfo("Dev mode: kode OTP sudah diisi otomatis di bawah.");
+          } else {
+            showInfo("OTP dikirim. Cek WhatsApp kamu.");
+          }
+        } catch (e) {
+          showErr("Tidak bisa konek ke server. Coba lagi.");
+        } finally {
+          btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp";
+        }
+      });
+
+      $("#verify-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideMsg();
+        const code = $("#code").value.trim();
+        if (!/^\d{6}$/.test(code)) { showErr("Kode harus 6 digit angka."); return; }
+        const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = "Memverifikasi…";
+        try {
+          const res = await fetch(`${API}/v1/auth/otp/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: lastPhone, code, purpose: "LOGIN" }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            const c = json?.error?.code;
+            if (c === "OTP_INVALID") showErr("Kode salah. Coba lagi.");
+            else if (c === "OTP_EXPIRED") showErr("Kode sudah kadaluarsa. Kirim ulang.");
+            else if (c === "OTP_TOO_MANY_ATTEMPTS") showErr("Terlalu banyak percobaan. Kirim OTP baru.");
+            else showErr("Verifikasi gagal. Coba lagi.");
+            return;
+          }
+          const token = json.data?.sessionToken;
+          if (token) {
+            localStorage.setItem("kongsian_session", token);
+            showInfo("Berhasil! Mengarahkan ke dashboard…");
+            setTimeout(() => {
+              // Route by role from /v1/brands/me
+              fetch(`${API}/v1/brands/me`, { headers: { Authorization: `Bearer ${token}` }})
+                .then(r => r.json()).then(j => {
+                  const role = j?.data?.role;
+                  if (role === "BRAND" || role === "BOTH") window.location.href = "/dashboard/brand";
+                  else if (role === "TENANT") window.location.href = "/dashboard/tenant";
+                  else window.location.href = "/dashboard/brand";
+                }).catch(() => { window.location.href = "/dashboard/brand"; });
+            }, 400);
+          } else {
+            showErr("Tidak ada session token. Coba lagi.");
+          }
+        } catch (e) {
+          showErr("Tidak bisa konek ke server. Coba lagi.");
+        } finally {
+          btn.disabled = false; btn.textContent = "Verifikasi";
+        }
+      });
+
+      $("#resend").addEventListener("click", () => {
+        $("#otp-form").style.display = "block";
+        $("#step2").classList.remove("show");
+        $("#verify-form").reset();
+      });
+    </script>
+  </body>
+</html>

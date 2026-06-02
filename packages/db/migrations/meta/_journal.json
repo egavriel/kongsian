@@ -8,6 +8,13 @@
       "when": 1780398177746,
       "tag": "0000_silent_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1780411211972,
+      "tag": "0001_swift_prism",
+      "breakpoints": true
     }
   ]
 }

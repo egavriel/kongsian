@@ -2,25 +2,56 @@
  * Kongsian API — Hono on Cloudflare Workers.
  *
  * Endpoints (all JSON, /v1 prefix):
- *   GET  /health             liveness
- *   POST /v1/auth/otp/request  { phone, purpose? } → sends OTP (stub: returns code in dev)
- *   POST /v1/auth/otp/verify   { phone, code, purpose? } → { sessionToken, user }
- *   POST /v1/auth/logout       { sessionToken } → ok
- *   GET  /v1/me                → { user } (requires Bearer session)
+ *   GET  /health                       liveness
+ *   POST /v1/auth/otp/request          { phone, purpose? } → sends OTP (stub: returns code in dev)
+ *   POST /v1/auth/otp/verify           { phone, code, purpose? } → { sessionToken, user }
+ *   POST /v1/auth/logout               Bearer → ok
+ *   GET  /v1/me                        → { user } (requires Bearer session)
  *
- * Auth follows Lucia v3's now-deprecated pattern, reimplemented directly
- * with a Drizzle + D1 adapter (the `otps` + `sessions` tables from
- * packages/db/src/schema). See README "Why no Lucia v3" for rationale.
+ *   GET  /v1/brands/me                 → current user's brand + SKUs + partnerships
+ *   POST /v1/brands                    { name, slug, description? } → brand
+ *   GET  /v1/skus                      ?brandId=... → SKUs
+ *   POST /v1/skus                      { brandId, code, name, priceIdr, masaSimpanHari }
+ *   PATCH /v1/skus/:id                 { name?, priceIdr?, masaSimpanHari?, active? }
+ *   DELETE /v1/skus/:id                soft delete (active=false)
+ *
+ *   GET  /v1/tenants                   ?phone=... → list (admin) or PIC's own
+ *   POST /v1/tenants                   { name, slug, address?, picPhoneE164 }
+ *
+ *   GET  /v1/partnerships              ?brandId=... | ?tenantId=...
+ *   POST /v1/partnerships              { brandId, tenantId, revenueSplitBrandBps, revenueSplitTenantBps }
+ *   POST /v1/partnerships/invite       { brandId, phone, cafeName, address?, split? } → create tenant PENDING + partnership PENDING + OTP INVITE
+ *   POST /v1/partnerships/:id/activate → brand accepts → status=ACTIVE
+ *
+ *   GET  /v1/movements                 ?partnershipId&from=&to= → list
+ *   POST /v1/movements                 { partnershipId, skuId, movementDate, kind, qty, reason?, fotoR2Key?, idempotencyKey }
+ *   GET  /v1/movements/sisa-sistem     ?partnershipId&weekStart= → computed per-SKU
+ *
+ *   GET  /v1/audit                     ?entityType=&entityId= → audit log
+ *
+ *   POST /v1/uploads/presign           { kind, contentType } → { uploadUrl, key } (R2 presigned)
+ *
+ * Auth follows a D1-native session pattern (Lucia v3 reimplemented). OTP requests
+ * are rate-limited at 5/hour/phone via the `otp_rate_limits` D1 counter (P0 #1).
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { getDb, type D1Env } from "@kongsian/db";
-import { APP_NAME, formatIdr } from "@kongsian/shared/constants";
+import { APP_NAME, formatIdr, CORS_ALLOWLIST } from "@kongsian/shared/constants";
 import { auth } from "./routes/auth";
 import { me } from "./routes/me";
+import { brands } from "./routes/brands";
+import { skus } from "./routes/skus";
+import { tenants } from "./routes/tenants";
+import { partnerships } from "./routes/partnerships";
+import { movements } from "./routes/movements";
+import { audit } from "./routes/audit";
+import { uploads } from "./routes/uploads";
 
-export type Bindings = D1Env & {
+export type Bindings = {
+  kongsian_db: D1Database;
+  // R2 (optional — for photo upload, Week 2)
+  KONGSIAN_BUCKET?: R2Bucket;
   ENV: string;
   LOG_LEVEL: string;
   APP_URL: string;
@@ -32,16 +63,34 @@ export type Bindings = D1Env & {
   WA_PHONE_ID: string;
   WA_TOKEN: string;
   OTP_HMAC_KEY: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  R2_BUCKET_NAME?: string;
+  R2_PUBLIC_BASE?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use("*", logger());
+
+/**
+ * CORS — P0 audit fix #3.
+ * Allowlist: kongsian.app + www + *.kongsian-web.pages.dev + localhost (dev only).
+ * We use a function so unknown origins get rejected (not echoed).
+ */
 app.use(
   "*",
   cors({
-    origin: (origin) => origin ?? "*",
+    origin: (origin) => {
+      if (!origin) return CORS_ALLOWLIST[0] || "https://kongsian.app";
+      const allow =
+        CORS_ALLOWLIST.includes(origin) ||
+        /^https:\/\/[a-z0-9-]+\.kongsian-web\.pages\.dev$/i.test(origin);
+      return allow ? origin : CORS_ALLOWLIST[0] || "https://kongsian.app";
+    },
     credentials: true,
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -49,7 +98,7 @@ app.get("/health", (c) =>
   c.json({
     ok: true,
     service: "kongsian-api",
-    version: "0.1.0",
+    version: "0.2.0",
     time: new Date().toISOString(),
   })
 );
@@ -64,5 +113,12 @@ app.get("/", (c) =>
 
 app.route("/v1/auth", auth);
 app.route("/v1", me);
+app.route("/v1/brands", brands);
+app.route("/v1/skus", skus);
+app.route("/v1/tenants", tenants);
+app.route("/v1/partnerships", partnerships);
+app.route("/v1/movements", movements);
+app.route("/v1/audit", audit);
+app.route("/v1/uploads", uploads);
 
 export default app;

@@ -16,14 +16,20 @@
     "migrate:apply:local": "wrangler d1 migrations apply kongsian-db --local",
     "migrate:apply:remote": "wrangler d1 migrations apply kongsian-db --remote",
     "studio": "drizzle-kit studio",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx seed.ts",
+    "seed:remote": "tsx seed.ts --remote"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.9.1",
+    "better-sqlite3": "^12.10.0",
     "drizzle-kit": "^0.28.1",
+    "tsx": "^4.22.4",
     "typescript": "^5.6.3",
     "wrangler": "^4.0.0"
   }

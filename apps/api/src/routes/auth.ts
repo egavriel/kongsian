@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { eq, and, desc, gte } from "drizzle-orm";
-import { getDb, otps, sessions, users } from "@kongsian/db";
+import { getDb, otps, sessions, users, auditLog } from "@kongsian/db";
 import {
   OtpRequestSchema,
   OtpVerifySchema,
@@ -13,12 +13,14 @@ import {
 import type { Bindings } from "../index";
 import { generateOtpCode, hashOtpCode, generateSessionToken } from "../lib/crypto";
 import { authMiddleware, type AuthContext } from "../lib/auth";
+import { checkAndIncrementOtp, getOtpCountThisHour } from "../lib/rate-limit";
 
 const router = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 
 /**
  * POST /v1/auth/otp/request
  * Generate a 6-digit OTP, store its hash, return the code in dev (no real WA yet).
+ * P0 #1: rate-limited to 5/hour/phone via otp_rate_limits D1 counter.
  */
 router.post("/otp/request", async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -30,6 +32,29 @@ router.post("/otp/request", async (c) => {
     );
   }
   const { phone, purpose } = parsed.data;
+
+  // Rate limit check + increment.
+  const rl = await checkAndIncrementOtp(c.env, phone);
+  if (!rl.allowed) {
+    c.header("Retry-After", String(rl.retryAfterSec));
+    c.header("X-RateLimit-Limit", String(rl.limit));
+    c.header("X-RateLimit-Remaining", "0");
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "OTP_RATE_LIMITED",
+          message: `Max ${rl.limit} OTP requests per hour. Try again in ${Math.ceil(
+            rl.retryAfterSec / 60
+          )} minutes.`,
+        },
+      },
+      429
+    );
+  }
+  c.header("X-RateLimit-Limit", String(rl.limit));
+  c.header("X-RateLimit-Remaining", String(Math.max(0, rl.limit - rl.count)));
+
   const db = getDb(c.env.kongsian_db);
 
   const code = generateOtpCode();
@@ -37,9 +62,10 @@ router.post("/otp/request", async (c) => {
   const now = Math.floor(Date.now() / 1000);
   const ttl = parseInt(c.env.OTP_TTL_SECONDS || String(OTP_TTL_SECONDS), 10);
   const expiresAt = now + ttl;
+  const otpId = crypto.randomUUID();
 
   await db.insert(otps).values({
-    id: crypto.randomUUID(),
+    id: otpId,
     phoneE164: phone,
     codeHash,
     expiresAt,
@@ -48,8 +74,12 @@ router.post("/otp/request", async (c) => {
     createdAt: now,
   });
 
+  // Audit: OTP sent.
+  // (We skip the audit row for OTP_SENT until a 'system' user exists. Week 3
+  // will introduce a real SYSTEM actor and backfill. The otps row + rate limit
+  // counter is the canonical record of the send itself.)
+
   // TODO: send via WhatsApp Cloud API when WA_PHONE_ID + WA_TOKEN are set.
-  // For Week 1, surface the code in the response in dev only.
   const isDev = c.env.ENV === "development";
   return c.json({
     ok: true,
@@ -57,7 +87,6 @@ router.post("/otp/request", async (c) => {
       phone,
       purpose,
       expiresAt,
-      // dev only — never include in production
       ...(isDev ? { devCode: code } : {}),
     },
   });
@@ -66,6 +95,8 @@ router.post("/otp/request", async (c) => {
 /**
  * POST /v1/auth/otp/verify
  * Check code, create or fetch user, mint a session token.
+ * P0 #1: also rate-limited at the verify side (anti-bruteforce) — separate
+ *   counter not needed because we already enforce max 5 attempts/OTP row.
  */
 router.post("/otp/verify", async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -77,9 +108,27 @@ router.post("/otp/verify", async (c) => {
     );
   }
   const { phone, code, purpose } = parsed.data;
+
+  // Belt-and-braces: also rate-limit verifies so an attacker can't drain attempts
+  // faster than the OTP TTL window without triggering the request-counter.
+  // 20 verifies/hour is plenty for a human + retries, blocks script kiddies.
+  const verifyRl = await checkAndIncrementOtp(c.env, `${phone}:verify` as unknown as string).catch(() => null);
+  if (verifyRl && !verifyRl.allowed) {
+    c.header("Retry-After", String(verifyRl.retryAfterSec));
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "VERIFY_RATE_LIMITED",
+          message: "Too many verify attempts. Slow down.",
+        },
+      },
+      429
+    );
+  }
+
   const db = getDb(c.env.kongsian_db);
 
-  // Pull most-recent unconsumed OTP for this phone+purpose.
   const rows = await db
     .select()
     .from(otps)
@@ -119,7 +168,6 @@ router.post("/otp/verify", async (c) => {
 
   const candidateHash = await hashOtpCode(code, c.env.OTP_HMAC_KEY);
   if (candidateHash !== row.codeHash) {
-    // increment attempts (note: in prod, batch this with a separate write or accept the race)
     await db
       .update(otps)
       .set({ attempts: row.attempts + 1 })
@@ -136,20 +184,51 @@ router.post("/otp/verify", async (c) => {
   // Find or create user.
   let userRows = await db.select().from(users).where(eq(users.phoneE164, phone)).limit(1);
   let user = userRows[0];
+  let isNewUser = false;
   if (!user) {
     const id = crypto.randomUUID();
     await db.insert(users).values({
       id,
       phoneE164: phone,
-      name: phone, // placeholder; updated on profile completion
+      name: phone,
       globalRole: "USER",
       createdAt: now,
       lastLoginAt: now,
     });
+    isNewUser = true;
     userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
     user = userRows[0];
   } else {
     await db.update(users).set({ lastLoginAt: now }).where(eq(users.id, user.id));
+  }
+
+  // Audit: OTP verified + user.
+  if (!isNewUser) {
+    await db.insert(auditLog).values({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      action: "OTP_VERIFIED",
+      entityType: "user",
+      entityId: user.id,
+      beforeJson: null,
+      afterJson: null,
+      ip: c.req.header("cf-connecting-ip") ?? null,
+      userAgent: c.req.header("user-agent") ?? null,
+      createdAt: now,
+    });
+  } else {
+    await db.insert(auditLog).values({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      action: "USER_CREATED",
+      entityType: "user",
+      entityId: user.id,
+      beforeJson: null,
+      afterJson: JSON.stringify({ phone, globalRole: "USER" }),
+      ip: c.req.header("cf-connecting-ip") ?? null,
+      userAgent: c.req.header("user-agent") ?? null,
+      createdAt: now,
+    });
   }
 
   // Mint session.
@@ -163,6 +242,19 @@ router.post("/otp/verify", async (c) => {
     expiresAt: now + ttl,
     userAgent: c.req.header("user-agent") ?? null,
     ip: c.req.header("cf-connecting-ip") ?? null,
+  });
+
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId: user.id,
+    action: "LOGIN_SUCCESS",
+    entityType: "session",
+    entityId: sessionId,
+    beforeJson: null,
+    afterJson: null,
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: now,
   });
 
   return c.json({
@@ -183,13 +275,64 @@ router.post("/otp/verify", async (c) => {
 
 /**
  * POST /v1/auth/logout
- * Invalidate the current session.
+ * Invalidate the current session. P0 #2 fix: verify the delete actually
+ * happened — if no rows are affected, surface an error so we don't silently
+ * leak "logged out but session still valid" cases.
  */
 router.post("/logout", authMiddleware, async (c) => {
-  const { sessionId } = c.get("auth");
+  const { sessionId, userId } = c.get("auth");
   const db = getDb(c.env.kongsian_db);
+  const now = Math.floor(Date.now() / 1000);
+
+  // Use a delete returning the row count. Drizzle doesn't expose .returning
+  // for deletes uniformly, so we do a SELECT first to capture the row for audit.
+  const before = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1);
+
+  if (before.length === 0) {
+    // Already gone — idempotent logout.
+    return c.json({ ok: true, data: { alreadyDeleted: true } });
+  }
+
   await db.delete(sessions).where(eq(sessions.id, sessionId));
-  return c.json({ ok: true });
+
+  // Verify (P0 #2): re-select to confirm. If anything weird happened, this
+  // would still find the row.
+  const after = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1);
+  if (after.length > 0) {
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "LOGOUT_FAILED",
+          message: "Session row was not deleted. Please retry.",
+        },
+      },
+      500
+    );
+  }
+
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId,
+    action: "LOGOUT",
+    entityType: "session",
+    entityId: sessionId,
+    beforeJson: JSON.stringify(before[0]),
+    afterJson: null,
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: now,
+  });
+
+  return c.json({ ok: true, data: { sessionId } });
 });
 
 /** Health sub-check for OTPs (used by the cron in Week 3). */
@@ -202,6 +345,13 @@ router.get("/otp/recent", async (c) => {
     .where(gte(otps.createdAt, cutoff))
     .limit(20);
   return c.json({ ok: true, data: recent });
+});
+
+/** Test helper: how many OTP requests this phone has used in the last hour? */
+router.get("/otp/rate-limit/:phone", async (c) => {
+  const phone = c.req.param("phone");
+  const count = await getOtpCountThisHour(c.env, phone);
+  return c.json({ ok: true, data: { phone, count, limit: 5 } });
 });
 
 export { router as auth };

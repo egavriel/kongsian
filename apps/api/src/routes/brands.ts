@@ -1,0 +1,209 @@
+/**
+ * Brand + role lookup.
+ * The current user's role is derived from which tables they have rows in:
+ *   - brands row owned by userId  → BRAND
+ *   - tenant_memberships row for userId  → TENANT
+ *   - both  → BOTH (UI splits)
+ *   - neither → VISITOR (must complete onboarding)
+ */
+import { and, eq, desc, inArray, sql } from "drizzle-orm";
+import { getDb, brands, skus, partnerships, tenants, tenantMemberships, users, auditLog, type DbClient } from "@kongsian/db";
+import { BrandCreateSchema } from "@kongsian/shared/validators";
+import {
+  DEFAULT_SPLIT_BRAND_BPS,
+  DEFAULT_SPLIT_TENANT_BPS,
+} from "@kongsian/shared/constants";
+import { Hono } from "hono";
+import { authMiddleware, type AuthContext } from "../lib/auth";
+import type { Bindings } from "../index";
+
+type Vars = { auth: AuthContext };
+const router = new Hono<{ Bindings: Bindings; Variables: Vars }>();
+
+router.use("*", authMiddleware);
+
+/** Look up the current user's role across brand/tenant tables. */
+export async function getRole(
+  db: DbClient,
+  userId: string
+): Promise<{ role: "BRAND" | "TENANT" | "BOTH" | "VISITOR"; brandId?: string; tenantId?: string }> {
+  const [brandRow] = await db.select().from(brands).where(eq(brands.userId, userId)).limit(1);
+  const [tenantRow] = await db
+    .select({ tenantId: tenantMemberships.tenantId })
+    .from(tenantMemberships)
+    .where(eq(tenantMemberships.userId, userId))
+    .limit(1);
+
+  if (brandRow && tenantRow) return { role: "BOTH", brandId: brandRow.id, tenantId: tenantRow.tenantId };
+  if (brandRow) return { role: "BRAND", brandId: brandRow.id };
+  if (tenantRow) return { role: "TENANT", tenantId: tenantRow.tenantId };
+  return { role: "VISITOR" };
+}
+
+/** GET /v1/brands/me — role + (brandId) + (tenantId) for the current user. */
+router.get("/me", async (c) => {
+  const { userId } = c.get("auth");
+  const db = getDb(c.env.kongsian_db);
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return c.json({ ok: false, error: { code: "USER_NOT_FOUND" } }, 404);
+  const role = await getRole(db, userId);
+  return c.json({
+    ok: true,
+    data: {
+      user: {
+        id: user.id,
+        phoneE164: user.phoneE164,
+        name: user.name,
+        globalRole: user.globalRole,
+      },
+      ...role,
+    },
+  });
+});
+
+/** GET /v1/brands/:id — full brand detail (SKUs + partnerships) for dashboards. */
+router.get("/:id", async (c) => {
+  const { userId } = c.get("auth");
+  const id = c.req.param("id");
+  const db = getDb(c.env.kongsian_db);
+
+  const [brand] = await db.select().from(brands).where(eq(brands.id, id)).limit(1);
+  if (!brand) return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND" } }, 404);
+
+  // Authorization: brand owner or any active partnership's tenant can view.
+  if (brand.userId !== userId) {
+    const [membership] = await db
+      .select()
+      .from(tenantMemberships)
+      .innerJoin(partnerships, eq(partnerships.tenantId, tenantMemberships.tenantId))
+      .where(
+        and(
+          eq(tenantMemberships.userId, userId),
+          eq(partnerships.brandId, id)
+        )
+      )
+      .limit(1);
+    if (!membership) {
+      return c.json(
+        { ok: false, error: { code: "FORBIDDEN", message: "Not your brand." } },
+        403
+      );
+    }
+  }
+
+  const skuRows = await db
+    .select()
+    .from(skus)
+    .where(eq(skus.brandId, id))
+    .orderBy(desc(skus.createdAt));
+
+  const partnershipRows = await db
+    .select({
+      partnership: partnerships,
+      tenant: tenants,
+    })
+    .from(partnerships)
+    .innerJoin(tenants, eq(tenants.id, partnerships.tenantId))
+    .where(eq(partnerships.brandId, id))
+    .orderBy(desc(partnerships.createdAt));
+
+  return c.json({
+    ok: true,
+    data: {
+      brand,
+      skus: skuRows,
+      partnerships: partnershipRows.map((r) => ({ ...r.partnership, tenant: r.tenant })),
+      isOwner: brand.userId === userId,
+    },
+  });
+});
+
+/** POST /v1/brands — create a brand for the current user. */
+router.post("/", async (c) => {
+  const { userId } = c.get("auth");
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = BrandCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { ok: false, error: { code: "INVALID_INPUT", issues: parsed.error.flatten() } },
+      400
+    );
+  }
+  const { name, slug, description } = parsed.data;
+  const db = getDb(c.env.kongsian_db);
+  const now = Math.floor(Date.now() / 1000);
+  const id = crypto.randomUUID();
+
+  // Idempotency: if user already owns a brand with same slug, return it.
+  const [existing] = await db
+    .select()
+    .from(brands)
+    .where(and(eq(brands.userId, userId), eq(brands.slug, slug)))
+    .limit(1);
+  if (existing) {
+    return c.json({ ok: true, data: { brand: existing, alreadyExists: true } });
+  }
+
+  await db.insert(brands).values({
+    id,
+    userId,
+    name,
+    slug,
+    description: description ?? null,
+    createdAt: now,
+  });
+
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId,
+    action: "BRAND_CREATED",
+    entityType: "brand",
+    entityId: id,
+    beforeJson: null,
+    afterJson: JSON.stringify({ name, slug }),
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: now,
+  });
+
+  const [brand] = await db.select().from(brands).where(eq(brands.id, id)).limit(1);
+  return c.json({ ok: true, data: { brand } });
+});
+
+/** PATCH /v1/brands/:id — owner only. */
+router.patch("/:id", async (c) => {
+  const { userId } = c.get("auth");
+  const id = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const db = getDb(c.env.kongsian_db);
+
+  const [brand] = await db.select().from(brands).where(eq(brands.id, id)).limit(1);
+  if (!brand) return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND" } }, 404);
+  if (brand.userId !== userId) {
+    return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const updates: Partial<typeof brands.$inferInsert> = {};
+  if (typeof body.name === "string" && body.name.length >= 2) updates.name = body.name;
+  if (typeof body.description === "string") updates.description = body.description;
+  if (Object.keys(updates).length === 0) {
+    return c.json({ ok: true, data: { brand } });
+  }
+  await db.update(brands).set(updates).where(eq(brands.id, id));
+  const [after] = await db.select().from(brands).where(eq(brands.id, id)).limit(1);
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId,
+    action: "BRAND_UPDATED",
+    entityType: "brand",
+    entityId: id,
+    beforeJson: JSON.stringify(brand),
+    afterJson: JSON.stringify(after),
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: now,
+  });
+  return c.json({ ok: true, data: { brand: after } });
+});
+
+export { router as brands };

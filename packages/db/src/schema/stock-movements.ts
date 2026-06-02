@@ -27,6 +27,8 @@ export const stockMovements = sqliteTable(
     }).notNull(),
     qty: integer("qty").notNull(),
     reason: text("reason"),
+    /** Optional photo proof (titip receipt, tarik paperwork). R2 key, not URL. */
+    fotoR2Key: text("foto_r2_key"),
     submittedByUserId: text("submitted_by_user_id")
       .notNull()
       .references(() => users.id),
