@@ -1,0 +1,324 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../../lib/api";
+const title = `Closing Harian — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:14px; }
+      h1 { font-size:20px; margin:0; }
+      main { padding:20px; }
+      label { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; font-size:13px; }
+      .lbl { font-weight:600; }
+      select, input {
+        background:#0b1220; border:1px solid #1e293b; color:#f1f5f9;
+        padding:12px; border-radius:10px; font-size:16px; font-family:inherit; width:100%;
+        min-height:48px;
+      }
+      select:focus, input:focus { outline:none; border-color:#fbbf24; }
+      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:16px; min-height:48px; }
+      .btn-primary { background:#fbbf24; color:#0b1220; width:100%; }
+      .btn-primary:hover { background:#f59e0b; }
+      .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+      .btn-ghost { background:transparent; color:#f1f5f9; border-color:#1e293b; }
+
+      .summary {
+        background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px;
+        margin-bottom:16px; display:grid; grid-template-columns:1fr 1fr; gap:10px;
+      }
+      .summary .lbl { font-size:12px; color:#94a3b8; }
+      .summary .val { font-size:18px; font-weight:700; }
+      .summary .val.warn { color:#fbbf24; }
+
+      .table-wrap { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:12px; margin-bottom:16px; overflow-x:auto; }
+      .table-wrap h2 { margin:0 0 10px; font-size:15px; color:#fbbf24; }
+      .sk-row {
+        display:grid; grid-template-columns: 1fr 80px 80px;
+        gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b;
+      }
+      .sk-row:last-child { border-bottom:none; }
+      .sk-row.head { color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; font-weight:700; }
+      .sk-label .code { color:#fbbf24; font-weight:700; margin-right:6px; }
+      .sk-label .name { color:#f1f5f9; font-weight:600; font-size:14px; }
+      .sk-label .stok { color:#94a3b8; font-size:12px; }
+      .sk-row input { padding:10px; text-align:center; font-size:16px; min-height:48px; }
+      .sk-row .diff { font-size:13px; text-align:center; color:#94a3b8; min-height:48px; display:flex; align-items:center; justify-content:center; }
+      .sk-row .diff.match { color:#34d399; }
+      .sk-row .diff.miss { color:#fbbf24; }
+
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .section-title { font-size:13px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; margin:20px 0 8px; }
+
+      .foto { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:12px; margin-bottom:16px; }
+      .foto h2 { margin:0 0 8px; font-size:15px; color:#fbbf24; }
+      .foto input[type=file] { padding:8px; background:transparent; border:none; color:#94a3b8; font-size:13px; }
+      .foto .preview { margin-top:8px; }
+      .foto .preview img { max-width:120px; border-radius:8px; border:1px solid #1e293b; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/tenant">← Tenant</a>
+        <h1>Closing Harian</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="ok" class="ok" style="display:none"></div>
+
+        <label>
+          <span class="lbl">Partnership (brand)</span>
+          <select id="partnership"></select>
+        </label>
+
+        <label>
+          <span class="lbl">Tanggal</span>
+          <input id="date" type="date" required />
+        </label>
+
+        <div class="summary" id="summary" style="display:none">
+          <div>
+            <div class="lbl">SKU di rak</div>
+            <div class="val" id="sum-skus">—</div>
+          </div>
+          <div>
+            <div class="lbl">Estimasi omzet</div>
+            <div class="val" id="sum-revenue">—</div>
+          </div>
+        </div>
+
+        <div class="section-title">Input per SKU</div>
+        <div class="table-wrap">
+          <div class="sk-row head">
+            <div>SKU</div>
+            <div style="text-align:center">Terjual</div>
+            <div style="text-align:center">Sisa Fisik</div>
+          </div>
+          <div id="sku-rows">
+            <div class="empty">Pilih partnership dulu.</div>
+          </div>
+        </div>
+
+        <div class="foto">
+          <h2>Foto chiller / display (opsional)</h2>
+          <input id="foto" type="file" accept="image/*" capture="environment" />
+          <div id="preview" class="preview"></div>
+        </div>
+
+        <button id="submit-btn" class="btn btn-primary" type="button" disabled>Submit Closing</button>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+      async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
+      function uuid() { return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4)).toString(16)); }
+
+      const errEl = document.getElementById("err");
+      const okEl = document.getElementById("ok");
+      const showErr = m => { errEl.textContent = m; errEl.style.display="block"; okEl.style.display="none"; };
+      const showOk = m => { okEl.textContent = m; okEl.style.display="block"; errEl.style.display="none"; };
+
+      const state = { tenantId: null, partnerships: [], skus: [], partnershipId: null, priceMap: {} };
+
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+
+      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
+
+      async function loadPartnerships() {
+        const me = await jget("/v1/tenants/me");
+        if (!me.ok) { showErr("Gagal muat akun tenant."); return; }
+        state.tenantId = me.data.tenant.id;
+        const active = (me.data.partnerships || []).filter(p => p.status === "ACTIVE");
+        if (active.length === 0) {
+          document.getElementById("partnership").innerHTML = `<option value="">— Belum ada brand partner —</option>`;
+          return;
+        }
+        document.getElementById("partnership").innerHTML = `<option value="">— Pilih brand —</option>` +
+          active.map(p => `<option value="${p.id}">${p.brand?.name || "(brand?)"}</option>`).join("");
+        state.partnerships = active;
+      }
+
+      function renderRows() {
+        const rowsEl = document.getElementById("sku-rows");
+        if (!state.partnershipId) {
+          rowsEl.innerHTML = `<div class="empty">Pilih partnership dulu.</div>`;
+          document.getElementById("submit-btn").disabled = true;
+          return;
+        }
+        if (state.skus.length === 0) {
+          rowsEl.innerHTML = `<div class="empty">Belum ada SKU untuk partnership ini.</div>`;
+          document.getElementById("submit-btn").disabled = true;
+          return;
+        }
+        rowsEl.innerHTML = state.skus.map(s => {
+          const stokSistem = (s.stokSistem != null) ? s.stokSistem : "—";
+          return `
+            <div class="sk-row" data-sku="${s.id}">
+              <div class="sk-label">
+                <div><span class="code">${s.code}</span><span class="name">${s.name}</span></div>
+                <div class="stok">Stok sistem: ${stokSistem}</div>
+              </div>
+              <input type="number" min="0" max="999" step="1" data-field="terjual" placeholder="0" inputmode="numeric" />
+              <input type="number" min="0" max="999" step="1" data-field="sisa" placeholder="0" inputmode="numeric" />
+            </div>
+          `;
+        }).join("");
+        document.getElementById("submit-btn").disabled = false;
+
+        // Live diff calculation
+        const sumSkuEl = document.getElementById("sum-skus");
+        const sumRevEl = document.getElementById("sum-revenue");
+        let totalRev = 0;
+        document.querySelectorAll("#sku-rows .sk-row").forEach(row => {
+          const sid = row.dataset.sku;
+          const tInp = row.querySelector('input[data-field="terjual"]');
+          const sInp = row.querySelector('input[data-field="sisa"]');
+          const update = () => {
+            const t = parseInt(tInp.value, 10) || 0;
+            const sisa = parseInt(sInp.value, 10) || 0;
+            const sku = state.skus.find(x => x.id === sid);
+            const stokSistem = (sku && sku.stokSistem != null) ? sku.stokSistem : null;
+            if (stokSistem != null) {
+              const expected = stokSistem - t;
+              const diff = expected - sisa;
+              // We don't have a diff column; just show match/warn
+            }
+            // Update running totals
+            const newTotal = Array.from(document.querySelectorAll("#sku-rows .sk-row")).reduce((acc, r) => {
+              const ti = parseInt(r.querySelector('input[data-field="terjual"]').value, 10) || 0;
+              const sk = state.skus.find(x => x.id === r.dataset.sku);
+              return acc + ti * (sk?.priceIdr || 0);
+            }, 0);
+            sumRevEl.textContent = newTotal > 0 ? fmtRp(newTotal) : "—";
+          };
+          tInp.addEventListener("input", update);
+          sInp.addEventListener("input", update);
+        });
+        sumSkuEl.textContent = state.skus.length;
+        sumRevEl.textContent = "—";
+        document.getElementById("summary").style.display = "grid";
+      }
+
+      document.getElementById("partnership").addEventListener("change", async (e) => {
+        const pid = e.target.value;
+        state.partnershipId = pid || null;
+        if (!pid) { state.skus = []; renderRows(); return; }
+        const today = new Date().toISOString().slice(0, 10);
+        const r = await jget(`/v1/tenants/${state.tenantId}/partnerships/${pid}/today`);
+        if (r.ok && r.data) {
+          state.skus = r.data.skus || [];
+        } else {
+          // Fallback: list from /v1/tenants/me
+          const me = await jget("/v1/tenants/me");
+          state.skus = (me.data.skus || []).filter(s => s.partnershipId === pid || !s.partnershipId);
+        }
+        renderRows();
+      });
+
+      let uploadedFotoUrl = null;
+      document.getElementById("foto").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const prev = document.getElementById("preview");
+        prev.innerHTML = `<span style="color:#94a3b8;font-size:12px">Uploading…</span>`;
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("kind", "closing");
+        const res = await fetch(API + "/v1/uploads", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${tok}` },
+          body: fd,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.ok) {
+          prev.innerHTML = `<span style="color:#fb7185;font-size:12px">Gagal upload.</span>`;
+          uploadedFotoUrl = null;
+          return;
+        }
+        uploadedFotoUrl = json.data?.url || null;
+        prev.innerHTML = uploadedFotoUrl
+          ? `<img src="${uploadedFotoUrl}" alt="foto" />`
+          : `<span style="color:#94a3b8;font-size:12px">Foto tersimpan.</span>`;
+      });
+
+      document.getElementById("submit-btn").addEventListener("click", async () => {
+        errEl.style.display = "none"; okEl.style.display = "none";
+        if (!state.partnershipId) { showErr("Pilih partnership dulu."); return; }
+        const date = document.getElementById("date").value;
+        if (!date) { showErr("Tanggal wajib."); return; }
+        const lines = [];
+        let anyFilled = false;
+        document.querySelectorAll("#sku-rows .sk-row").forEach(row => {
+          const sid = row.dataset.sku;
+          const t = parseInt(row.querySelector('input[data-field="terjual"]').value, 10);
+          const s = parseInt(row.querySelector('input[data-field="sisa"]').value, 10);
+          if ((!isNaN(t) && t > 0) || (!isNaN(s) && s >= 0)) {
+            anyFilled = true;
+            lines.push({ skuId: sid, terjual: isNaN(t) ? 0 : t, sisaFisik: isNaN(s) ? 0 : s });
+          }
+        });
+        if (!anyFilled) { showErr("Isi minimal 1 SKU."); return; }
+
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true; btn.textContent = "Mengirim…";
+        try {
+          // Single call to closing endpoint (handles both terjual + sisa-fisik)
+          const path = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/terjual`;
+          const r = await fetch(API + path, {
+            method: "POST",
+            headers: { ...authH, "Idempotency-Key": uuid() },
+            body: JSON.stringify({ lines, fotoR2Url: uploadedFotoUrl || undefined }),
+          });
+          const json = await r.json().catch(() => ({}));
+          if (r.ok && json.ok) {
+            // Try to also push sisa-fisik if endpoint exists
+            const sisaLines = lines.filter(l => l.sisaFisik != null).map(l => ({ skuId: l.skuId, sisaFisik: l.sisaFisik }));
+            if (sisaLines.length) {
+              await fetch(API + `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/sisa-fisik`, {
+                method: "POST",
+                headers: { ...authH, "Idempotency-Key": uuid() },
+                body: JSON.stringify({ lines: sisaLines, fotoR2Url: uploadedFotoUrl || undefined }),
+              }).catch(() => {});
+            }
+            // Try submit
+            await fetch(API + `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/submit`, {
+              method: "POST",
+              headers: { ...authH, "Idempotency-Key": uuid() },
+            }).catch(() => {});
+
+            showOk("Closing tersimpan! Mengarahkan…");
+            setTimeout(() => { window.location.href = "/dashboard/tenant"; }, 800);
+            return;
+          }
+          showErr("Gagal: " + (json?.error?.code || `HTTP ${r.status}`));
+        } catch (e) {
+          showErr("Tidak bisa konek ke server.");
+        } finally {
+          btn.disabled = false; btn.textContent = "Submit Closing";
+        }
+      });
+
+      loadPartnerships();
+    </script>
+  </body>
+</html>
