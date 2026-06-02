@@ -81,7 +81,7 @@ export function createApiClient(opts: { baseUrl: string; getToken?: () => string
 /** API base URL — set in apps/web wrangler.toml as PUBLIC_API_URL (or fallback). */
 export const API_BASE_URL =
   (typeof import.meta !== "undefined" && (import.meta as any).env?.PUBLIC_API_URL) ||
-  "https://kongsian-api.workers.dev";
+  "https://kongsian-api.thegavriel-co.workers.dev";
 
 /** Single shared client. */
 export const api = createApiClient({ baseUrl: API_BASE_URL });
