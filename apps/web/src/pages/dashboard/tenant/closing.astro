@@ -1,6 +1,7 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
+import NotificationBell from "../../../components/NotificationBell.astro";
 const title = `Closing Harian — ${APP_NAME}`;
 ---
 <!doctype html>
@@ -75,7 +76,7 @@ const title = `Closing Harian — ${APP_NAME}`;
       <header class="top">
         <a class="back" href="/dashboard/tenant">← Tenant</a>
         <h1>Closing Harian</h1>
-        <span></span>
+        <span><NotificationBell /></span>
       </header>
       <main>
         <div id="err" class="err" style="display:none"></div>
@@ -125,6 +126,7 @@ const title = `Closing Harian — ${APP_NAME}`;
     </div>
 
     <script define:vars={{ API_BASE_URL }}>
+      window.__KONGSIAN_API__ = API_BASE_URL;
       const API = API_BASE_URL.replace(/\/$/, "");
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }

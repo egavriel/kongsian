@@ -1,6 +1,7 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
+import NotificationBell from "../../../components/NotificationBell.astro";
 const title = `Tenant Dashboard — ${APP_NAME}`;
 ---
 <!doctype html>
@@ -88,6 +89,7 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
       <header class="top">
         <div style="font-weight:700;font-size:15px">{APP_NAME}</div>
         <div style="display:flex;align-items:center;gap:10px">
+          <NotificationBell />
           <span class="role-tag">TENANT</span>
           <button id="logout" class="logout">Keluar</button>
         </div>
@@ -125,6 +127,7 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
     </div>
 
     <script define:vars={{ API_BASE_URL }}>
+      window.__KONGSIAN_API__ = API_BASE_URL;
       const API = API_BASE_URL.replace(/\/$/, "");
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }

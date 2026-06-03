@@ -1,0 +1,231 @@
+---
+/**
+ * NotificationBell — Week 4, F2.
+ *
+ * Self-contained Astro component with inline JS island.
+ * - Polls GET /v1/notifications every 45s (paused when tab hidden)
+ * - Renders bell icon with unread count badge
+ * - Click → dropdown of recent notifications, each navigates to entity URL
+ * - Click item → POST /v1/notifications/:id/read, then navigate
+ * - "Tandai semua dibaca" → POST /v1/notifications/read-all
+ * - 9 kind → icon + label mapping in Bahasa Indonesia
+ *
+ * Usage: <NotificationBell /> anywhere — must be after session exists in localStorage.
+ */
+---
+
+<style>
+  .nb-wrap { position: relative; display: inline-block; }
+  .nb-btn {
+    background: transparent; border: 1px solid #1e293b; color: #f1f5f9;
+    border-radius: 10px; padding: 6px 10px; cursor: pointer; font-size: 16px;
+    line-height: 1; display: inline-flex; align-items: center; gap: 6px;
+    position: relative;
+  }
+  .nb-btn:hover { border-color: #94a3b8; }
+  .nb-badge {
+    position: absolute; top: -6px; right: -6px;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    background: #fb7185; color: #0b1220; border-radius: 999px;
+    font-size: 10px; font-weight: 700; line-height: 18px; text-align: center;
+    border: 2px solid #0b1220; display: none;
+  }
+  .nb-badge.visible { display: inline-block; }
+  .nb-pop {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    width: 340px; max-width: 92vw; max-height: 480px; overflow: auto;
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 50;
+    display: none;
+  }
+  .nb-pop.open { display: block; }
+  .nb-pop-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; border-bottom: 1px solid #1e293b;
+  }
+  .nb-pop-head h3 { margin: 0; font-size: 14px; }
+  .nb-pop-head a { font-size: 12px; color: #38bdf8; cursor: pointer; }
+  .nb-list { padding: 4px 0; }
+  .nb-item {
+    display: flex; gap: 10px; padding: 10px 14px;
+    border-bottom: 1px solid #1e293b; cursor: pointer;
+    transition: background 0.1s;
+  }
+  .nb-item:hover { background: #1e293b; }
+  .nb-item.unread { background: rgba(56, 189, 248, 0.06); }
+  .nb-item:last-child { border-bottom: none; }
+  .nb-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+  .nb-content { flex: 1; min-width: 0; }
+  .nb-title { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+  .nb-body { font-size: 12px; color: #94a3b8; margin-top: 2px;
+             overflow: hidden; text-overflow: ellipsis; }
+  .nb-time { font-size: 10px; color: #64748b; margin-top: 4px; }
+  .nb-empty { padding: 30px 14px; text-align: center; color: #64748b; font-size: 13px; }
+  .nb-err { padding: 12px 14px; color: #fb7185; font-size: 12px; }
+</style>
+
+<div class="nb-wrap" data-nb>
+  <button class="nb-btn" type="button" aria-label="Notifikasi" data-nb-toggle>
+    <span>🔔</span>
+    <span class="nb-badge" data-nb-badge>0</span>
+  </button>
+  <div class="nb-pop" data-nb-pop>
+    <div class="nb-pop-head">
+      <h3>Notifikasi</h3>
+      <a data-nb-readall>Tandai semua dibaca</a>
+    </div>
+    <div data-nb-list>
+      <div class="nb-empty">Belum ada notifikasi</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Self-initializing IIFE so it works in any Astro page that embeds <NotificationBell />
+  (function initNotificationBell() {
+    const root = document.querySelector("[data-nb]");
+    if (!root) return;
+    const btn = root.querySelector("[data-nb-toggle]");
+    const badge = root.querySelector("[data-nb-badge]");
+    const pop = root.querySelector("[data-nb-pop]");
+    const list = root.querySelector("[data-nb-list]");
+    const readAll = root.querySelector("[data-nb-readall]");
+
+    const FALLBACK_API = "https://kongsian-api.thegavriel-co.workers.dev";
+    const API = (window.__KONGSIAN_API__ || FALLBACK_API).replace(/\/$/, "");
+    if (!API) return;
+    const tok = localStorage.getItem("kongsian_session");
+    if (!tok) return;
+
+    const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+
+    // 9 kind → icon + label
+    const KIND_META = {
+      CLOSING_REMINDER:   { icon: "⏰", label: "Reminder Closing" },
+      CLOSING_SUBMITTED:  { icon: "📝", label: "Closing Masuk" },
+      DISPUTE_OPENED:     { icon: "⚠️",  label: "Dispute Dibuka" },
+      DISPUTE_MESSAGE:    { icon: "💬", label: "Pesan Dispute" },
+      DISPUTE_RESOLVED:   { icon: "✅", label: "Dispute Selesai" },
+      SETTLEMENT_READY:   { icon: "📊", label: "Settlement Siap" },
+      SETTLEMENT_APPROVED:{ icon: "👍", label: "Settlement Disetujui" },
+      SETTLEMENT_PAID:    { icon: "💰", label: "Settlement Lunas" },
+      OTP:                { icon: "🔐", label: "Kode OTP" },
+    };
+
+    function entityUrl(n) {
+      if (!n.entityType || !n.entityId) return null;
+      switch (n.entityType) {
+        case "settlement":    return `/dashboard/brand/settlements/${n.entityId}`;
+        case "dispute":       return `/dashboard/tenant/disputes/${n.entityId}`;
+        case "daily_closing": return `/dashboard/brand/closings`;
+        default: return null;
+      }
+    }
+
+    function fmtRel(unixSec) {
+      const d = new Date(unixSec * 1000);
+      const now = new Date();
+      const diff = (now - d) / 1000;
+      if (diff < 60) return "baru saja";
+      if (diff < 3600) return `${Math.floor(diff/60)} mnt lalu`;
+      if (diff < 86400) return `${Math.floor(diff/3600)} jam lalu`;
+      return d.toLocaleDateString("id-ID", { day:"2-digit", month:"short" });
+    }
+
+    function render(notifs, unread) {
+      badge.textContent = unread > 99 ? "99+" : String(unread);
+      badge.classList.toggle("visible", unread > 0);
+
+      if (!notifs || notifs.length === 0) {
+        list.innerHTML = `<div class="nb-empty">Belum ada notifikasi</div>`;
+        return;
+      }
+      list.innerHTML = notifs.map(n => {
+        const meta = KIND_META[n.kind] || { icon: "🔔", label: n.kind };
+        const url = entityUrl(n);
+        const unreadCls = n.readAt ? "" : "unread";
+        return `
+          <div class="nb-item ${unreadCls}" data-nb-id="${n.id}"${url ? ` data-nb-url="${url}"` : ""}>
+            <div class="nb-icon">${meta.icon}</div>
+            <div class="nb-content">
+              <div class="nb-title">${escapeHtml(meta.label)} · ${escapeHtml(n.title || "")}</div>
+              ${n.body ? `<div class="nb-body">${escapeHtml(n.body)}</div>` : ""}
+              <div class="nb-time">${fmtRel(n.createdAt)}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Wire clicks
+      list.querySelectorAll(".nb-item").forEach(el => {
+        el.addEventListener("click", async () => {
+          const id = el.getAttribute("data-nb-id");
+          const url = el.getAttribute("data-nb-url");
+          if (id) {
+            try { await fetch(API + `/v1/notifications/${id}/read`, { method: "POST", headers: authH }); } catch {}
+          }
+          pop.classList.remove("open");
+          if (url) window.location.href = url;
+          else fetchAndRender();
+        });
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    async function fetchAndRender() {
+      try {
+        const res = await fetch(API + "/v1/notifications?limit=20", { headers: authH });
+        if (!res.ok) {
+          if (res.status === 401) { stopPolling(); return; }
+          list.innerHTML = `<div class="nb-err">Gagal memuat (${res.status})</div>`;
+          return;
+        }
+        const j = await res.json();
+        render(j.data?.notifications || [], j.data?.unreadCount || 0);
+      } catch (e) {
+        list.innerHTML = `<div class="nb-err">${escapeHtml(e?.message || "Network error")}</div>`;
+      }
+    }
+
+    // Toggle popover
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !pop.classList.contains("open");
+      pop.classList.toggle("open", willOpen);
+      if (willOpen) fetchAndRender();
+    });
+    document.addEventListener("click", (e) => {
+      if (!root.contains(e.target)) pop.classList.remove("open");
+    });
+
+    // Read all
+    readAll.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await fetch(API + "/v1/notifications/read-all", { method: "POST", headers: authH });
+        fetchAndRender();
+      } catch {}
+    });
+
+    // Poll every 45s, pause when tab hidden
+    let timer = null;
+    function startPolling() {
+      if (timer) return;
+      fetchAndRender();
+      timer = setInterval(() => { if (!document.hidden) fetchAndRender(); }, 45000);
+    }
+    function stopPolling() {
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopPolling();
+      else startPolling();
+    });
+    startPolling();
+  })();
+</script>
