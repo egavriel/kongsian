@@ -35,10 +35,10 @@ migrations_dir = "../../packages/db/migrations"
 #   photos/dispute/{disputeId}/{messageId}.jpg
 #   payments/{settlementId}/proof.{ext}
 #   pdf/settlements/{settlementId}.pdf
-# [[r2_buckets]]
-# binding = "KONGSIAN_BUCKET"
-# bucket_name = "kongsian-media"
-# preview_bucket_name = "kongsian-media-dev"
+[[r2_buckets]]
+binding = "KONGSIAN_BUCKET"
+bucket_name = "kongsian-media"
+preview_bucket_name = "kongsian-media-dev"
 
 # === Production vars (overridable per-env via wrangler --env or in dashboard) ===
 # P0 #1: ENV must be "production" on the deployed Worker so the OTP endpoint
