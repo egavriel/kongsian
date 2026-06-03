@@ -103,17 +103,26 @@ async function loadAccessibleSettlement(env: Bindings, userId: string, userGloba
     .limit(1);
   if (!partnership) return { ok: false as const, code: 404 as const, error: "PARTNERSHIP_NOT_FOUND" };
 
-  if (userGlobalRole === "PLATFORM_ADMIN") {
-    return { ok: true as const, settlement, partnership };
-  }
-
+  // Fetch both parties in one round trip (P2-1: avoid 2 extra queries per
+  // PDF render). Brand is needed for the ownership check; tenant is
+  // returned for callers that need its name (e.g. PDF render).
   const [brand] = await db
     .select()
     .from(brands)
     .where(eq(brands.id, partnership.brandId))
     .limit(1);
+  const [tenant] = await db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.id, partnership.tenantId))
+    .limit(1);
+
+  if (userGlobalRole === "PLATFORM_ADMIN") {
+    return { ok: true as const, settlement, partnership, brand, tenant };
+  }
+
   if (brand && brand.userId === userId) {
-    return { ok: true as const, settlement, partnership, role: "BRAND" as const };
+    return { ok: true as const, settlement, partnership, brand, tenant, role: "BRAND" as const };
   }
   const [mem] = await db
     .select()
@@ -126,7 +135,7 @@ async function loadAccessibleSettlement(env: Bindings, userId: string, userGloba
     )
     .limit(1);
   if (mem) {
-    return { ok: true as const, settlement, partnership, role: "TENANT" as const };
+    return { ok: true as const, settlement, partnership, brand, tenant, role: "TENANT" as const };
   }
   return { ok: false as const, code: 403 as const, error: "FORBIDDEN" };
 }
@@ -448,29 +457,25 @@ router.post("/admin/settlements/generate", async (c) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /v1/settlements/:id/pdf  — render + cache + serve settlement PDF
+// In-process mutex for cold-cache PDF rendering.
+// Prevents N concurrent first-render requests from doing duplicate work
+// (R2 put + DB update) and double-audit-logging.
+// Workers isolates share this map per isolate lifetime — sufficient because
+// the race window is sub-second and the worst case is one extra render.
 // ---------------------------------------------------------------------------
+const pdfRenderLocks = new Map<string, Promise<Uint8Array>>();
+
 router.get("/settlements/:id/pdf", async (c) => {
   const id = c.req.param("id");
   const { userId } = c.get("auth");
   const user = await getUser(c);
   if (!user) return c.json({ ok: false, error: { code: "USER_NOT_FOUND" } }, 404);
 
+  const db = getDb(c.env.kongsian_db);
+
   const guard = await loadAccessibleSettlement(c.env, userId, user.globalRole, id);
   if (!guard.ok) return c.json({ ok: false, error: { code: guard.error } }, guard.code);
-
-  const db = getDb(c.env.kongsian_db);
-  const [brand] = await db
-    .select()
-    .from(brands)
-    .where(eq(brands.id, guard.partnership.brandId))
-    .limit(1);
-  const [tenant] = await db
-    .select()
-    .from(tenants)
-    .where(eq(tenants.id, guard.partnership.tenantId))
-    .limit(1);
-  if (!brand || !tenant) {
+  if (!guard.brand || !guard.tenant) {
     return c.json({ ok: false, error: { code: "PARTNERSHIP_PARTY_NOT_FOUND" } }, 404);
   }
 
@@ -487,12 +492,11 @@ router.get("/settlements/:id/pdf", async (c) => {
   if (guard.settlement.pdfR2Key === cacheKey) {
     const cached = await bucket.get(cacheKey);
     if (cached) {
-      const buf = await cached.arrayBuffer();
-      return new Response(buf, {
+      return new Response(cached.body, {
         status: 200,
         headers: {
           "content-type": "application/pdf",
-          "content-disposition": `inline; filename="settlement-${guard.settlement.weekStartDate}-${id.slice(0, 8)}.pdf"`,
+          "content-disposition": `attachment; filename="settlement-${guard.settlement.weekStartDate}-${id.slice(0, 8)}.pdf"`,
           "cache-control": "private, max-age=86400",
           "x-pdf-source": "cache",
         },
@@ -500,55 +504,92 @@ router.get("/settlements/:id/pdf", async (c) => {
     }
   }
 
-  // 2. Fetch lines
-  const lines = await db
-    .select({
-      line: settlementLines,
-      skuCode: skus.code,
-      skuName: skus.name,
-    })
-    .from(settlementLines)
-    .innerJoin(skus, eq(skus.id, settlementLines.skuId))
-    .where(eq(settlementLines.settlementId, id));
+  // 2. Cold-cache render — serialize concurrent first-render requests per id.
+  // Reuse the in-flight promise if one exists; otherwise create a new one.
+  let inflight = pdfRenderLocks.get(id);
+  if (!inflight) {
+    inflight = (async () => {
+      try {
+        // 2a. Fetch lines
+        const lines = await db
+          .select({
+            line: settlementLines,
+            skuCode: skus.code,
+            skuName: skus.name,
+          })
+          .from(settlementLines)
+          .innerJoin(skus, eq(skus.id, settlementLines.skuId))
+          .where(eq(settlementLines.settlementId, id));
 
-  // 3. Render
-  const { bytes, filename } = await renderSettlementPdf({
-    settlement: guard.settlement,
-    lines,
-    brandName: brand.name,
-    tenantName: tenant.name,
-    brandBps: guard.partnership.revenueSplitBrandBps,
-    tenantBps: guard.partnership.revenueSplitTenantBps,
-  });
+        // 2b. Render
+        const { bytes, filename: _filename } = await renderSettlementPdf({
+          settlement: guard.settlement,
+          lines,
+          brandName: guard.brand!.name,
+          tenantName: guard.tenant!.name,
+          brandBps: guard.partnership.revenueSplitBrandBps,
+          tenantBps: guard.partnership.revenueSplitTenantBps,
+        });
 
-  // 4. Store in R2 + write pdfR2Key
-  await bucket.put(cacheKey, bytes, {
-    httpMetadata: { contentType: "application/pdf" },
-  });
-  await db
-    .update(settlements)
-    .set({ pdfR2Key: cacheKey })
-    .where(eq(settlements.id, id));
+        // 2c. Store in R2 + write pdfR2Key
+        await bucket.put(cacheKey, bytes, {
+          httpMetadata: { contentType: "application/pdf" },
+        });
+        await db
+          .update(settlements)
+          .set({ pdfR2Key: cacheKey })
+          .where(eq(settlements.id, id));
 
-  // 5. Audit + return
-  await db.insert(auditLog).values({
-    id: crypto.randomUUID(),
-    userId,
-    action: "SETTLEMENT_PDF_RENDERED",
-    entityType: "settlement",
-    entityId: id,
-    beforeJson: null,
-    afterJson: JSON.stringify({ r2Key: cacheKey, size: bytes.byteLength }),
-    ip: c.req.header("cf-connecting-ip") ?? null,
-    userAgent: c.req.header("user-agent") ?? null,
-    createdAt: nowSec(),
-  });
+        // 2d. Audit
+        await db.insert(auditLog).values({
+          id: crypto.randomUUID(),
+          userId,
+          action: "SETTLEMENT_PDF_RENDERED",
+          entityType: "settlement",
+          entityId: id,
+          beforeJson: null,
+          afterJson: JSON.stringify({ r2Key: cacheKey, size: bytes.byteLength }),
+          ip: c.req.header("cf-connecting-ip") ?? null,
+          userAgent: c.req.header("user-agent") ?? null,
+          createdAt: nowSec(),
+        });
+
+        return bytes;
+      } finally {
+        pdfRenderLocks.delete(id);
+      }
+    })();
+    pdfRenderLocks.set(id, inflight);
+  }
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await inflight;
+  } catch (err) {
+    // Best-effort: log failure for ops visibility. The user gets a 500.
+    await db.insert(auditLog).values({
+      id: crypto.randomUUID(),
+      userId,
+      action: "SETTLEMENT_PDF_FAILED",
+      entityType: "settlement",
+      entityId: id,
+      beforeJson: null,
+      afterJson: JSON.stringify({ error: String(err) }),
+      ip: c.req.header("cf-connecting-ip") ?? null,
+      userAgent: c.req.header("user-agent") ?? null,
+      createdAt: nowSec(),
+    });
+    return c.json(
+      { ok: false, error: { code: "PDF_RENDER_FAILED", message: String(err) } },
+      500
+    );
+  }
 
   return new Response(bytes, {
     status: 200,
     headers: {
       "content-type": "application/pdf",
-      "content-disposition": `inline; filename="${filename}"`,
+      "content-disposition": `attachment; filename="settlement-${guard.settlement.weekStartDate}-${id.slice(0, 8)}.pdf"`,
       "cache-control": "private, max-age=86400",
       "x-pdf-source": "fresh",
     },

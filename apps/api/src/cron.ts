@@ -4,7 +4,9 @@
  * Multi-schedule (apps/api/wrangler.toml):
  *   "* * * * *"    Every minute — WA dispatch (notifications + OTPs, D1-backed)
  *   "0 14 * * *"   Daily 14:00 UTC = 21:00 WIB — closing reminders
- *   "59 16 * * 0"  Weekly Sun 16:59 UTC = Sun 23:59 WIB — settlement generator
+ *   "59 16 * * 7"  Weekly Sun 16:59 UTC = Sun 23:59 WIB — settlement generator
+ *                   (cron uses 0..7, both 0 and 7 mean Sunday; we accept both
+ *                    for portability with cron tooling that emits 0)
  *
  * IMPORTANT (Opus 4.8 audit fix): the previous implementation kept the
  * plaintext OTP in an in-memory Map, which doesn't work because cron

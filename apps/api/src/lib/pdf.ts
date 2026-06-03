@@ -16,12 +16,12 @@ import type { Settlement, SettlementLine } from "@kongsian/db";
 // Format helpers
 // ---------------------------------------------------------------------------
 
-/** Format integer IDR as "Rp1.250.000" (no decimal, dot thousands). */
+/** Format integer IDR as "Rp 1.250.000" (no decimal, dot thousands, ID-ID convention). */
 export function formatIdr(n: number): string {
   const abs = Math.abs(n);
   const s = abs.toString();
   const withDots = s.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return (n < 0 ? "-Rp" : "Rp") + withDots;
+  return (n < 0 ? "-Rp " : "Rp ") + withDots;
 }
 
 /** Format date YYYY-MM-DD as "Senin, 09 Juni 2026" (Bahasa Indonesia). */

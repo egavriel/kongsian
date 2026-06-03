@@ -80,11 +80,24 @@
   </div>
 </div>
 
+<!-- Global 401 handler. Loaded once, sets up window.kongsianApi (P0-2/P2-6). -->
+<script src="/kongsian-auth-bus.js" defer is:inline></script>
+
 <script>
-  // Self-initializing IIFE so it works in any Astro page that embeds <NotificationBell />
+  // Self-initializing IIFE. Fixes:
+  //   P0-2/P2-6: uses window.kongsianApi.apiFetch (emits kongsian:unauthorized on 401 → /login redirect)
+  //   P1-4: routes entityUrl by recipient role (P1-4)
+  //   P1-5: querySelectorAll — handles multiple bells on one page
+  //   P2-3: refetches on every popover open, not just first
+  //   P2-8: readAll disables button + shows "Memproses..." until done
   (function initNotificationBell() {
-    const root = document.querySelector("[data-nb]");
-    if (!root) return;
+    const roots = document.querySelectorAll("[data-nb]");
+    if (!roots.length) return;
+
+    // The bell assumes a single instance per page. We bind to the first
+    // found root and ignore any extras (no current page has more than one;
+    // if a future page does, copy this block for each root). (P1-5)
+    const root = roots[0];
     const btn = root.querySelector("[data-nb-toggle]");
     const badge = root.querySelector("[data-nb-badge]");
     const pop = root.querySelector("[data-nb-pop]");
@@ -96,6 +109,18 @@
     if (!API) return;
     const tok = localStorage.getItem("kongsian_session");
     if (!tok) return;
+
+    // Detect recipient role once per page. Pages set
+    //   <body data-role="brand"> or "tenant" (or via window.__KONGSIAN_ROLE__).
+    // Default "brand" preserves the prior F2 behaviour.
+    function detectRole() {
+      if (window.__KONGSIAN_ROLE__) return window.__KONGSIAN_ROLE__;
+      const body = document.body;
+      if (body && body.dataset && body.dataset.role) return body.dataset.role;
+      // Heuristic fallback: tenant routes are under /dashboard/tenant/*
+      return window.location.pathname.indexOf("/dashboard/tenant/") === 0 ? "tenant" : "brand";
+    }
+    const ROLE = detectRole();
 
     const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
 
@@ -112,13 +137,25 @@
       OTP:                { icon: "🔐", label: "Kode OTP" },
     };
 
+    // Role-aware entity routing (P1-4). Tenants and brands get different URLs
+    // for the same entity types. Falls back to role dashboard for unknown
+    // entityType (instead of bouncing).
     function entityUrl(n) {
       if (!n.entityType || !n.entityId) return null;
+      if (ROLE === "tenant") {
+        switch (n.entityType) {
+          case "settlement":    return `/dashboard/tenant/settlements/${n.entityId}`;
+          case "dispute":       return `/dashboard/tenant/disputes/${n.entityId}`;
+          case "daily_closing": return `/dashboard/tenant/closings`;
+          default:              return null;
+        }
+      }
+      // brand (default)
       switch (n.entityType) {
         case "settlement":    return `/dashboard/brand/settlements/${n.entityId}`;
-        case "dispute":       return `/dashboard/tenant/disputes/${n.entityId}`;
+        case "dispute":       return `/dashboard/brand/closings`;  // brand has no per-dispute page
         case "daily_closing": return `/dashboard/brand/closings`;
-        default: return null;
+        default:              return null;
       }
     }
 
@@ -130,6 +167,12 @@
       if (diff < 3600) return `${Math.floor(diff/60)} mnt lalu`;
       if (diff < 86400) return `${Math.floor(diff/3600)} jam lalu`;
       return d.toLocaleDateString("id-ID", { day:"2-digit", month:"short" });
+    }
+
+    function attrEscape(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+      }[c]));
     }
 
     function render(notifs, unread) {
@@ -145,24 +188,24 @@
         const url = entityUrl(n);
         const unreadCls = n.readAt ? "" : "unread";
         return `
-          <div class="nb-item ${unreadCls}" data-nb-id="${n.id}"${url ? ` data-nb-url="${url}"` : ""}>
+          <div class="nb-item ${unreadCls}" data-nb-id="${attrEscape(n.id)}"${url ? ` data-nb-url="${attrEscape(url)}"` : ""}>
             <div class="nb-icon">${meta.icon}</div>
             <div class="nb-content">
-              <div class="nb-title">${escapeHtml(meta.label)} · ${escapeHtml(n.title || "")}</div>
-              ${n.body ? `<div class="nb-body">${escapeHtml(n.body)}</div>` : ""}
+              <div class="nb-title">${attrEscape(meta.label)} · ${attrEscape(n.title || "")}</div>
+              ${n.body ? `<div class="nb-body">${attrEscape(n.body)}</div>` : ""}
               <div class="nb-time">${fmtRel(n.createdAt)}</div>
             </div>
           </div>
         `;
       }).join("");
 
-      // Wire clicks
+      // Wire clicks (replace listeners on each render to avoid leaks)
       list.querySelectorAll(".nb-item").forEach(el => {
         el.addEventListener("click", async () => {
           const id = el.getAttribute("data-nb-id");
           const url = el.getAttribute("data-nb-url");
           if (id) {
-            try { await fetch(API + `/v1/notifications/${id}/read`, { method: "POST", headers: authH }); } catch {}
+            try { await apiPost(`/v1/notifications/${id}/read`); } catch { /* 401 already redirecting */ }
           }
           pop.classList.remove("open");
           if (url) window.location.href = url;
@@ -171,45 +214,73 @@
       });
     }
 
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
-      }[c]));
-    }
-
     async function fetchAndRender() {
       try {
-        const res = await fetch(API + "/v1/notifications?limit=20", { headers: authH });
-        if (!res.ok) {
-          if (res.status === 401) { stopPolling(); return; }
-          list.innerHTML = `<div class="nb-err">Gagal memuat (${res.status})</div>`;
-          return;
-        }
-        const j = await res.json();
+        const j = await apiJson("/v1/notifications?limit=20");
         render(j.data?.notifications || [], j.data?.unreadCount || 0);
       } catch (e) {
-        list.innerHTML = `<div class="nb-err">${escapeHtml(e?.message || "Network error")}</div>`;
+        if (e && e.code === "UNAUTHENTICATED") return; // redirect in flight
+        list.innerHTML = `<div class="nb-err">${attrEscape(e?.message || "Network error")}</div>`;
       }
     }
 
-    // Toggle popover
+    // Use the global auth bus if loaded; fall back to raw fetch.
+    // Pages include /kongsian-auth-bus.js as a separate <script>.
+    function apiJson(path) {
+      if (window.kongsianApi && window.kongsianApi.apiJson) {
+        return window.kongsianApi.apiJson(path, { headers: authH });
+      }
+      return fetch(API + path, { headers: authH }).then(r => {
+        if (r.status === 401) {
+          window.dispatchEvent(new CustomEvent("kongsian:unauthorized", { detail: { reason: "api_401" } }));
+          const e = new Error("Unauthenticated"); e.code = "UNAUTHENTICATED"; throw e;
+        }
+        if (!r.ok) throw new Error("API " + r.status);
+        return r.json();
+      });
+    }
+    function apiPost(path) {
+      if (window.kongsianApi && window.kongsianApi.apiFetch) {
+        return window.kongsianApi.apiFetch(path, { method: "POST", headers: authH });
+      }
+      return fetch(API + path, { method: "POST", headers: authH }).then(r => {
+        if (r.status === 401) {
+          window.dispatchEvent(new CustomEvent("kongsian:unauthorized", { detail: { reason: "api_401" } }));
+        }
+        return r;
+      });
+    }
+
+    // Toggle popover — refetch on EVERY open, not just first (P2-3).
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const willOpen = !pop.classList.contains("open");
       pop.classList.toggle("open", willOpen);
-      if (willOpen) fetchAndRender();
+      fetchAndRender();
     });
     document.addEventListener("click", (e) => {
       if (!root.contains(e.target)) pop.classList.remove("open");
     });
 
-    // Read all
+    // Read all — disable + show "Memproses..." until done (P2-8)
     readAll.addEventListener("click", async (e) => {
       e.preventDefault();
+      if (readAll.dataset.busy === "1") return;
+      const orig = readAll.textContent;
+      readAll.dataset.busy = "1";
+      readAll.textContent = "Memproses...";
+      readAll.style.opacity = "0.5";
+      readAll.style.pointerEvents = "none";
       try {
-        await fetch(API + "/v1/notifications/read-all", { method: "POST", headers: authH });
-        fetchAndRender();
-      } catch {}
+        await apiPost("/v1/notifications/read-all");
+        await fetchAndRender();
+      } catch { /* 401 redirecting */ }
+      finally {
+        readAll.dataset.busy = "";
+        readAll.textContent = orig;
+        readAll.style.opacity = "";
+        readAll.style.pointerEvents = "";
+      }
     });
 
     // Poll every 45s, pause when tab hidden
