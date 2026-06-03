@@ -8,6 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 #   "* * * * *"   Every minute — WA dispatch (notifications + OTPs, D1-backed)
 #   "0 14 * * *"  Daily 14:00 UTC = 21:00 WIB — closing reminders
 #   "59 16 * * 7" Weekly Sun 16:59 UTC = Sun 23:59 WIB — settlement generator
+#   NOTE: CF accepts both 0 and 7 for Sunday, but `event.cron` is the literal string from wrangler.toml.
+#   Keep this string and the branch in src/cron.ts in lockstep.
 [triggers]
 crons = ["* * * * *", "0 14 * * *", "59 16 * * 7"]
 
@@ -21,6 +23,22 @@ binding = "kongsian_db"
 database_name = "kongsian-db"
 database_id = "94a52c2f-af08-4642-b477-4edc2251f52b"
 migrations_dir = "../../packages/db/migrations"
+
+# === R2 binding (Kongsian media: titip/tarik photos, dispute photos, payment proof, PDF cache) ===
+# TODO(week4-f0): enable R2 in Cloudflare dashboard first, then create buckets:
+#   wrangler r2 bucket create kongsian-media
+#   wrangler r2 bucket create kongsian-media-dev
+# Then uncomment [[r2_buckets]] below. Key prefix convention:
+#   photos/titip/{movementId}.jpg
+#   photos/tarik/{movementId}.jpg
+#   photos/closing/{closingId}/{lineId}.jpg
+#   photos/dispute/{disputeId}/{messageId}.jpg
+#   payments/{settlementId}/proof.{ext}
+#   pdf/settlements/{settlementId}.pdf
+# [[r2_buckets]]
+# binding = "KONGSIAN_BUCKET"
+# bucket_name = "kongsian-media"
+# preview_bucket_name = "kongsian-media-dev"
 
 # === Production vars (overridable per-env via wrangler --env or in dashboard) ===
 # P0 #1: ENV must be "production" on the deployed Worker so the OTP endpoint

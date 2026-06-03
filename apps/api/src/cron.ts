@@ -203,7 +203,7 @@ export async function onCronTrigger(
           const r = await generateClosingReminders(env);
           // eslint-disable-next-line no-console
           console.log(`[CRON-REMINDER] inserted=${r.inserted}`);
-        } else if (cron === "59 16 * * 0") {
+        } else if (cron === "59 16 * * 7") {
           const r = await generateWeeklySettlements(env);
           // eslint-disable-next-line no-console
           console.log(`[CRON-SETTLEMENT] generated=${r.generated} skipped=${r.skipped}`);
