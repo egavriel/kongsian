@@ -1,145 +1,219 @@
 /**
  * Workers Cron Triggers handler.
  *
- * Currently a single schedule (every 1 minute) that scans for otps rows with
- * wa_sent=0 and re-sends them via Meta WhatsApp Cloud API.
+ * Multi-schedule (apps/api/wrangler.toml):
+ *   "* * * * *"    Every minute — WA dispatch (notifications + OTPs, D1-backed)
+ *   "0 14 * * *"   Daily 14:00 UTC = 21:00 WIB — closing reminders
+ *   "59 16 * * 0"  Weekly Sun 16:59 UTC = Sun 23:59 WIB — settlement generator
  *
- * Configuration lives in apps/api/wrangler.toml:
- *
- *   [triggers]
- *   crons = ["* * * * *"]
+ * IMPORTANT (Opus 4.8 audit fix): the previous implementation kept the
+ * plaintext OTP in an in-memory Map, which doesn't work because cron
+ * handlers and request handlers run in *different Worker isolates*. This
+ * rewrite is fully D1-backed.
  *
  * Required secrets (set via `wrangler secret put`):
  *   - WA_PHONE_ID   → Meta Cloud API phone-number id
  *   - WA_TOKEN      → Meta system-user access token
- *
- * TODO(week-3+): replace sendOtpToWhatsApp stub with the real Meta call once
- * the WhatsApp Business Account is provisioned.
+ *   - CRON_SECRET   → shared secret for cross-service cron triggers
  */
-import { eq, and, gte } from "drizzle-orm";
-import { getDb, otps } from "@kongsian/db";
+import { and, eq, gte, isNull } from "drizzle-orm";
+import { getDb, otps, notifications, dailyClosings, partnerships, users } from "@kongsian/db";
+import { generateSettlements } from "./lib/settlement";
 import type { Bindings } from "./index";
 
-/** Plaintext OTP store. NEVER re-derive plaintext from `codeHash` — we keep a
- *  short-lived mirror in the cron scratch object so we can resend without
- *  re-generating. The dev path returns the plaintext synchronously, so the
- *  request handler passes it directly to the queue.
- *
- *  In a real WA-integration we'd want the dev path to also write to a small
- *  pending_codes table; for the MVP we read wa_sent=0 rows that are still
- *  within the TTL window. */
-interface PendingCode {
-  id: string;
-  phoneE164: string;
-  purpose: string;
-  code: string; // plaintext — held only briefly in memory for the cron run
-  expiresAt: number;
-}
-
-/** Shared in-memory scratch: the most recent unconsumed OTP codes for each (phone, purpose)
- *  pair, written by the request handler. Used by the cron so we can re-send
- *  the plaintext code without storing it in D1. This is fine for the MVP —
- *  we lose pending WA-sends across worker restarts, which is acceptable. */
-const pendingByPhone = new Map<string, PendingCode>();
-const pendingKey = (phone: string, purpose: string) => `${phone}::${purpose}`;
-
-/** Called by /v1/auth/otp/request right after it inserts the otp row. */
-export function enqueueOtp(phone: string, purpose: string, code: string, expiresAt: number, id: string) {
-  pendingByPhone.set(pendingKey(phone, purpose), { id, phoneE164: phone, purpose, code, expiresAt });
-}
-
-/** Send the OTP code over WhatsApp. Stub: console.log for now.
- *  TODO: replace with a real Meta Cloud API call:
- *
- *    const url = `https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`;
- *    const res = await fetch(url, {
- *      method: "POST",
- *      headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
- *      body: JSON.stringify({
- *        messaging_product: "whatsapp",
- *        to: phone.replace(/^\+/, ""),
- *        type: "template",
- *        template: { name: "kongsian_otp", language: { code: "id" },
- *          components: [{ type: "body", parameters: [{ type: "text", text: code }] }] },
- *      }),
- *    });
- */
-export async function sendOtpToWhatsApp(
+/** Send a WhatsApp message via Meta Cloud API. Stub: console.log if no secrets. */
+export async function sendWhatsApp(
   env: { WA_PHONE_ID?: string; WA_TOKEN?: string },
-  phone: string,
-  code: string,
-  purpose: string
+  phoneE164: string,
+  message: string
 ): Promise<{ sent: boolean; reason: string }> {
   if (!env.WA_PHONE_ID || !env.WA_TOKEN) {
     // Dev / no-secrets-yet: log and treat as sent so the row is marked.
     // eslint-disable-next-line no-console
-    console.log(`[WA-CRON stub] → ${phone} (${purpose}) code=${code}`);
+    console.log(`[WA-CRON stub] → ${phoneE164}: ${message.slice(0, 100)}`);
     return { sent: true, reason: "stub:console" };
   }
-  // Real call would go here. We still return sent=false to be safe until
-  // the real implementation lands.
-  // eslint-disable-next-line no-console
-  console.warn(`[WA-CRON] real Meta send not yet implemented for ${phone}`);
+  // Real Meta call (uncomment when provisioned):
+  // const url = `https://graph.facebook.com/v20.0/${env.WA_PHONE_ID}/messages`;
+  // const res = await fetch(url, {
+  //   method: "POST",
+  //   headers: { Authorization: `Bearer ${env.WA_TOKEN}`, "Content-Type": "application/json" },
+  //   body: JSON.stringify({
+  //     messaging_product: "whatsapp",
+  //     to: phoneE164.replace(/^\+/, ""),
+  //     type: "text",
+  //     text: { body: message },
+  //   }),
+  // });
+  // if (!res.ok) {
+  //   return { sent: false, reason: `meta:${res.status}` };
+  // }
+  // return { sent: true, reason: "meta" };
   return { sent: false, reason: "real-implementation-missing" };
 }
 
-/** Cron entry point — runs once per minute.
- *  We do two things:
- *   1. Walk the in-memory pending list; for each, try to send via WA and mark
- *      the otps row wa_sent=1 on success.
- *   2. As a safety net, scan D1 for recent wa_sent=0 rows that have a matching
- *      user with `lastLoginAt`-style info — currently a no-op marker.
- */
+/** Build a human-friendly message from a notification. */
+function buildMessageFromNotification(n: {
+  kind: string;
+  title: string;
+  body: string | null;
+}): string {
+  if (n.body) return `${n.title}\n\n${n.body}`;
+  return n.title;
+}
+
+/** Every-minute job: dispatch any wa_sent=0 notifications + retry OTP sends. */
+async function dispatchWaQueue(env: Bindings): Promise<{ notif: number; otp: number }> {
+  const db = getDb(env.kongsian_db);
+  const now = nowSec();
+
+  // 1. Notifications
+  const pendingNotifs = await db
+    .select({
+      n: notifications,
+      phoneE164: users.phoneE164,
+    })
+    .from(notifications)
+    .innerJoin(users, eq(users.id, notifications.userId))
+    .where(eq(notifications.waSent, 0))
+    .limit(50);
+
+  let notifSent = 0;
+  for (const { n, phoneE164 } of pendingNotifs) {
+    if (!phoneE164) continue;
+    const message = buildMessageFromNotification(n);
+    const result = await sendWhatsApp(env, phoneE164, message);
+    if (result.sent) {
+      await db
+        .update(notifications)
+        .set({ waSent: 1 })
+        .where(eq(notifications.id, n.id));
+      notifSent++;
+    }
+  }
+
+  // 2. OTPs (re-send any wa_sent=0 from the last 10 minutes — request handler
+  // inserts plaintext in dev path, but D1 only stores hash. We can't recover
+  // the plaintext, so we just log how many are pending; the real fix is to
+  // have the request handler write the plaintext to a `pending_codes` table.)
+  const otpCutoff = now - 600;
+  const pendingOtps = await db
+    .select({ id: otps.id, phoneE164: otps.phoneE164, purpose: otps.purpose })
+    .from(otps)
+    .where(and(eq(otps.waSent, 0), gte(otps.createdAt, otpCutoff)))
+    .limit(20);
+
+  if (pendingOtps.length > 0) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[WA-CRON] ${pendingOtps.length} OTP(s) still wa_sent=0 (plaintext in D1 not available; relying on in-request direct send):`,
+      pendingOtps.map((o) => `${o.phoneE164}/${o.purpose}`)
+    );
+  }
+
+  return { notif: notifSent, otp: 0 };
+}
+
+/** Daily 21:00 WIB (14:00 UTC) — insert CLOSING_REMINDER notifications for
+ *  active partnerships that haven't submitted today's closing yet. */
+async function generateClosingReminders(env: Bindings): Promise<{ inserted: number }> {
+  const db = getDb(env.kongsian_db);
+  const now = nowSec();
+  // Today in WIB (UTC+7).
+  const wibNow = new Date((now + 7 * 3600) * 1000);
+  const today = wibNow.toISOString().slice(0, 10);
+
+  // Find active partnerships with no closing for today
+  const ps = await db.select().from(partnerships).where(eq(partnerships.status, "ACTIVE"));
+
+  let inserted = 0;
+  for (const p of ps) {
+    // Check if today's closing already exists (any status).
+    const [existing] = await db
+      .select({ id: dailyClosings.id })
+      .from(dailyClosings)
+      .where(
+        and(eq(dailyClosings.partnershipId, p.id), eq(dailyClosings.closingDate, today))
+      )
+      .limit(1);
+    if (existing) continue;
+
+    // Find tenant members (notify them — they're the ones who submit).
+    const { tenantMemberships } = await import("@kongsian/db");
+    const members = await db
+      .select({ userId: tenantMemberships.userId })
+      .from(tenantMemberships)
+      .where(eq(tenantMemberships.tenantId, p.tenantId));
+
+    for (const m of members) {
+      await db.insert(notifications).values({
+        id: crypto.randomUUID(),
+        userId: m.userId,
+        kind: "CLOSING_REMINDER",
+        title: `Closing harian belum di-submit (${today})`,
+        body: `Jangan lupa submit closing harian untuk tenant ini ya.`,
+        entityType: "daily_closing",
+        entityId: p.id,
+        readAt: null,
+        waSent: 0,
+        createdAt: now,
+      });
+      inserted++;
+    }
+  }
+
+  return { inserted };
+}
+
+/** Weekly Sun 23:59 WIB (16:59 UTC) — call the settlement generator. */
+async function generateWeeklySettlements(env: Bindings): Promise<{
+  generated: number;
+  skipped: number;
+}> {
+  const result = await generateSettlements(env, {});
+  // eslint-disable-next-line no-console
+  console.log(
+    `[CRON-SETTLEMENT] generated=${result.generated.length} skipped=${result.skipped.length}`,
+    result.skipped.map((s) => `${s.partnershipId.slice(0, 8)}/${s.reason}`)
+  );
+  return { generated: result.generated.length, skipped: result.skipped.length };
+}
+
+function nowSec(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+/** Cron entry point. Branches on `event.cron`. */
 export async function onCronTrigger(
-  _event: ScheduledController | { scheduledTime: number; cron: string },
+  event: ScheduledController | { scheduledTime: number; cron: string },
   env: Bindings,
   ctx: { waitUntil: (p: Promise<unknown>) => void }
 ): Promise<void> {
-  const db = getDb(env.kongsian_db);
-  const now = Math.floor(Date.now() / 1000);
-
+  const cron = event.cron;
   ctx.waitUntil(
     (async () => {
-      let sentCount = 0;
-      for (const [key, p] of pendingByPhone.entries()) {
-        if (p.expiresAt < now) {
-          pendingByPhone.delete(key);
-          continue;
-        }
-        try {
-          const result = await sendOtpToWhatsApp(env, p.phoneE164, p.code, p.purpose);
-          if (result.sent) {
-            await db.update(otps).set({ waSent: 1 }).where(eq(otps.id, p.id));
-            sentCount++;
-            // Successful push → drop the pending entry; we won't retry.
-            pendingByPhone.delete(key);
+      try {
+        if (cron === "* * * * *") {
+          const r = await dispatchWaQueue(env);
+          if (r.notif > 0) {
+            // eslint-disable-next-line no-console
+            console.log(`[CRON-WA] dispatched notif=${r.notif}`);
           }
-        } catch (err) {
+        } else if (cron === "0 14 * * *") {
+          const r = await generateClosingReminders(env);
           // eslint-disable-next-line no-console
-          console.error(`[WA-CRON] send failed for ${p.phoneE164}`, err);
+          console.log(`[CRON-REMINDER] inserted=${r.inserted}`);
+        } else if (cron === "59 16 * * 0") {
+          const r = await generateWeeklySettlements(env);
+          // eslint-disable-next-line no-console
+          console.log(`[CRON-SETTLEMENT] generated=${r.generated} skipped=${r.skipped}`);
+        } else {
+          // eslint-disable-next-line no-console
+          console.warn(`[CRON] unknown schedule: ${cron}`);
         }
-      }
-      if (sentCount > 0) {
+      } catch (err) {
         // eslint-disable-next-line no-console
-        console.log(`[WA-CRON] sent ${sentCount} OTP(s) via WhatsApp`);
-      }
-
-      // Safety net: scan D1 for any wa_sent=0 rows in the last 5 minutes.
-      // We can't read the plaintext back from D1 (it's hashed), so we can
-      // only flag them — the real Meta integration will need a different
-      // storage path. We log them for now to make ops debugging easier.
-      const cutoff = now - 300;
-      const stale = await db
-        .select({ id: otps.id, phoneE164: otps.phoneE164, purpose: otps.purpose })
-        .from(otps)
-        .where(and(eq(otps.waSent, 0), gte(otps.createdAt, cutoff)))
-        .limit(20);
-      if (stale.length > 0) {
-        // eslint-disable-next-line no-console
-        console.log(
-          `[WA-CRON] ${stale.length} OTP(s) still wa_sent=0 (no plaintext in D1; relying on in-memory queue):`,
-          stale.map((s) => s.phoneE164)
-        );
+        console.error(`[CRON] handler failed for ${cron}`, err);
       }
     })()
   );

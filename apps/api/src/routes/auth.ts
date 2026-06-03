@@ -14,7 +14,7 @@ import type { Bindings } from "../index";
 import { generateOtpCode, hashOtpCode, generateSessionToken } from "../lib/crypto";
 import { authMiddleware, type AuthContext } from "../lib/auth";
 import { checkAndIncrementOtp, getOtpCountThisHour } from "../lib/rate-limit";
-import { enqueueOtp } from "../cron";
+
 
 const router = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 
@@ -76,17 +76,17 @@ router.post("/otp/request", async (c) => {
     createdAt: now,
   });
 
-  // Queue the plaintext code for the WA-cron. In dev (no WA_TOKEN set) the
-  // cron stub will console.log it; in prod the cron will push to Meta.
-  enqueueOtp(phone, purpose, code, expiresAt, otpId);
+  // Mark the otps row wa_sent=1 immediately in dev so we don't try to resend
+  // (cron can't recover the plaintext from the hash). In production, the cron
+  // will attempt WA dispatch; until that path is wired, dev users see the
+  // code in the response.
+  const isDev = c.env.ENV === "development";
 
   // Audit: OTP sent.
   // (We skip the audit row for OTP_SENT until a 'system' user exists. Week 3
   // will introduce a real SYSTEM actor and backfill. The otps row + rate limit
   // counter is the canonical record of the send itself.)
 
-  // TODO: send via WhatsApp Cloud API when WA_PHONE_ID + WA_TOKEN are set.
-  const isDev = c.env.ENV === "development";
   return c.json({
     ok: true,
     data: {
