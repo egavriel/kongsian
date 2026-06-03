@@ -20,6 +20,47 @@ import type { Bindings } from "../index";
 type Vars = { auth: AuthContext };
 const router = new Hono<{ Bindings: Bindings; Variables: Vars }>();
 
+// ---------------------------------------------------------------------------
+// PUBLIC route (no auth) — used by vanity URL landing page
+// `kongsian.app/<slug>`. Returns brand name + logo + description + active
+// tenant count. Throttled by Cloudflare's per-IP rate limit at the edge.
+// ---------------------------------------------------------------------------
+router.get("/by-slug/:slug", async (c) => {
+  const slug = c.req.param("slug");
+  // Validate: lowercase, dashes, 2..40 chars. Reject anything else to
+  // avoid exposing internal brand names.
+  if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(slug)) {
+    return c.json({ ok: false, error: { code: "INVALID_SLUG" } }, 400);
+  }
+  const db = getDb(c.env.kongsian_db);
+  const [brand] = await db
+    .select({ id: brands.id, name: brands.name, slug: brands.slug, logoR2Key: brands.logoR2Key, description: brands.description })
+    .from(brands)
+    .where(eq(brands.slug, slug))
+    .limit(1);
+  if (!brand) return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND" } }, 404);
+
+  // Count ACTIVE partnerships so the landing can say "5 cafe partners" etc.
+  const [{ cnt }] = await db
+    .select({ cnt: sql<number>`COUNT(*)` })
+    .from(partnerships)
+    .where(and(eq(partnerships.brandId, brand.id), eq(partnerships.status, "ACTIVE")));
+
+  return c.json({
+    ok: true,
+    data: {
+      brand: {
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+        logoR2Key: brand.logoR2Key,
+        description: brand.description,
+      },
+      activePartnershipCount: Number(cnt ?? 0),
+    },
+  });
+});
+
 router.use("*", authMiddleware);
 
 /** Look up the current user's role across brand/tenant tables. */

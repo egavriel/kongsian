@@ -1,0 +1,221 @@
+---
+/**
+ * Vanity URL landing page — Week 5, F1.
+ *
+ *   kongsian.app/<slug>  →  this page
+ *   kongsian.app/        →  redirects to /login (handled by index.astro)
+ *
+ * What this page does:
+ *   1. Server-side fetches GET /v1/brands/by-slug/<slug> (no auth needed).
+ *   2. If brand not found → 404 with a friendly "brand tidak ditemukan".
+ *   3. Otherwise renders a public landing:
+ *      - Brand name + (future) logo
+ *      - Optional description
+ *      - "Login sebagai Cafe Partner" CTA → /login?next=/dashboard/tenant
+ *        (after login, the user lands on their tenant dashboard)
+ *      - If user is already logged in: detect their role via /v1/brands/me
+ *        and show "Buka Dashboard" link appropriate to their role
+ *        (brand owner of this brand → /dashboard/brand; tenant of one
+ *        of this brand's partnerships → /dashboard/tenant).
+ *
+ * Why this approach:
+ *   - Memorable URL for cafe partners ("kongsian.app/little-hanniel" sticks
+ *     in WhatsApp messages better than a UUID).
+ *   - Public landing doubles as a soft marketing surface for the brand.
+ *   - One page handles anonymous + logged-in states gracefully.
+ */
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../lib/api";
+
+const slug = Astro.params.slug ?? "";
+
+// Server-side: fetch the brand by slug. We use a public endpoint (no auth)
+// added in apps/api/src/routes/brands.ts.
+const apiBase = API_BASE_URL.replace(/\/$/, "");
+let brandInfo: {
+  brand: { id: string; name: string; slug: string; logoR2Key: string | null; description: string | null };
+  activePartnershipCount: number;
+} | null = null;
+let notFound = false;
+let invalidSlug = false;
+
+try {
+  const res = await fetch(`${apiBase}/v1/brands/by-slug/${encodeURIComponent(slug)}`);
+  if (res.status === 404) notFound = true;
+  else if (res.status === 400) invalidSlug = true;
+  else if (res.ok) {
+    const j = await res.json();
+    if (j.ok) brandInfo = j.data;
+  }
+} catch (e) {
+  // Network error: show a neutral page (don't expose stack).
+  notFound = true;
+}
+
+const title = brandInfo ? `${brandInfo.brand.name} — ${APP_NAME}` : `${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={brandInfo?.brand.description ?? `Halaman resmi ${brandInfo?.brand.name ?? ""} di ${APP_NAME}.`} />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #0b1220; color: #f1f5f9;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: #38bdf8; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .shell { max-width: 480px; margin: 0 auto; padding: 60px 20px 80px; }
+      .brand-hero { text-align: center; margin-bottom: 32px; }
+      .brand-logo {
+        width: 80px; height: 80px; border-radius: 20px;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: #0b1220; font-weight: 800; font-size: 32px;
+        display: inline-flex; align-items: center; justify-content: center;
+        margin-bottom: 16px; box-shadow: 0 4px 16px rgba(251, 191, 36, .3);
+      }
+      .brand-logo.has-image { background: #0f172a; padding: 0; overflow: hidden; }
+      .brand-logo.has-image img { width: 100%; height: 100%; object-fit: cover; }
+      h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.02em; }
+      .slug-line { font-size: 13px; color: #94a3b8; margin: 0 0 16px; }
+      .description { font-size: 14px; color: #cbd5e1; margin: 0 0 24px; }
+
+      .card {
+        background: #0f172a; border: 1px solid #1e293b; border-radius: 14px;
+        padding: 20px; margin-bottom: 16px;
+      }
+      .card .lbl { font-size: 12px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+      .card .val { font-size: 16px; font-weight: 600; }
+      .stat-row { display: flex; gap: 12px; }
+      .stat-row .card { flex: 1; }
+
+      .cta {
+        display: block; width: 100%; padding: 14px 20px; text-align: center;
+        font-size: 15px; font-weight: 700; border-radius: 12px;
+        background: #fbbf24; color: #0b1220; border: none; cursor: pointer;
+        margin-top: 8px;
+      }
+      .cta:hover { background: #fde68a; text-decoration: none; }
+      .cta.secondary { background: transparent; color: #38bdf8; border: 1px solid #1e293b; }
+      .cta.secondary:hover { border-color: #94a3b8; }
+      .err { background: rgba(251, 113, 133, .12); color: #fb7185; border: 1px solid rgba(251, 113, 133, .3); padding: 24px; border-radius: 12px; text-align: center; }
+      .err h2 { margin: 0 0 8px; font-size: 18px; }
+      .err p { margin: 0; font-size: 13px; color: #cbd5e1; }
+      .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748b; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      {notFound || invalidSlug ? (
+        <div class="err">
+          <h2>Brand tidak ditemukan</h2>
+          <p>
+            Slug "<code>{slug}</code>" tidak ada di sistem. Periksa ejaan, atau
+            {" "}<a href="/login">login</a> dulu kalau kamu brand owner.
+          </p>
+        </div>
+      ) : brandInfo ? (
+        <>
+          <div class="brand-hero">
+            {brandInfo.brand.logoR2Key ? (
+              <div class="brand-logo has-image">
+                <img src={`/api/brand-logo?key=${encodeURIComponent(brandInfo.brand.logoR2Key)}`} alt={brandInfo.brand.name} />
+              </div>
+            ) : (
+              <div class="brand-logo">{brandInfo.brand.name.charAt(0).toUpperCase()}</div>
+            )}
+            <h1>{brandInfo.brand.name}</h1>
+            <p class="slug-line">kongsian.app/{brandInfo.brand.slug}</p>
+            {brandInfo.brand.description && <p class="description">{brandInfo.brand.description}</p>}
+          </div>
+
+          <div class="stat-row">
+            <div class="card">
+              <div class="lbl">Cafe Partner</div>
+              <div class="val">{brandInfo.activePartnershipCount}</div>
+            </div>
+            <div class="card">
+              <div class="lbl">Status</div>
+              <div class="val">Aktif</div>
+            </div>
+          </div>
+
+          <div class="card" id="login-state">
+            <div class="lbl">Akses</div>
+            <div class="val" id="login-state-text">Login untuk mulai</div>
+            <a class="cta" id="primary-cta" href="/login?next=/dashboard/tenant">
+              Login sebagai Cafe Partner
+            </a>
+            <a class="cta secondary" href="/login">
+              Login sebagai Brand
+            </a>
+          </div>
+
+          <p class="footer">
+            Powered by <a href="/">{APP_NAME}</a>
+          </p>
+        </>
+      ) : (
+        <div class="err">
+          <h2>Brand tidak ditemukan</h2>
+          <p>Gagal memuat brand. Coba lagi beberapa saat.</p>
+        </div>
+      )}
+    </div>
+
+    <script src="/kongsian-auth-bus.js" defer is:inline></script>
+    <script define:vars={{ slug, brandId: brandInfo?.brand.id }}>
+      // ---------------------------------------------------------------------
+      // If the user is already logged in, route them to the right dashboard
+      // instead of showing the login CTA.
+      // ---------------------------------------------------------------------
+      const tok = localStorage.getItem("kongsian_session");
+      if (tok) {
+        // Use the global auth bus if loaded; fallback to raw fetch.
+        const headers = { Authorization: "Bearer " + tok };
+        const apiFetch = (path) => {
+          if (window.kongsianApi && window.kongsianApi.apiFetch) {
+            return window.kongsianApi.apiFetch(path, { headers });
+          }
+          return fetch(window.location.origin.replace(/\/$/, "") + path, { headers });
+        };
+        (async () => {
+          try {
+            const res = await apiFetch("/v1/brands/me");
+            if (!res.ok) return;
+            const j = await res.json();
+            if (!j.ok) return;
+            const { role, brandId, tenantId } = j.data;
+            const card = document.getElementById("login-state");
+            const text = document.getElementById("login-state-text");
+            const cta = document.getElementById("primary-cta");
+            if (role === "BRAND" && brandId === brandId) {
+              text.textContent = "Kamu owner brand ini";
+              cta.textContent = "Buka Brand Dashboard";
+              cta.href = "/dashboard/brand";
+            } else if (role === "BRAND") {
+              text.textContent = "Kamu login sebagai brand lain";
+              cta.textContent = "Buka Brand Dashboard kamu";
+              cta.href = "/dashboard/brand";
+            } else if (role === "TENANT" || role === "BOTH") {
+              text.textContent = "Kamu login sebagai cafe partner";
+              cta.textContent = "Buka Cafe Dashboard";
+              cta.href = "/dashboard/tenant";
+            }
+          } catch (e) {
+            // Stay on the public landing.
+          }
+        })();
+      }
+    </script>
+  </body>
+</html>
