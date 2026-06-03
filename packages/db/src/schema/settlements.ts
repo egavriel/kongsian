@@ -28,6 +28,10 @@ export const settlements = sqliteTable(
       .default("DRAFT"),
     approvedByUserId: text("approved_by_user_id").references(() => users.id),
     approvedAt: integer("approved_at"),
+    paidAt: integer("paid_at"),
+    paidByUserId: text("paid_by_user_id").references(() => users.id),
+    paymentProofR2Key: text("payment_proof_r2_key"),
+    paymentNote: text("payment_note"),
     pdfR2Key: text("pdf_r2_key"),
     generatedAt: integer("generated_at")
       .notNull()
@@ -37,6 +41,7 @@ export const settlements = sqliteTable(
     uniqPartnershipWeek: uniqueIndex("uniq_settlement_pw").on(t.partnershipId, t.weekStartDate),
     idxStatus: index("idx_settlement_status").on(t.status),
     idxWeek: index("idx_settlement_week").on(t.weekStartDate),
+    idxPartnershipStatus: index("idx_settlement_partnership_status").on(t.partnershipId, t.status),
   })
 );
 

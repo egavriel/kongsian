@@ -23,6 +23,7 @@ export const dailyClosings = sqliteTable(
     submittedByUserId: text("submitted_by_user_id").references(() => users.id),
     submittedAt: integer("submitted_at"),
     notes: text("notes"),
+    lockedAt: integer("locked_at"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),
@@ -30,6 +31,7 @@ export const dailyClosings = sqliteTable(
   (t) => ({
     uniqPartnershipDate: uniqueIndex("uniq_closing_pd").on(t.partnershipId, t.closingDate),
     idxStatus: index("idx_dc_status").on(t.status),
+    idxPartnershipStatus: index("idx_dc_partnership_status").on(t.partnershipId, t.status),
   })
 );
 

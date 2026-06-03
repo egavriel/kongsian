@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "102ec26d-c0dd-4c5a-9c62-a1da8b481bbd",
-  "prevId": "c2a9502c-ac90-4c19-b775-5b3f217515a3",
+  "id": "89856112-bd6f-4209-aec7-e34e95fee42b",
+  "prevId": "102ec26d-c0dd-4c5a-9c62-a1da8b481bbd",
   "tables": {
     "users": {
       "name": "users",
@@ -36,6 +36,21 @@
           "autoincrement": false,
           "default": "'USER'"
         },
+        "onboarding_role": {
+          "name": "onboarding_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "verification_status": {
+          "name": "verification_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PENDING_VERIFICATION'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -47,21 +62,6 @@
         "last_login_at": {
           "name": "last_login_at",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "verification_status": {
-          "name": "verification_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'PENDING_VERIFIED'"
-        },
-        "onboarding_role": {
-          "name": "onboarding_role",
-          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -81,6 +81,13 @@
             "phone_e164"
           ],
           "isUnique": true
+        },
+        "idx_users_verification": {
+          "name": "idx_users_verification",
+          "columns": [
+            "verification_status"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -896,6 +903,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "locked_at": {
+          "name": "locked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -917,6 +931,14 @@
         "idx_dc_status": {
           "name": "idx_dc_status",
           "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "idx_dc_partnership_status": {
+          "name": "idx_dc_partnership_status",
+          "columns": [
+            "partnership_id",
             "status"
           ],
           "isUnique": false
@@ -1144,6 +1166,34 @@
           "notNull": false,
           "autoincrement": false
         },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "paid_by_user_id": {
+          "name": "paid_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payment_proof_r2_key": {
+          "name": "payment_proof_r2_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payment_note": {
+          "name": "payment_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "pdf_r2_key": {
           "name": "pdf_r2_key",
           "type": "text",
@@ -1182,6 +1232,14 @@
             "week_start_date"
           ],
           "isUnique": false
+        },
+        "idx_settlement_partnership_status": {
+          "name": "idx_settlement_partnership_status",
+          "columns": [
+            "partnership_id",
+            "status"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1204,6 +1262,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "approved_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "settlements_paid_by_user_id_users_id_fk": {
+          "name": "settlements_paid_by_user_id_users_id_fk",
+          "tableFrom": "settlements",
+          "tableTo": "users",
+          "columnsFrom": [
+            "paid_by_user_id"
           ],
           "columnsTo": [
             "id"
@@ -1356,14 +1427,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch())"
-        },
         "wa_sent": {
           "name": "wa_sent",
           "type": "integer",
@@ -1371,6 +1434,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
         }
       },
       "indexes": {
@@ -1386,6 +1457,14 @@
           "name": "idx_otp_expires",
           "columns": [
             "expires_at"
+          ],
+          "isUnique": false
+        },
+        "idx_otp_wa_sent": {
+          "name": "idx_otp_wa_sent",
+          "columns": [
+            "wa_sent",
+            "created_at"
           ],
           "isUnique": false
         }
@@ -1640,6 +1719,34 @@
           "autoincrement": false,
           "default": "'OPEN'"
         },
+        "raised_by_user_id": {
+          "name": "raised_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opened_by_role": {
+          "name": "opened_by_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "photo_r2_key": {
+          "name": "photo_r2_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "resolution_notes": {
           "name": "resolution_notes",
           "type": "text",
@@ -1684,6 +1791,13 @@
             "status"
           ],
           "isUnique": false
+        },
+        "idx_dispute_closing_line": {
+          "name": "idx_dispute_closing_line",
+          "columns": [
+            "daily_closing_line_id"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1706,6 +1820,19 @@
           "tableTo": "daily_closing_lines",
           "columnsFrom": [
             "daily_closing_line_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "disputes_raised_by_user_id_users_id_fk": {
+          "name": "disputes_raised_by_user_id_users_id_fk",
+          "tableFrom": "disputes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "raised_by_user_id"
           ],
           "columnsTo": [
             "id"
@@ -1805,6 +1932,296 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "closing_photos": {
+      "name": "closing_photos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "daily_closing_id": {
+          "name": "daily_closing_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "r2_key": {
+          "name": "r2_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "uploaded_by_user_id": {
+          "name": "uploaded_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "idx_cp_closing": {
+          "name": "idx_cp_closing",
+          "columns": [
+            "daily_closing_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "closing_photos_daily_closing_id_daily_closings_id_fk": {
+          "name": "closing_photos_daily_closing_id_daily_closings_id_fk",
+          "tableFrom": "closing_photos",
+          "tableTo": "daily_closings",
+          "columnsFrom": [
+            "daily_closing_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "closing_photos_uploaded_by_user_id_users_id_fk": {
+          "name": "closing_photos_uploaded_by_user_id_users_id_fk",
+          "tableFrom": "closing_photos",
+          "tableTo": "users",
+          "columnsFrom": [
+            "uploaded_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "dispute_messages": {
+      "name": "dispute_messages",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dispute_id": {
+          "name": "dispute_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "author_user_id": {
+          "name": "author_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "author_role": {
+          "name": "author_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "photo_r2_key": {
+          "name": "photo_r2_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "idx_dm_dispute": {
+          "name": "idx_dm_dispute",
+          "columns": [
+            "dispute_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "dispute_messages_dispute_id_disputes_id_fk": {
+          "name": "dispute_messages_dispute_id_disputes_id_fk",
+          "tableFrom": "dispute_messages",
+          "tableTo": "disputes",
+          "columnsFrom": [
+            "dispute_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "dispute_messages_author_user_id_users_id_fk": {
+          "name": "dispute_messages_author_user_id_users_id_fk",
+          "tableFrom": "dispute_messages",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "notifications": {
+      "name": "notifications",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "wa_sent": {
+          "name": "wa_sent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "idx_notif_user_unread": {
+          "name": "idx_notif_user_unread",
+          "columns": [
+            "user_id",
+            "read_at"
+          ],
+          "isUnique": false
+        },
+        "idx_notif_wa": {
+          "name": "idx_notif_wa",
+          "columns": [
+            "wa_sent",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "notifications_user_id_users_id_fk": {
+          "name": "notifications_user_id_users_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

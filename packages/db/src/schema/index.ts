@@ -16,3 +16,6 @@ export * from "./sessions";
 export * from "./audit-log";
 export * from "./disputes";
 export * from "./otp-rate-limits";
+export * from "./closing-photos";
+export * from "./dispute-messages";
+export * from "./notifications";

@@ -25,6 +25,10 @@ export const disputes = sqliteTable(
     })
       .notNull()
       .default("OPEN"),
+    raisedByUserId: text("raised_by_user_id").references(() => users.id),
+    openedByRole: text("opened_by_role", { enum: ["BRAND", "TENANT", "ADMIN"] }),
+    reason: text("reason"),
+    photoR2Key: text("photo_r2_key"),
     resolutionNotes: text("resolution_notes"),
     resolvedByUserId: text("resolved_by_user_id").references(() => users.id),
     resolvedAt: integer("resolved_at"),
@@ -35,6 +39,7 @@ export const disputes = sqliteTable(
   (t) => ({
     idxPartnership: index("idx_dispute_partnership").on(t.partnershipId),
     idxStatus: index("idx_dispute_status").on(t.status),
+    idxClosingLine: index("idx_dispute_closing_line").on(t.dailyClosingLineId),
   })
 );
 
