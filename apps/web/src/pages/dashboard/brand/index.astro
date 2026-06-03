@@ -164,7 +164,14 @@ const title = `Brand Dashboard — ${APP_NAME}`;
 
       (async () => {
         const me = await jget("/v1/brands/me");
-        if (!me.ok) { window.location.href = "/login"; return; }
+        if (!me.ok) {
+          // P0 #3: API returns 403 VERIFICATION_PENDING for unverified users.
+          if (me.error?.code === "VERIFICATION_PENDING") {
+            window.location.href = "/login?registered=1";
+            return;
+          }
+          window.location.href = "/login"; return;
+        }
         const { role, brandId, user } = me.data;
         if (!brandId) {
           document.querySelector("main").innerHTML =

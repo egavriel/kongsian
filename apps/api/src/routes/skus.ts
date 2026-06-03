@@ -5,7 +5,7 @@
 import { Hono } from "hono";
 import { and, eq, desc } from "drizzle-orm";
 import { z } from "zod";
-import { getDb, brands, skus, partnershipSkus, auditLog } from "@kongsian/db";
+import { getDb, brands, skus, partnershipSkus, partnerships, tenantMemberships, auditLog } from "@kongsian/db";
 import { authMiddleware, type AuthContext } from "../lib/auth";
 import type { Bindings } from "../index";
 
@@ -30,14 +30,48 @@ async function assertBrandOwner(env: Bindings, userId: string, brandId: string) 
   return { ok: true as const, db, brand };
 }
 
-/** GET /v1/skus?brandId=... — list SKUs for a brand. */
+/** GET /v1/skus?brandId=... — list SKUs for a brand. IDOR fix (P0 #2):
+ *  the caller must own the brand (or be an active partnership's tenant
+ *  member, mirroring the brands.ts:67-94 ownership rule). */
 router.get("/", async (c) => {
+  const { userId } = c.get("auth");
   const brandId = c.req.query("brandId");
   if (!brandId) {
     return c.json({ ok: false, error: { code: "MISSING_BRAND_ID" } }, 400);
   }
-  const db = getDb(c.env.kongsian_db);
-  const rows = await db
+  const owner = await assertBrandOwner(c.env, userId, brandId);
+  if (!owner.ok) {
+    // Owners always allowed. Tenants (active partnership member) also allowed,
+    // so the cafe PIC can see what SKUs they're titip'd. Use the same path.
+    const db = getDb(c.env.kongsian_db);
+    const tenantAccess = await db
+      .select({ id: partnerships.id })
+      .from(partnerships)
+      .innerJoin(
+        tenantMemberships,
+        and(
+          eq(tenantMemberships.tenantId, partnerships.tenantId),
+          eq(tenantMemberships.userId, userId)
+        )
+      )
+      .where(
+        and(
+          eq(partnerships.brandId, brandId),
+          eq(partnerships.status, "ACTIVE")
+        )
+      )
+      .limit(1);
+    if (tenantAccess.length === 0) {
+      return c.json({ ok: false, error: { code: owner.error } }, owner.code as 403 | 404);
+    }
+    const rows = await db
+      .select()
+      .from(skus)
+      .where(eq(skus.brandId, brandId))
+      .orderBy(desc(skus.createdAt));
+    return c.json({ ok: true, data: rows });
+  }
+  const rows = await owner.db
     .select()
     .from(skus)
     .where(eq(skus.brandId, brandId))

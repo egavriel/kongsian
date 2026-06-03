@@ -140,7 +140,15 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
       });
 
       (async () => {
-        const me = await jget("/v1/tenants/me");
+        // P0 #3: verify the session belongs to a verified user before showing
+        // the dashboard. /v1/me returns verificationStatus; if PENDING, bounce.
+        const me = await jget("/v1/me");
+        if (!me.ok) { window.location.href = "/login"; return; }
+        if (me.data?.verificationStatus === "PENDING_VERIFICATION" || me.data?.verificationStatus === "REJECTED") {
+          window.location.href = "/login?registered=1";
+          return;
+        }
+        const tenant = await jget("/v1/tenants/me");
         if (!me.ok) {
           document.querySelector("main").innerHTML =
             `<div class="err">Akun tenant tidak ditemukan. <a href="/login">Login ulang</a>.</div>`;

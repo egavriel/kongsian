@@ -103,6 +103,20 @@ const title = `Daftar — ${APP_NAME}`;
       .role-card .emoji { font-size: 24px; display: block; margin-bottom: 6px; }
       .role-card .label { font-weight: 700; font-size: 15px; display: block; }
       .role-card .sub { color: #94a3b8; font-size: 12px; display: block; margin-top: 4px; }
+      /* P0 #3: blocking verification modal */
+      .block-modal {
+        position: fixed; inset: 0; background: rgba(11, 18, 32, .85);
+        display: none; align-items: center; justify-content: center;
+        z-index: 50; padding: 20px;
+      }
+      .block-modal.show { display: flex; }
+      .block-card {
+        background: #0f172a; border: 1px solid #fbbf24; border-radius: 14px;
+        padding: 28px; max-width: 420px; width: 100%; text-align: center;
+      }
+      .block-card .ic { font-size: 40px; display: block; margin-bottom: 12px; }
+      .block-card .tt { font-weight: 700; font-size: 20px; margin-bottom: 8px; }
+      .block-card .msg { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
     </style>
   </head>
   <body>
@@ -177,6 +191,16 @@ const title = `Daftar — ${APP_NAME}`;
       </div>
     </main>
 
+    <!-- P0 #3: verification blocking modal -->
+    <div id="verify-block" class="block-modal" role="dialog" aria-modal="true">
+      <div class="block-card">
+        <span class="ic">⏳</span>
+        <div class="tt">Akun kamu belum diverifikasi admin</div>
+        <div class="msg" id="verify-block-msg">Tunggu max 1x24 jam. Kami kabari via WhatsApp setelah approve.</div>
+        <button class="btn btn-ghost" id="verify-block-logout">Keluar</button>
+      </div>
+    </div>
+
     <script define:vars={{ API_BASE_URL }}>
       const API = API_BASE_URL.replace(/\/$/, "");
       const $ = (s) => document.querySelector(s);
@@ -184,6 +208,15 @@ const title = `Daftar — ${APP_NAME}`;
       const showErr = (m) => { err.textContent = m; err.style.display = "block"; info.style.display = "none"; };
       const showInfo = (m) => { info.textContent = m; info.style.display = "block"; err.style.display = "none"; };
       const hideMsg = () => { err.style.display = "none"; info.style.display = "none"; };
+      const showVerificationBlock = (msg) => {
+        document.getElementById("verify-block-msg").textContent = msg;
+        document.getElementById("verify-block").classList.add("show");
+        document.querySelector(".card").style.display = "none";
+      };
+      document.getElementById("verify-block-logout").addEventListener("click", () => {
+        try { localStorage.removeItem("kongsian_session"); } catch {}
+        window.location.href = "/login?registered=1";
+      });
 
       let lastPhone = "";
       let chosenRole = "";
@@ -283,12 +316,21 @@ const title = `Daftar — ${APP_NAME}`;
           const user = json.data?.user;
           if (token) {
             try { localStorage.setItem("kongsian_session", token); } catch {}
+            // P0 #3: surface VERIFICATION_PENDING as a blocking modal in-place.
+            // Belt-and-braces: confirm via /v1/brands/me (which now 403s PENDING).
+            try {
+              const r = await fetch(`${API}/v1/brands/me`, { headers: { Authorization: `Bearer ${token}` } });
+              const j = await r.json().catch(() => ({}));
+              if (r.status === 403 && j?.error?.code === "VERIFICATION_PENDING") {
+                showVerificationBlock(j.error.message || "Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.");
+                return;
+              }
+            } catch {}
             // Route by role
             const vs = user?.verificationStatus;
             const role = chosenRole; // BRAND | TENANT — chosen at registration
-            if (vs === "PENDING_VERIFICATION" || vs === "PENDING_VERIFIED") {
-              showInfo("Berhasil! Akun kamu menunggu verifikasi admin (~1x24 jam)…");
-              setTimeout(() => { window.location.href = "/login?registered=1"; }, 1200);
+            if (vs === "PENDING_VERIFICATION" || vs === "REJECTED") {
+              showVerificationBlock("Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.");
             } else {
               showInfo("Berhasil! Mengarahkan ke dashboard…");
               setTimeout(() => {

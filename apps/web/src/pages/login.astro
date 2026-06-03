@@ -83,6 +83,20 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
       .step2.show { display: block; }
       .small { font-size: 13px; color: #94a3b8; }
       .muted { color: #94a3b8; }
+      /* P0 #3: blocking verification modal */
+      .block-modal {
+        position: fixed; inset: 0; background: rgba(11, 18, 32, .85);
+        display: none; align-items: center; justify-content: center;
+        z-index: 50; padding: 20px;
+      }
+      .block-modal.show { display: flex; }
+      .block-card {
+        background: #0f172a; border: 1px solid #fbbf24; border-radius: 14px;
+        padding: 28px; max-width: 420px; width: 100%; text-align: center;
+      }
+      .block-card .ic { font-size: 40px; display: block; margin-bottom: 12px; }
+      .block-card .tt { font-weight: 700; font-size: 20px; margin-bottom: 8px; }
+      .block-card .msg { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
     </style>
   </head>
   <body>
@@ -139,6 +153,16 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
       </div>
     </main>
 
+    <!-- P0 #3: verification blocking modal -->
+    <div id="verify-block" class="block-modal" role="dialog" aria-modal="true">
+      <div class="block-card">
+        <span class="ic">⏳</span>
+        <div class="tt">Akun kamu belum diverifikasi admin</div>
+        <div class="msg" id="verify-block-msg">Tunggu max 1x24 jam. Kami kabari via WhatsApp setelah approve.</div>
+        <button class="btn btn-ghost" id="verify-block-logout">Keluar</button>
+      </div>
+    </div>
+
     <script define:vars={{ API_BASE_URL }}>
       const API = API_BASE_URL.replace(/\/$/, "");
       const $ = (s) => document.querySelector(s);
@@ -146,6 +170,16 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
       const showErr = (m) => { err.textContent = m; err.style.display = "block"; info.style.display = "none"; };
       const showInfo = (m) => { info.textContent = m; info.style.display = "block"; err.style.display = "none"; };
       const hideMsg = () => { err.style.display = "none"; info.style.display = "none"; };
+      const showVerificationBlock = (msg) => {
+        document.getElementById("verify-block-msg").textContent = msg;
+        document.getElementById("verify-block").classList.add("show");
+        // Hide the OTP card so it cannot be interacted with.
+        document.querySelector(".card").style.display = "none";
+      };
+      document.getElementById("verify-block-logout").addEventListener("click", () => {
+        localStorage.removeItem("kongsian_session");
+        window.location.href = "/login?registered=1";
+      });
 
       let lastPhone = "";
 
@@ -214,16 +248,25 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
           const token = json.data?.sessionToken;
           if (token) {
             localStorage.setItem("kongsian_session", token);
-            showInfo("Berhasil! Mengarahkan ke dashboard…");
-            setTimeout(() => {
-              // Route by role from /v1/brands/me
-              fetch(`${API}/v1/brands/me`, { headers: { Authorization: `Bearer ${token}` }})
-                .then(r => r.json()).then(j => {
-                  const role = j?.data?.role;
-                  if (role === "BRAND" || role === "BOTH") window.location.href = "/dashboard/brand";
-                  else if (role === "TENANT") window.location.href = "/dashboard/tenant";
-                  else window.location.href = "/dashboard/brand";
-                }).catch(() => { window.location.href = "/dashboard/brand"; });
+            showInfo("Berhasil! Mengecek status verifikasi…");
+            setTimeout(async () => {
+              // P0 #3: gate on verification status. The API now returns 403 for
+              // PENDING_VERIFICATION/REJECTED — we treat that as "blocked".
+              try {
+                const r = await fetch(`${API}/v1/brands/me`, { headers: { Authorization: `Bearer ${token}` }});
+                const j = await r.json().catch(() => ({}));
+                if (r.status === 403 && j?.error?.code === "VERIFICATION_PENDING") {
+                  // Show a blocking in-page modal — do NOT redirect.
+                  showVerificationBlock(j.error.message || "Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.");
+                  return;
+                }
+                const role = j?.data?.role;
+                if (role === "BRAND" || role === "BOTH") window.location.href = "/dashboard/brand";
+                else if (role === "TENANT") window.location.href = "/dashboard/tenant";
+                else window.location.href = "/dashboard/brand";
+              } catch {
+                window.location.href = "/dashboard/brand";
+              }
             }, 400);
           } else {
             showErr("Tidak ada session token. Coba lagi.");

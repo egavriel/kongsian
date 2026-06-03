@@ -40,12 +40,29 @@ export async function getRole(
   return { role: "VISITOR" };
 }
 
-/** GET /v1/brands/me — role + (brandId) + (tenantId) for the current user. */
+/** GET /v1/brands/me — role + (brandId) + (tenantId) for the current user.
+ *  P0 #3: gate PENDING_VERIFICATION + REJECTED users with 403 so they
+ *  cannot reach dashboards before admin approval (defense in depth — the
+ *  Astro pages also enforce this client-side). */
 router.get("/me", async (c) => {
   const { userId } = c.get("auth");
   const db = getDb(c.env.kongsian_db);
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user) return c.json({ ok: false, error: { code: "USER_NOT_FOUND" } }, 404);
+  // Admin/ops bypass.
+  const isAdmin = user.globalRole === "PLATFORM_ADMIN";
+  if (!isAdmin && (user.verificationStatus === "PENDING_VERIFICATION" || user.verificationStatus === "REJECTED")) {
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "VERIFICATION_PENDING",
+          message: "Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.",
+        },
+      },
+      403
+    );
+  }
   const role = await getRole(db, userId);
   return c.json({
     ok: true,

@@ -11,7 +11,7 @@ database_id = "94a52c2f-af08-4642-b477-4edc2251f52b"
 migrations_dir = "../../packages/db/migrations"
 
 [vars]
-ENV = "development"
+ENV = "production"
 LOG_LEVEL = "info"
 APP_URL = "https://kongsian.app"
 OTP_TTL_SECONDS = "300"

@@ -19,11 +19,14 @@ database_name = "kongsian-db"
 database_id = "94a52c2f-af08-4642-b477-4edc2251f52b"
 migrations_dir = "../../packages/db/migrations"
 
-# === Local-only vars (overridable by .dev.vars) ===
+# === Production vars (overridable per-env via wrangler --env or in dashboard) ===
+# P0 #1: ENV must be "production" on the deployed Worker so the OTP endpoint
+# does not return the plaintext devCode. Local dev uses wrangler dev with
+# .dev.vars / wrangler.<env>.toml override, not this file.
 [vars]
-ENV = "development"
-LOG_LEVEL = "debug"
-APP_URL = "http://localhost:4321"
+ENV = "production"
+LOG_LEVEL = "info"
+APP_URL = "https://kongsian.app"
 OTP_TTL_SECONDS = "300"
 OTP_MAX_ATTEMPTS = "5"
 SESSION_TTL_SECONDS = "2592000"

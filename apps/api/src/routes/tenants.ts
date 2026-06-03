@@ -3,9 +3,9 @@
  * Tenant PICs are looked up by phone (no FK to users until they sign up).
  */
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { getDb, tenants, auditLog } from "@kongsian/db";
+import { getDb, tenants, tenantMemberships, auditLog } from "@kongsian/db";
 import { authMiddleware, type AuthContext } from "../lib/auth";
 import type { Bindings } from "../index";
 
@@ -19,16 +19,43 @@ const TenantUpsertSchema = z.object({
   picPhoneE164: z.string().regex(/^\+[1-9]\d{7,14}$/),
 });
 
-/** GET /v1/tenants — list (optional ?phone=). */
+/** GET /v1/tenants — list (optional ?phone=). IDOR fix (P0 #2): always scope
+ *  results to tenants where the authenticated user has a membership row, OR
+ *  to the explicit ?phone= self-lookup. We never return the full tenants
+ *  table to any caller. */
 router.get("/", async (c) => {
+  const { userId } = c.get("auth");
   const phone = c.req.query("phone");
   const db = getDb(c.env.kongsian_db);
+
+  // Find every tenant this user is a member of.
+  const memberRows = await db
+    .select({ tenantId: tenantMemberships.tenantId })
+    .from(tenantMemberships)
+    .where(eq(tenantMemberships.userId, userId));
+  const memberTenantIds = memberRows.map((r) => r.tenantId);
+
   if (phone) {
-    const rows = await db.select().from(tenants).where(eq(tenants.picPhoneE164, phone));
+    // Self-lookup of own tenant by PIC phone — only allowed for tenants the
+    // user is actually a member of (admin/seed uses POST /v1/tenants, not this).
+    if (memberTenantIds.length === 0) return c.json({ ok: true, data: [] });
+    const rows = await db
+      .select()
+      .from(tenants)
+      .where(
+        and(
+          eq(tenants.picPhoneE164, phone),
+          inArray(tenants.id, memberTenantIds)
+        )
+      );
     return c.json({ ok: true, data: rows });
   }
-  // For demo: list all tenants (limit 50). Real listing is per-user via partnership.
-  const rows = await db.select().from(tenants).limit(50);
+  if (memberTenantIds.length === 0) return c.json({ ok: true, data: [] });
+  const rows = await db
+    .select()
+    .from(tenants)
+    .where(inArray(tenants.id, memberTenantIds))
+    .limit(50);
   return c.json({ ok: true, data: rows });
 });
 

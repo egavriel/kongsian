@@ -11,7 +11,7 @@
  *  - POST /v1/partnerships/:id/suspend  brand: flip to SUSPENDED
  */
 import { Hono } from "hono";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { z } from "zod";
 import {
   getDb,
@@ -66,28 +66,130 @@ const InviteSchema = z.object({
   revenueSplitTenantBps: z.number().int().min(0).max(10000).optional(),
 });
 
-/** GET /v1/partnerships — list scoped by query. */
+/** GET /v1/partnerships — list scoped by query. IDOR fix (P0 #2): even when
+ *  the caller supplies ?brandId or ?tenantId, we additionally assert the
+ *  user is the brand owner OR a tenant membership of the given tenant.
+ *  Without a query param we return only partnerships the user can reach. */
 router.get("/", async (c) => {
+  const { userId } = c.get("auth");
   const brandId = c.req.query("brandId");
   const tenantId = c.req.query("tenantId");
   const db = getDb(c.env.kongsian_db);
+
+  // Authorization check first.
+  if (brandId) {
+    const [brand] = await db
+      .select({ id: brands.id, userId: brands.userId })
+      .from(brands)
+      .where(eq(brands.id, brandId))
+      .limit(1);
+    if (!brand) {
+      return c.json({ ok: true, data: [] });
+    }
+    if (brand.userId !== userId) {
+      // Not the brand owner — must be a member of an active partnership's tenant.
+      const access = await db
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .innerJoin(
+          tenantMemberships,
+          and(
+            eq(tenantMemberships.tenantId, partnerships.tenantId),
+            eq(tenantMemberships.userId, userId)
+          )
+        )
+        .where(eq(partnerships.brandId, brandId))
+        .limit(1);
+      if (access.length === 0) {
+        return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+      }
+    }
+  } else if (tenantId) {
+    const [m] = await db
+      .select({ id: tenantMemberships.id })
+      .from(tenantMemberships)
+      .where(
+        and(
+          eq(tenantMemberships.tenantId, tenantId),
+          eq(tenantMemberships.userId, userId)
+        )
+      )
+      .limit(1);
+    if (!m) {
+      return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+    }
+  } else {
+    // No filter — return only partnerships the user can see.
+    // Union of: partnerships where brand.userId = userId, OR partnerships
+    // where user is a tenant member.
+    const ownedBrandIdsRows = await db
+      .select({ id: brands.id })
+      .from(brands)
+      .where(eq(brands.userId, userId));
+    const ownedBrandIds = ownedBrandIdsRows.map((r) => r.id);
+    const memberTenantIdsRows = await db
+      .select({ tenantId: tenantMemberships.tenantId })
+      .from(tenantMemberships)
+      .where(eq(tenantMemberships.userId, userId));
+    const memberTenantIds = memberTenantIdsRows.map((r) => r.tenantId);
+    if (ownedBrandIds.length === 0 && memberTenantIds.length === 0) {
+      return c.json({ ok: true, data: [] });
+    }
+    // Build a list of partnership rows from either side, then dedupe.
+    const seen = new Set<string>();
+    let combined: Array<{ id: string }> = [];
+    if (ownedBrandIds.length > 0) {
+      const a = await db
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .where(inArray(partnerships.brandId, ownedBrandIds));
+      combined = combined.concat(a);
+    }
+    if (memberTenantIds.length > 0) {
+      const b = await db
+        .select({ id: partnerships.id })
+        .from(partnerships)
+        .where(inArray(partnerships.tenantId, memberTenantIds));
+      combined = combined.concat(b);
+    }
+    const allowedIds: string[] = [];
+    for (const r of combined) {
+      if (!seen.has(r.id)) {
+        seen.add(r.id);
+        allowedIds.push(r.id);
+      }
+    }
+    if (allowedIds.length === 0) return c.json({ ok: true, data: [] });
+    const rows = await db
+      .select({ partnership: partnerships, tenant: tenants, brand: brands })
+      .from(partnerships)
+      .innerJoin(tenants, eq(tenants.id, partnerships.tenantId))
+      .innerJoin(brands, eq(brands.id, partnerships.brandId))
+      .where(inArray(partnerships.id, allowedIds))
+      .orderBy(desc(partnerships.createdAt));
+    return c.json({
+      ok: true,
+      data: rows.map((r) => ({ ...r.partnership, tenant: r.tenant, brand: r.brand })),
+    });
+  }
+
   const where = brandId
     ? eq(partnerships.brandId, brandId)
-    : tenantId
-      ? eq(partnerships.tenantId, tenantId)
-      : undefined;
+    : eq(partnerships.tenantId, tenantId!);
   const baseQuery = db
     .select({ partnership: partnerships, tenant: tenants, brand: brands })
     .from(partnerships)
     .innerJoin(tenants, eq(tenants.id, partnerships.tenantId))
     .innerJoin(brands, eq(brands.id, partnerships.brandId))
+    .where(where)
     .orderBy(desc(partnerships.createdAt));
-  const rows = where ? await baseQuery.where(where) : await baseQuery;
+  const rows = await baseQuery;
   return c.json({ ok: true, data: rows.map((r) => ({ ...r.partnership, tenant: r.tenant, brand: r.brand })) });
 });
 
-/** GET /v1/partnerships/:id — single. */
+/** GET /v1/partnerships/:id — single. IDOR fix (P0 #2): owner or member check. */
 router.get("/:id", async (c) => {
+  const { userId } = c.get("auth");
   const id = c.req.param("id");
   const db = getDb(c.env.kongsian_db);
   const [row] = await db
@@ -98,6 +200,20 @@ router.get("/:id", async (c) => {
     .where(eq(partnerships.id, id))
     .limit(1);
   if (!row) return c.json({ ok: false, error: { code: "PARTNERSHIP_NOT_FOUND" } }, 404);
+  const isBrandOwner = row.brand.userId === userId;
+  if (!isBrandOwner) {
+    const [m] = await db
+      .select({ id: tenantMemberships.id })
+      .from(tenantMemberships)
+      .where(
+        and(
+          eq(tenantMemberships.tenantId, row.partnership.tenantId),
+          eq(tenantMemberships.userId, userId)
+        )
+      )
+      .limit(1);
+    if (!m) return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+  }
   return c.json({ ok: true, data: { ...row.partnership, tenant: row.tenant, brand: row.brand } });
 });
 
