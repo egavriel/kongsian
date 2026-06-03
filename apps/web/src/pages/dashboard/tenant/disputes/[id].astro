@@ -1,0 +1,177 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "@/lib/api";
+const title = `Dispute — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:13px; }
+      h1 { font-size:18px; margin:0; }
+      main { padding:20px; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .meta-block { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:14px; }
+      .meta-block .lbl { font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; margin-bottom:4px; }
+      .meta-block .val { font-weight:600; }
+      .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:700; }
+      .badge.open { background:rgba(251,113,133,.15); color:#fb7185; }
+      .badge.resolved { background:rgba(52,211,153,.15); color:#34d399; }
+      .thread { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+      .msg { background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:10px 12px; }
+      .msg.brand { border-left:3px solid #38bdf8; }
+      .msg.tenant { border-left:3px solid #fbbf24; }
+      .msg.admin { border-left:3px solid #a855f7; }
+      .msg .head { display:flex; justify-content:space-between; font-size:11px; color:#94a3b8; margin-bottom:4px; }
+      .msg .body { white-space:pre-wrap; word-wrap:break-word; }
+      textarea { width:100%; min-height:80px; padding:10px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; color:#f1f5f9; font-family:inherit; font-size:14px; resize:vertical; }
+      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 18px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:14px; }
+      .btn-primary { background:#fbbf24; color:#0b1220; }
+      .btn-primary:hover { background:#f59e0b; }
+      .btn-ghost { background:transparent; color:#f1f5f9; border-color:#1e293b; }
+      .btn-ghost:hover { border-color:#94a3b8; }
+      input[type=text] { width:100%; padding:10px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; color:#f1f5f9; font-size:14px; }
+      label { display:block; font-size:13px; color:#94a3b8; margin:12px 0 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/tenant/disputes">← Disputes</a>
+        <h1 id="title">Dispute</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="ok" class="ok" style="display:none"></div>
+        <div id="content">
+          <div style="text-align:center;color:#94a3b8;padding:24px">Memuat…</div>
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+      async function jpost(p, b) { return (await fetch(API+p, { method: "POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const okEl = document.getElementById("ok");
+      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; okEl.style.display = "none"; };
+      const showOk = (m) => { okEl.textContent = m; okEl.style.display = "block"; errEl.style.display = "none"; };
+
+      const id = location.pathname.split("/").pop();
+      let dispute = null;
+      let callerRole = null;
+
+      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n || 0); }
+      function fmtDate(s) {
+        if (!s) return "—";
+        return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" });
+      }
+      function fmtDateTime(unix) {
+        if (!unix) return "—";
+        return new Date(unix * 1000).toLocaleString("id-ID", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+      }
+
+      async function load() {
+        const r = await jget(`/v1/disputes/${id}`);
+        if (!r.ok) { showErr(r.error?.code || "Gagal memuat dispute."); return; }
+        dispute = r.data.dispute;
+        callerRole = r.data.callerRole;
+        render();
+      }
+
+      function render() {
+        const isResolved = dispute.status !== "OPEN";
+        document.getElementById("title").textContent = `Dispute ${dispute.sku?.code || ""}`;
+        const sel = dispute.selisihQty;
+        const c = document.getElementById("content");
+        c.innerHTML = `
+          <div class="meta-block">
+            <div class="lbl">SKU</div>
+            <div class="val">${dispute.sku?.code || "—"} · ${dispute.sku?.name || ""}</div>
+            <div class="lbl" style="margin-top:10px">Closing</div>
+            <div class="val">${fmtDate(dispute.closing?.closingDate)}</div>
+            <div class="lbl" style="margin-top:10px">Selisih</div>
+            <div class="val" style="color:${sel > 0 ? '#34d399' : '#fb7185'};font-size:18px">${sel > 0 ? '+' : ''}${sel}</div>
+            <div class="lbl" style="margin-top:10px">Status</div>
+            <div class="val">
+              <span class="badge ${isResolved ? 'resolved' : 'open'}">${dispute.status}</span>
+            </div>
+            ${dispute.reason ? `<div class="lbl" style="margin-top:10px">Alasan</div><div class="val">${dispute.reason}</div>` : ''}
+            ${dispute.resolutionNotes ? `<div class="lbl" style="margin-top:10px">Resolusi</div><div class="val" style="white-space:pre-wrap">${dispute.resolutionNotes}</div>` : ''}
+          </div>
+
+          <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Percakapan (${(dispute.messages || []).length})</div>
+          <div class="thread">
+            ${(dispute.messages || []).map(m => `
+              <div class="msg ${(m.authorRole || '').toLowerCase()}">
+                <div class="head">
+                  <span>${m.authorName || m.authorRole} · ${m.authorRole}</span>
+                  <span>${fmtDateTime(m.createdAt)}</span>
+                </div>
+                <div class="body">${m.body}</div>
+              </div>
+            `).join("") || '<div style="color:#94a3b8;font-size:13px">Belum ada pesan.</div>'}
+          </div>
+
+          ${!isResolved ? `
+            <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Balas / Resolve</div>
+            <label>Pesan</label>
+            <textarea id="msg-body" placeholder="Tulis pesan…"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-ghost" id="post-msg" type="button">Kirim Pesan</button>
+            </div>
+
+            <label style="margin-top:18px">Resolusi (akan menutup dispute)</label>
+            <input type="text" id="res-text" placeholder="Misal: stok opname, koreksi qty titip…" />
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-primary" id="resolve-btn" type="button">Mark Resolved</button>
+            </div>
+          ` : `<div class="meta-block" style="border-color:#34d399"><div class="lbl">Dispute sudah ditutup</div><div class="val" style="color:#34d399">${dispute.status.replace('RESOLVED_', 'Resolved by ')}</div></div>`}
+        `;
+        bindActions();
+      }
+
+      function bindActions() {
+        const pm = document.getElementById("post-msg");
+        if (pm) pm.addEventListener("click", async () => {
+          const body = document.getElementById("msg-body").value.trim();
+          if (!body) { showErr("Pesan kosong."); return; }
+          const r = await jpost(`/v1/disputes/${id}/messages`, { body });
+          if (!r.ok) { showErr(r.error?.code || "Gagal kirim pesan."); return; }
+          showOk("Pesan terkirim ✓");
+          document.getElementById("msg-body").value = "";
+          await load();
+        });
+        const rb = document.getElementById("resolve-btn");
+        if (rb) rb.addEventListener("click", async () => {
+          const resolution = document.getElementById("res-text").value.trim();
+          if (!resolution) { showErr("Tulis resolusi dulu."); return; }
+          if (!confirm("Tandai dispute ini resolved?")) return;
+          const r = await jpost(`/v1/disputes/${id}/resolve`, { resolution });
+          if (!r.ok) { showErr(r.error?.code || "Gagal resolve."); return; }
+          showOk("Dispute resolved ✓");
+          await load();
+        });
+      }
+
+      load();
+    </script>
+  </body>
+</html>

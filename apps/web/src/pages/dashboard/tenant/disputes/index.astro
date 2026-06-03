@@ -1,0 +1,123 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "@/lib/api";
+const title = `Disputes — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      a:hover { text-decoration:underline; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:16px 20px; border-bottom:1px solid #1e293b;
+        position:sticky; top:0; background:rgba(11,18,32,.92);
+        backdrop-filter:blur(6px); z-index:5;
+      }
+      .back { color:#94a3b8; font-size:13px; }
+      h1 { font-size:20px; margin:0; }
+      main { padding:20px; }
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .loading { color:#94a3b8; text-align:center; padding:24px; }
+      .dispute-card {
+        background:#0f172a; border:1px solid #1e293b; border-radius:12px;
+        padding:14px; margin-bottom:10px; display:block; color:inherit;
+      }
+      .dispute-card:hover { border-color:#fbbf24; text-decoration:none; }
+      .dispute-card .head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+      .dispute-card .sku { font-weight:700; color:#fbbf24; }
+      .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:700; }
+      .badge.open { background:rgba(251,113,133,.15); color:#fb7185; }
+      .badge.resolved_brand { background:rgba(52,211,153,.15); color:#34d399; }
+      .badge.resolved_tenant { background:rgba(96,165,250,.15); color:#60a5fa; }
+      .badge.resolved_admin { background:rgba(168,85,247,.15); color:#a855f7; }
+      .meta { font-size:12px; color:#94a3b8; }
+      .selisih { font-size:13px; margin-top:6px; }
+      .selisih.neg { color:#fb7185; }
+      .selisih.pos { color:#34d399; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/tenant">← Tenant</a>
+        <h1>Disputes</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="list">
+          <div class="loading">Memuat…</div>
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const listEl = document.getElementById("list");
+      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; };
+
+      function fmtDate(s) {
+        if (!s) return "—";
+        return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" });
+      }
+
+      function badgeClass(status) {
+        return status === "OPEN" ? "open"
+          : status === "RESOLVED_BRAND" ? "resolved_brand"
+          : status === "RESOLVED_TENANT" ? "resolved_tenant"
+          : "resolved_admin";
+      }
+      function badgeLabel(status) {
+        return status === "OPEN" ? "OPEN"
+          : status === "RESOLVED_BRAND" ? "RESOLVED · BRAND"
+          : status === "RESOLVED_TENANT" ? "RESOLVED · TENANT"
+          : "RESOLVED · ADMIN";
+      }
+
+      (async () => {
+        const r = await jget("/v1/disputes?limit=50");
+        if (!r.ok) { showErr(r.error?.code || "Gagal memuat disputes."); listEl.innerHTML = ""; return; }
+        const items = r.data?.disputes || [];
+        if (items.length === 0) {
+          listEl.innerHTML = `<div class="empty">Belum ada dispute. Dispute muncul otomatis ketika ada selisih closing.</div>`;
+          return;
+        }
+        listEl.innerHTML = items.map(d => {
+          const sel = d.selisihQty;
+          const selClass = sel > 0 ? "pos" : sel < 0 ? "neg" : "";
+          const selText = sel > 0 ? `+${sel}` : `${sel}`;
+          return `
+            <a class="dispute-card" href="/dashboard/tenant/disputes/${d.id}">
+              <div class="head">
+                <div>
+                  <div class="sku">${d.sku?.code || "—"}</div>
+                  <div class="meta">${d.sku?.name || ""}</div>
+                </div>
+                <span class="badge ${badgeClass(d.status)}">${badgeLabel(d.status)}</span>
+              </div>
+              <div class="meta">Closing ${fmtDate(d.closingDate)} · ${d.partnership?.brand?.name || ""}</div>
+              <div class="selisih ${selClass}">Selisih: ${selText}</div>
+            </a>
+          `;
+        }).join("");
+      })();
+    </script>
+  </body>
+</html>

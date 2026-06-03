@@ -1,0 +1,115 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "@/lib/api";
+const title = `Tenant Closings — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:520px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:13px; }
+      h1 { font-size:18px; margin:0; }
+      main { padding:20px; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      .loading { color:#94a3b8; text-align:center; padding:24px; }
+      .closing-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:10px; display:block; color:inherit; }
+      .closing-card:hover { border-color:#fbbf24; text-decoration:none; }
+      .closing-card .head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+      .closing-card .date { font-weight:700; color:#fbbf24; }
+      .closing-card .meta { font-size:12px; color:#94a3b8; }
+      .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:700; }
+      .badge.open { background:rgba(96,165,250,.15); color:#60a5fa; }
+      .badge.submitted { background:rgba(52,211,153,.15); color:#34d399; }
+      .badge.locked { background:rgba(168,85,247,.15); color:#a855f7; }
+      .filter-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+      .filter-row select { flex:1; min-width:120px; padding:10px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; color:#f1f5f9; font-size:14px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand">← Brand</a>
+        <h1>Tenant Closings</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div class="filter-row">
+          <select id="status-filter">
+            <option value="">All status</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="LOCKED">Locked</option>
+            <option value="OPEN">Open (draft)</option>
+          </select>
+        </div>
+        <div id="list">
+          <div class="loading">Memuat…</div>
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const listEl = document.getElementById("list");
+      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; };
+
+      function fmtDate(s) {
+        if (!s) return "—";
+        return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" });
+      }
+
+      // Determine the brand ID from /v1/brands/me
+      let brandId = null;
+      const me = await jget("/v1/brands/me");
+      if (me.ok && me.data?.brand?.id) brandId = me.data.brand.id;
+      else { showErr("Brand tidak ditemukan."); listEl.innerHTML = ""; }
+
+      const filter = document.getElementById("status-filter");
+      filter.addEventListener("change", () => load());
+
+      async function load() {
+        if (!brandId) return;
+        const status = filter.value;
+        const url = `/v1/brands/${brandId}/closings?` + (status ? `status=${status}&` : "") + "limit=50";
+        const r = await jget(url);
+        if (!r.ok) { showErr(r.error?.code || "Gagal memuat closings."); listEl.innerHTML = ""; return; }
+        const items = r.data?.closings || [];
+        if (items.length === 0) {
+          listEl.innerHTML = `<div class="empty">Belum ada closing dari tenant.</div>`;
+          return;
+        }
+        listEl.innerHTML = items.map(c => {
+          const cls = (c.status || "OPEN").toLowerCase();
+          return `
+            <a class="closing-card" href="/dashboard/brand/closings/${c.id}">
+              <div class="head">
+                <div class="date">${fmtDate(c.closingDate)}</div>
+                <span class="badge ${cls}">${c.status}</span>
+              </div>
+              <div class="meta">Partnership: ${c.partnershipId?.slice(0, 8) || "—"}</div>
+            </a>
+          `;
+        }).join("");
+      }
+
+      if (brandId) load();
+    </script>
+  </body>
+</html>

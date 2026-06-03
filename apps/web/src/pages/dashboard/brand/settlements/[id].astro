@@ -1,0 +1,183 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "@/lib/api";
+const title = `Settlement — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:520px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:13px; }
+      h1 { font-size:18px; margin:0; }
+      main { padding:20px; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .meta-block { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:14px; }
+      .meta-block .lbl { font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; margin-bottom:4px; }
+      .meta-block .val { font-weight:600; }
+      .meta-block .val.big { font-size:22px; color:#fbbf24; }
+      .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:700; }
+      .badge.draft { background:rgba(96,165,250,.15); color:#60a5fa; }
+      .badge.pending_brand { background:rgba(251,191,36,.15); color:#fbbf24; }
+      .badge.brand_approved { background:rgba(52,211,153,.15); color:#34d399; }
+      .badge.paid { background:rgba(168,85,247,.15); color:#a855f7; }
+      .badge.disputed { background:rgba(251,113,133,.15); color:#fb7185; }
+      .line-list { display:flex; flex-direction:column; gap:6px; }
+      .line-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #1e293b; font-size:14px; }
+      .line-row:last-child { border-bottom:none; }
+      .line-row .qty { color:#94a3b8; font-size:12px; }
+      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 18px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:14px; margin-right:8px; margin-top:8px; }
+      .btn-primary { background:#fbbf24; color:#0b1220; }
+      .btn-primary:hover { background:#f59e0b; }
+      .btn-ghost { background:transparent; color:#f1f5f9; border-color:#1e293b; }
+      .btn-ghost:hover { border-color:#94a3b8; }
+      input[type=text] { width:100%; padding:10px; background:#0f172a; border:1px solid #1e293b; border-radius:8px; color:#f1f5f9; font-size:14px; }
+      label { display:block; font-size:13px; color:#94a3b8; margin:12px 0 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand/settlements">← Settlements</a>
+        <h1>Settlement</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="ok" class="ok" style="display:none"></div>
+        <div id="content">
+          <div style="text-align:center;color:#94a3b8;padding:24px">Memuat…</div>
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+      async function jpost(p, b) { return (await fetch(API+p, { method: "POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const okEl = document.getElementById("ok");
+      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; okEl.style.display = "none"; };
+      const showOk = (m) => { okEl.textContent = m; okEl.style.display = "block"; errEl.style.display = "none"; };
+
+      const id = location.pathname.split("/").pop();
+      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n || 0); }
+      function fmtDate(s) { if (!s) return "—"; return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" }); }
+      function fmtDateTime(unix) { if (!unix) return "—"; return new Date(unix * 1000).toLocaleString("id-ID", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }); }
+      function badgeCls(s) { return (s || "").toLowerCase(); }
+
+      async function load() {
+        const r = await jget(`/v1/settlements/${id}`);
+        if (!r.ok) { showErr(r.error?.code || "Gagal memuat settlement."); return; }
+        render(r.data);
+      }
+
+      function render(d) {
+        const s = d.settlement;
+        const isDraft = s.status === "DRAFT" || s.status === "PENDING_BRAND";
+        const isApproved = s.status === "BRAND_APPROVED";
+        const isPaid = s.status === "PAID";
+
+        const c = document.getElementById("content");
+        c.innerHTML = `
+          <div class="meta-block">
+            <div class="lbl">Periode</div>
+            <div class="val">${fmtDate(s.weekStartDate)} – ${fmtDate(s.weekEndDate)}</div>
+            <div class="lbl" style="margin-top:10px">Status</div>
+            <div class="val"><span class="badge ${badgeCls(s.status)}">${s.status}</span></div>
+            <div class="lbl" style="margin-top:10px">Total Omzet</div>
+            <div class="val big">${fmtRp(s.totalOmzetIdr)}</div>
+            <div class="lbl" style="margin-top:10px">Pembagian</div>
+            <div class="val">Brand: <strong>${fmtRp(s.brandShareIdr)}</strong> · Tenant: <strong>${fmtRp(s.tenantShareIdr)}</strong></div>
+            <div class="lbl" style="margin-top:10px">Total Terjual</div>
+            <div class="val">${s.totalTerjual} item</div>
+          </div>
+
+          <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Per SKU (${(d.lines || []).length})</div>
+          <div class="meta-block">
+            <div class="line-list">
+              ${(d.lines || []).map(l => `
+                <div class="line-row">
+                  <div>
+                    <div style="font-weight:600">${l.sku?.code || l.skuId?.slice(0, 8) || "—"}</div>
+                    <div style="font-size:12px;color:#94a3b8">${l.sku?.name || ""}</div>
+                  </div>
+                  <div style="text-align:right">
+                    <div>${fmtRp(l.omzetIdr)}</div>
+                    <div class="qty">${l.qtyTerjual} item</div>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          ${s.paymentProofR2Key ? `
+            <div class="meta-block" style="border-color:#34d399">
+              <div class="lbl">Bukti Pembayaran</div>
+              <div class="val" style="font-family:monospace;font-size:12px;word-break:break-all">${s.paymentProofR2Key}</div>
+              ${s.paymentNote ? `<div class="lbl" style="margin-top:10px">Catatan</div><div class="val">${s.paymentNote}</div>` : ''}
+            </div>
+          ` : ''}
+
+          ${isDraft ? `
+            <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Aksi</div>
+            <button class="btn btn-primary" id="approve-btn" type="button">Approve Settlement</button>
+          ` : ''}
+
+          ${isApproved ? `
+            <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Tandai Sudah Dibayar</div>
+            <label>Catatan (opsional)</label>
+            <input type="text" id="paid-note" placeholder="Misal: BCA a.n. ..." />
+            <div>
+              <button class="btn btn-primary" id="mark-paid-btn" type="button">Mark Paid</button>
+            </div>
+          ` : ''}
+
+          ${isPaid ? `
+            <div class="meta-block" style="border-color:#a855f7">
+              <div class="lbl">Paid</div>
+              <div class="val" style="color:#a855f7">${fmtDateTime(s.paidAt)}</div>
+            </div>
+          ` : ''}
+        `;
+        bindActions();
+      }
+
+      function bindActions() {
+        const ab = document.getElementById("approve-btn");
+        if (ab) ab.addEventListener("click", async () => {
+          if (!confirm("Approve settlement ini? Tenant akan di-notify.")) return;
+          const r = await jpost(`/v1/settlements/${id}/approve`, {});
+          if (!r.ok) { showErr(r.error?.code || "Gagal approve."); return; }
+          showOk("Settlement di-approve ✓");
+          await load();
+        });
+        const pb = document.getElementById("mark-paid-btn");
+        if (pb) pb.addEventListener("click", async () => {
+          const note = document.getElementById("paid-note")?.value?.trim() ?? "";
+          if (!confirm("Tandai settlement sudah dibayar? (Bukti transfer harus sudah di-upload manual via WA)")) return;
+          const r = await jpost(`/v1/settlements/${id}/mark-paid`, { note });
+          if (!r.ok) { showErr(r.error?.code || "Gagal mark paid. " + (r.error?.message || "")); return; }
+          showOk("Settlement paid ✓");
+          await load();
+        });
+      }
+
+      load();
+    </script>
+  </body>
+</html>

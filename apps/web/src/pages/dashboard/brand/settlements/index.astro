@@ -1,0 +1,107 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "@/lib/api";
+const title = `Settlements — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:520px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:13px; }
+      h1 { font-size:18px; margin:0; }
+      main { padding:20px; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      .loading { color:#94a3b8; text-align:center; padding:24px; }
+      .settle-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:10px; display:block; color:inherit; }
+      .settle-card:hover { border-color:#fbbf24; text-decoration:none; }
+      .settle-card .head { display:flex; justify-content:space-between; align-items:start; margin-bottom:8px; }
+      .settle-card .week { font-weight:700; }
+      .settle-card .omzet { font-size:18px; color:#fbbf24; font-weight:700; margin-top:4px; }
+      .settle-card .split { display:flex; gap:12px; font-size:12px; color:#94a3b8; margin-top:4px; }
+      .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:700; }
+      .badge.draft { background:rgba(96,165,250,.15); color:#60a5fa; }
+      .badge.pending_brand { background:rgba(251,191,36,.15); color:#fbbf24; }
+      .badge.brand_approved { background:rgba(52,211,153,.15); color:#34d399; }
+      .badge.paid { background:rgba(168,85,247,.15); color:#a855f7; }
+      .badge.disputed { background:rgba(251,113,133,.15); color:#fb7185; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand">← Brand</a>
+        <h1>Settlements</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="list">
+          <div class="loading">Memuat…</div>
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const listEl = document.getElementById("list");
+      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; };
+
+      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n || 0); }
+      function fmtDate(s) {
+        if (!s) return "—";
+        return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day:"2-digit", month:"short" });
+      }
+      function badgeCls(s) { return (s || "").toLowerCase(); }
+
+      const me = await jget("/v1/brands/me");
+      let brandId = me.ok && me.data?.brand?.id;
+      if (!brandId) { showErr("Brand tidak ditemukan."); listEl.innerHTML = ""; }
+
+      async function load() {
+        if (!brandId) return;
+        const r = await jget(`/v1/brands/${brandId}/settlements?limit=50`);
+        if (!r.ok) { showErr(r.error?.code || "Gagal memuat settlements."); listEl.innerHTML = ""; return; }
+        const items = r.data?.settlements || [];
+        if (items.length === 0) {
+          listEl.innerHTML = `<div class="empty">Belum ada settlement. Generator jalan setiap Minggu 23:59 WIB.</div>`;
+          return;
+        }
+        listEl.innerHTML = items.map(s => `
+          <a class="settle-card" href="/dashboard/brand/settlements/${s.id}">
+            <div class="head">
+              <div>
+                <div class="week">${fmtDate(s.weekStartDate)} – ${fmtDate(s.weekEndDate)}</div>
+                <div class="meta" style="font-size:12px;color:#94a3b8">${s.totalTerjual} item terjual</div>
+              </div>
+              <span class="badge ${badgeCls(s.status)}">${s.status}</span>
+            </div>
+            <div class="omzet">${fmtRp(s.totalOmzetIdr)}</div>
+            <div class="split">
+              <span>Brand: <strong>${fmtRp(s.brandShareIdr)}</strong></span>
+              <span>Tenant: <strong>${fmtRp(s.tenantShareIdr)}</strong></span>
+            </div>
+          </a>
+        `).join("");
+      }
+
+      if (brandId) load();
+    </script>
+  </body>
+</html>
