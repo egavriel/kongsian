@@ -7,9 +7,9 @@ compatibility_flags = ["nodejs_compat"]
 # onCronTrigger dispatches by `event.cron` (see apps/api/src/cron.ts).
 #   "* * * * *"   Every minute — WA dispatch (notifications + OTPs, D1-backed)
 #   "0 14 * * *"  Daily 14:00 UTC = 21:00 WIB — closing reminders
-#   "59 16 * * 0" Weekly Sun 16:59 UTC = Sun 23:59 WIB — settlement generator
+#   "59 16 * * 7" Weekly Sun 16:59 UTC = Sun 23:59 WIB — settlement generator
 [triggers]
-crons = ["* * * * *", "0 14 * * *", "59 16 * * 0"]
+crons = ["* * * * *", "0 14 * * *", "59 16 * * 7"]
 
 # Production observability
 [observability]
