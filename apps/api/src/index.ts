@@ -49,6 +49,7 @@ import { audit } from "./routes/audit";
 import { uploads } from "./routes/uploads";
 import { admin } from "./routes/admin";
 import { disputes } from "./routes/disputes";
+import { settlements } from "./routes/settlements";
 import { tenantClosings, brandClosings } from "./routes/closings";
 import { onCronTrigger } from "./cron";
 
@@ -71,6 +72,7 @@ export type Bindings = {
   R2_SECRET_ACCESS_KEY?: string;
   R2_BUCKET_NAME?: string;
   R2_PUBLIC_BASE?: string;
+  CRON_SECRET?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -126,6 +128,7 @@ app.route("/v1/audit", audit);
 app.route("/v1/uploads", uploads);
 app.route("/v1/admin", admin);
 app.route("/v1/disputes", disputes);
+app.route("/v1", settlements);
 app.route("/v1/tenants", tenantClosings);
 app.route("/v1/brands", brandClosings);
 
