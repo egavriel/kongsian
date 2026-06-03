@@ -48,6 +48,7 @@ import { movements } from "./routes/movements";
 import { audit } from "./routes/audit";
 import { uploads } from "./routes/uploads";
 import { admin } from "./routes/admin";
+import { disputes } from "./routes/disputes";
 import { tenantClosings, brandClosings } from "./routes/closings";
 import { onCronTrigger } from "./cron";
 
@@ -124,6 +125,7 @@ app.route("/v1/movements", movements);
 app.route("/v1/audit", audit);
 app.route("/v1/uploads", uploads);
 app.route("/v1/admin", admin);
+app.route("/v1/disputes", disputes);
 app.route("/v1/tenants", tenantClosings);
 app.route("/v1/brands", brandClosings);
 
