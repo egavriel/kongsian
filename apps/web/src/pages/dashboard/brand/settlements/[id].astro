@@ -133,6 +133,9 @@ const title = `Settlement — ${APP_NAME}`;
             </div>
           ` : ''}
 
+          <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Dokumen</div>
+          <button class="btn btn-ghost" id="pdf-btn" type="button">📄 Download PDF Rekap</button>
+
           ${isDraft ? `
             <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Aksi</div>
             <button class="btn btn-primary" id="approve-btn" type="button">Approve Settlement</button>
@@ -158,6 +161,39 @@ const title = `Settlement — ${APP_NAME}`;
       }
 
       function bindActions() {
+        const pb = document.getElementById("pdf-btn");
+        if (pb) pb.addEventListener("click", async () => {
+          pb.disabled = true;
+          pb.textContent = "Membuat PDF…";
+          try {
+            const res = await fetch(API + `/v1/settlements/${id}/pdf`, { headers: authH });
+            if (!res.ok) {
+              const j = await res.json().catch(() => ({}));
+              showErr(j.error?.code || `Gagal (${res.status})`);
+              pb.disabled = false;
+              pb.textContent = "📄 Download PDF Rekap";
+              return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const cd = res.headers.get("content-disposition") || "";
+            const m = cd.match(/filename="([^"]+)"/);
+            a.download = m ? m[1] : `settlement-${id.slice(0, 8)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showOk("PDF diunduh ✓");
+            pb.disabled = false;
+            pb.textContent = "📄 Download PDF Rekap";
+          } catch (e) {
+            showErr("Gagal download: " + (e?.message || e));
+            pb.disabled = false;
+            pb.textContent = "📄 Download PDF Rekap";
+          }
+        });
         const ab = document.getElementById("approve-btn");
         if (ab) ab.addEventListener("click", async () => {
           if (!confirm("Approve settlement ini? Tenant akan di-notify.")) return;

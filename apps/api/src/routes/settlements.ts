@@ -25,6 +25,7 @@ import {
 import { tenantMemberships } from "@kongsian/db";
 import { authMiddleware, getUser, type AuthContext } from "../lib/auth";
 import { generateSettlements } from "../lib/settlement";
+import { renderSettlementPdf } from "../lib/pdf";
 import type { Bindings } from "../index";
 
 type Vars = { auth: AuthContext };
@@ -444,6 +445,114 @@ router.post("/admin/settlements/generate", async (c) => {
   const result = await generateSettlements(c.env, body.data);
 
   return c.json({ ok: true, data: result });
+});
+
+// ---------------------------------------------------------------------------
+// GET /v1/settlements/:id/pdf  — render + cache + serve settlement PDF
+// ---------------------------------------------------------------------------
+router.get("/settlements/:id/pdf", async (c) => {
+  const id = c.req.param("id");
+  const { userId } = c.get("auth");
+  const user = await getUser(c);
+  if (!user) return c.json({ ok: false, error: { code: "USER_NOT_FOUND" } }, 404);
+
+  const guard = await loadAccessibleSettlement(c.env, userId, user.globalRole, id);
+  if (!guard.ok) return c.json({ ok: false, error: { code: guard.error } }, guard.code);
+
+  const db = getDb(c.env.kongsian_db);
+  const [brand] = await db
+    .select()
+    .from(brands)
+    .where(eq(brands.id, guard.partnership.brandId))
+    .limit(1);
+  const [tenant] = await db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.id, guard.partnership.tenantId))
+    .limit(1);
+  if (!brand || !tenant) {
+    return c.json({ ok: false, error: { code: "PARTNERSHIP_PARTY_NOT_FOUND" } }, 404);
+  }
+
+  const bucket = c.env.KONGSIAN_BUCKET;
+  if (!bucket) {
+    return c.json(
+      { ok: false, error: { code: "R2_NOT_BOUND", message: "Storage belum dikonfigurasi." } },
+      503
+    );
+  }
+
+  // 1. Try cache (R2)
+  const cacheKey = `pdf/settlements/${id}.pdf`;
+  if (guard.settlement.pdfR2Key === cacheKey) {
+    const cached = await bucket.get(cacheKey);
+    if (cached) {
+      const buf = await cached.arrayBuffer();
+      return new Response(buf, {
+        status: 200,
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `inline; filename="settlement-${guard.settlement.weekStartDate}-${id.slice(0, 8)}.pdf"`,
+          "cache-control": "private, max-age=86400",
+          "x-pdf-source": "cache",
+        },
+      });
+    }
+  }
+
+  // 2. Fetch lines
+  const lines = await db
+    .select({
+      line: settlementLines,
+      skuCode: skus.code,
+      skuName: skus.name,
+    })
+    .from(settlementLines)
+    .innerJoin(skus, eq(skus.id, settlementLines.skuId))
+    .where(eq(settlementLines.settlementId, id));
+
+  // 3. Render
+  const { bytes, filename } = await renderSettlementPdf({
+    settlement: guard.settlement,
+    lines,
+    brandName: brand.name,
+    tenantName: tenant.name,
+    brandBps: guard.partnership.revenueSplitBrandBps,
+    tenantBps: guard.partnership.revenueSplitTenantBps,
+  });
+
+  // 4. Store in R2 + write pdfR2Key
+  await bucket.put(cacheKey, bytes, {
+    httpMetadata: { contentType: "application/pdf" },
+  });
+  await db
+    .update(settlements)
+    .set({ pdfR2Key: cacheKey })
+    .where(eq(settlements.id, id));
+
+  // 5. Audit + return
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId,
+    action: "SETTLEMENT_PDF_RENDERED",
+    entityType: "settlement",
+    entityId: id,
+    beforeJson: null,
+    afterJson: JSON.stringify({ r2Key: cacheKey, size: bytes.byteLength }),
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: nowSec(),
+  });
+
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      "content-type": "application/pdf",
+      "content-disposition": `inline; filename="${filename}"`,
+      "cache-control": "private, max-age=86400",
+      "x-pdf-source": "fresh",
+    },
+  });
 });
 
 export { router as settlements };
