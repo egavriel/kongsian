@@ -6,7 +6,8 @@
  *  - GET  /v1/partnerships?tenantId=... tenant dashboard
  *  - POST /v1/partnerships              create (brand-only, PENDING)
  *  - POST /v1/partnerships/invite       brand: send invite by phone, create tenant
- *                                        (if missing) + PENDING partnership + INVITE OTP
+ *                                        (if missing) + PENDING partnership + INVITE OTP,
+ *                                        deliver via WhatsApp (W5 pilot).
  *  - POST /v1/partnerships/:id/activate brand: flip to ACTIVE
  *  - POST /v1/partnerships/:id/suspend  brand: flip to SUSPENDED
  */
@@ -36,10 +37,36 @@ import {
   DEFAULT_SPLIT_BRAND_BPS,
   DEFAULT_SPLIT_TENANT_BPS,
 } from "@kongsian/shared/constants";
+import { sendWa } from "../lib/wa-gateway";
 import type { Bindings } from "../index";
 
 const router = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 router.use("*", authMiddleware);
+
+/**
+ * Build the WhatsApp message for a brand-inviting-cafe invite.
+ * Includes the deep link to the register page (so the cafe PIC just taps the
+ * link, their phone is pre-filled, and they only need to type the OTP + name).
+ */
+function buildInviteMessage(args: {
+  brandName: string;
+  cafeName: string;
+  appUrl: string;
+  phone: string;
+  code: string;
+  ttlSeconds: number;
+}): string {
+  const ttlMin = Math.round(args.ttlSeconds / 60);
+  const link = `${args.appUrl.replace(/\/+$/, "")}/register?phone=${encodeURIComponent(args.phone)}&role=TENANT`;
+  return (
+    `*[${args.brandName}] — Undangan Partner Kongsian*\n\n` +
+    `Halo! Kamu diundang untuk menjadi PIC *${args.cafeName}* di Kongsian.\n\n` +
+    `Tap link ini untuk daftar (nomor kamu sudah terisi):\n${link}\n\n` +
+    `Kode OTP kamu:\n*${args.code}*\n\n` +
+    `Berlaku ${ttlMin} menit. Setelah daftar, kamu bisa langsung catat titipan & closing harian.\n\n` +
+    `Bukan kamu? Abaikan pesan ini.`
+  );
+}
 
 const CreateSchema = z
   .object({
@@ -402,10 +429,38 @@ router.post("/invite", async (c) => {
     expiresAt: now + ttl,
     attempts: 0,
     purpose: "INVITE",
+    waSent: 0, // updated to 1 below on successful delivery
     createdAt: now,
   });
 
-  // 4) Audit.
+  // 4) Send the invite via WhatsApp (synchronous, same pattern as auth.ts
+  //    /v1/auth/otp/request). In stub mode (no WA configured) we just log
+  //    and fall through. In real mode we deliver the deep link + code.
+  const waConfigured = Boolean(c.env.WA_PROVIDER_URL);
+  let waDelivered = false;
+  if (waConfigured) {
+    const message = buildInviteMessage({
+      brandName: brand.name,
+      cafeName,
+      appUrl: c.env.APP_URL,
+      phone,
+      code,
+      ttlSeconds: ttl,
+    });
+    const result = await sendWa(c.env, phone, message, { timeoutMs: 6000 });
+    waDelivered = result.sent;
+    if (waDelivered) {
+      await db.update(otps).set({ waSent: 1 }).where(eq(otps.id, otpId));
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[partnerships.invite] WA send failed for ${phone} (brand=${brandId}, cafe=${cafeName}): ${result.reason}. ` +
+          `Falling back to devCode in response so the brand owner can communicate it manually.`
+      );
+    }
+  }
+
+  // 5) Audit.
   await db.insert(auditLog).values({
     id: crypto.randomUUID(),
     userId,
@@ -419,6 +474,7 @@ router.post("/invite", async (c) => {
       status: "PENDING",
       invitedPhone: phone,
       isNewTenant,
+      inviteDelivered: waDelivered,
     }),
     ip: c.req.header("cf-connecting-ip") ?? null,
     userAgent: c.req.header("user-agent") ?? null,
@@ -436,8 +492,11 @@ router.post("/invite", async (c) => {
       invite: {
         phone,
         expiresAt: now + ttl,
-        // dev only — never include in production
-        ...(c.env.ENV === "development" ? { devCode: code } : {}),
+        inviteDelivered: waDelivered,
+        // devCode only returned when WA delivery is unconfirmed (stub mode
+        // OR real WA failure). In successful real-WA delivery, devCode is
+        // NEVER returned — the code is only in the WA message.
+        ...(waDelivered ? {} : { devCode: code }),
       },
     },
   });

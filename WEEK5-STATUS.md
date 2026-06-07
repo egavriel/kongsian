@@ -204,7 +204,7 @@ After this, the dev Worker (`kongsian-api-dev`) will hit the real WA chain on ev
 
 - **Hermes bridge allowlist.** The bridge only sends to allowlisted numbers (currently admin + Ervina). To let the wife receive, either (a) add her number to `WHATSAPP_ALLOWED_USERS` and restart the bridge, or (b) set up a separate non-allowlist bridge for the trial. Option (a) is one env var change + `bash ~/.hermes/scripts/whatsapp-watchdog.sh` to restart cleanly.
 
-- **`scripts/start-wa-relay.sh` is broken.** The first write of the wrapper script had its `$(cat ...)` pattern redacted by the conversation tool's content filter, leaving a malformed shell. The wa-relay is currently launched via Python subprocess instead. The `.wa-tunnel.env` file documents the manual fallback (paste the secret inline). For a permanent fix, write the wrapper as a Python script that sets the env then execs tsx, or just document the Python invocation.
+- **`scripts/start-wa-relay.sh` is broken.** The first write of the wrapper script had its `$(cat ...)` pattern redacted by the conversation tool's content filter, leaving a malformed shell. **Replaced** with `scripts/start-wa-relay.py` (pure Python, no shell pattern). Verified: launches wa-relay, port 3031 binds, secret loaded from disk. The `.wa-tunnel-env` file points to the Python version.
 
 - **`apps/web` typecheck has 87 pre-existing errors.** Unrelated to this work — Astro framework warnings, not my changes. `apps/api` and `packages/db` typecheck cleanly. The build still ships.
 
