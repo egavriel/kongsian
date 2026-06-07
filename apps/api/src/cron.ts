@@ -94,10 +94,12 @@ async function dispatchWaQueue(env: Bindings): Promise<{ notif: number; otp: num
     }
   }
 
-  // 2. OTPs (re-send any wa_sent=0 from the last 10 minutes — request handler
-  // inserts plaintext in dev path, but D1 only stores hash. We can't recover
-  // the plaintext, so we just log how many are pending; the real fix is to
-  // have the request handler write the plaintext to a `pending_codes` table.)
+  // 2. OTPs — Week-5: request handler now sends synchronously, so any row
+  // still wa_sent=0 here is either (a) a real WA failure that we should
+  // surface, or (b) a request that hit stub mode (no WA configured). We
+  // can't recover the plaintext (D1 only stores the hash), so the recovery
+  // path is the user re-requesting a new code. We just log a count so a
+  // future alert can detect a wave of failures.
   const otpCutoff = now - 600;
   const pendingOtps = await db
     .select({ id: otps.id, phoneE164: otps.phoneE164, purpose: otps.purpose })
@@ -108,7 +110,7 @@ async function dispatchWaQueue(env: Bindings): Promise<{ notif: number; otp: num
   if (pendingOtps.length > 0) {
     // eslint-disable-next-line no-console
     console.log(
-      `[WA-CRON] ${pendingOtps.length} OTP(s) still wa_sent=0 (plaintext in D1 not available; relying on in-request direct send):`,
+      `[WA-CRON] ${pendingOtps.length} OTP(s) wa_sent=0 in last 10min (no plaintext in D1; user must re-request):`,
       pendingOtps.map((o) => `${o.phoneE164}/${o.purpose}`)
     );
   }

@@ -2,6 +2,12 @@
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../lib/api";
 const title = `Daftar — ${APP_NAME}`;
+// ?phone=628xxx deep-link pre-fill (from WA invites / shared links).
+// ?role=BRAND|TENANT pre-selects the role card (e.g. for a brand inviting
+// a cafe PIC, the link can be /register?phone=...&role=TENANT).
+const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
+const roleParam = (Astro.url.searchParams.get("role") ?? "").trim().toUpperCase();
+const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam : "";
 ---
 <!doctype html>
 <html lang="id">
@@ -139,10 +145,12 @@ const title = `Daftar — ${APP_NAME}`;
               type="tel"
               inputmode="tel"
               autocomplete="tel"
-              placeholder="+628****7890"
+              placeholder="+62 812 1234 5678"
               required
               pattern="^\+[1-9]\d{7,14}$"
+              data-prefill={phoneParam}
             />
+            <span class="small muted">Pakai awalan + (contoh: +62812xxxxx).</span>
           </label>
           <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
           <p class="small" style="margin-top:16px">
@@ -201,7 +209,7 @@ const title = `Daftar — ${APP_NAME}`;
       </div>
     </div>
 
-    <script define:vars={{ API_BASE_URL }}>
+    <script define:vars={{ API_BASE_URL, prefillRole }}>
       const API = API_BASE_URL.replace(/\/$/, "");
       const $ = (s) => document.querySelector(s);
       const err = $("#err"), info = $("#info");
@@ -219,7 +227,39 @@ const title = `Daftar — ${APP_NAME}`;
       });
 
       let lastPhone = "";
-      let chosenRole = "";
+      let chosenRole = prefillRole || ""; // may be pre-selected from ?role=
+      let isSending = false;
+
+      // ---- Phone normalization ----
+      const phoneInput = $("#phone");
+      const phonePrefill = (phoneInput.dataset.prefill || "").trim();
+      if (phonePrefill) {
+        phoneInput.value = normalizePhone(phonePrefill);
+      }
+      phoneInput.addEventListener("blur", () => {
+        const norm = normalizePhone(phoneInput.value);
+        if (norm && norm !== phoneInput.value) phoneInput.value = norm;
+      });
+
+      function normalizePhone(raw) {
+        const digits = String(raw).replace(/[^\d]/g, "");
+        if (!digits) return "";
+        let core = digits;
+        if (core.startsWith("0")) core = core.slice(1);
+        if (/^8\d{6,12}$/.test(core)) return "+62" + core;
+        if (/^62\d{8,13}$/.test(core)) return "+" + core;
+        if (/^[1-9]\d{7,14}$/.test(core)) return "+" + core;
+        return "";
+      }
+
+      // Pre-select the role card visually if ?role= was provided.
+      if (chosenRole) {
+        const card = document.querySelector(`.role-card[data-role="${chosenRole}"]`);
+        if (card) {
+          card.classList.add("selected");
+          $("#role").value = chosenRole;
+        }
+      }
 
       // Role card selection
       document.querySelectorAll(".role-card").forEach((card) => {
@@ -228,10 +268,7 @@ const title = `Daftar — ${APP_NAME}`;
           card.classList.add("selected");
           chosenRole = card.getAttribute("data-role");
           $("#role").value = chosenRole;
-          // Re-evaluate verify button
-          const code = $("#code").value.trim();
-          const name = $("#name").value.trim();
-          $("#verify-btn").disabled = !(chosenRole && /^\d{6}$/.test(code) && name.length >= 2);
+          recheckVerify();
         });
       });
 
@@ -247,12 +284,10 @@ const title = `Daftar — ${APP_NAME}`;
         el && el.addEventListener("input", recheckVerify);
       });
 
-      $("#otp-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        hideMsg();
-        const phone = $("#phone").value.trim();
-        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
-        const btn = $("#send-btn"); btn.disabled = true; btn.textContent = "Mengirim…";
+      async function sendOtp(phone, btn) {
+        if (isSending) return false;
+        isSending = true;
+        if (btn) { btn.disabled = true; btn.textContent = "Mengirim…"; }
         try {
           const res = await fetch(`${API}/v1/auth/otp/request`, {
             method: "POST",
@@ -264,7 +299,7 @@ const title = `Daftar — ${APP_NAME}`;
             const code = json?.error?.code;
             if (code === "OTP_RATE_LIMITED") showErr("Kebanyakan percobaan. Coba lagi ~1 jam.");
             else showErr("Gagal kirim OTP. Coba lagi.");
-            return;
+            return false;
           }
           lastPhone = phone;
           try { localStorage.setItem("kongsian_register_phone", phone); } catch {}
@@ -280,11 +315,23 @@ const title = `Daftar — ${APP_NAME}`;
             showInfo("OTP dikirim. Cek WhatsApp kamu.");
           }
           recheckVerify();
+          return true;
         } catch (e) {
           showErr("Tidak bisa konek ke server. Coba lagi.");
+          return false;
         } finally {
-          btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp";
+          isSending = false;
+          if (btn) { btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp"; }
         }
+      }
+
+      $("#otp-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideMsg();
+        const phone = normalizePhone($("#phone").value.trim());
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
+        $("#phone").value = phone;
+        await sendOtp(phone, $("#send-btn"));
       });
 
       $("#verify-form").addEventListener("submit", async (e) => {
@@ -348,14 +395,17 @@ const title = `Daftar — ${APP_NAME}`;
         }
       });
 
-      $("#resend").addEventListener("click", () => {
-        $("#otp-form").style.display = "block";
-        $("#step2").classList.remove("show");
-        $("#verify-form").reset();
-        chosenRole = "";
-        document.querySelectorAll(".role-card").forEach((c) => c.classList.remove("selected"));
-        $("#role").value = "";
-        $("#verify-btn").disabled = true;
+      // Resend: actually re-call the OTP endpoint, then drop the user back
+      // into step 2 with the same phone. (Was a UI-only reset before — bug.)
+      $("#resend").addEventListener("click", async () => {
+        hideMsg();
+        const phone = lastPhone || normalizePhone($("#phone").value.trim());
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+          showErr("Nomor tidak valid. Balik ke step 1 dan masukin lagi.");
+          return;
+        }
+        const ok = await sendOtp(phone, null);
+        if (ok) showInfo("OTP baru dikirim. Cek WhatsApp kamu.");
       });
     </script>
   </body>

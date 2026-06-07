@@ -41,3 +41,10 @@ drizzle/meta/_journal.json.bak
 # Wrangler
 .dev.vars
 .mf/
+
+# W5 pilot runtime (wa-relay secret, tunnel logs, tunnel config).
+# .wa-tunnel.env is committed — it documents the deploy-time config —
+# but the actual secret and live logs are not.
+.wa-relay-secret
+.wa-relay.log
+.cloudflared.log

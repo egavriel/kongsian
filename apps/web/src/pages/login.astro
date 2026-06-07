@@ -4,6 +4,10 @@ import { API_BASE_URL } from "../lib/api";
 const title = `Masuk — ${APP_NAME}`;
 // ?registered=1 banner shown when user just registered
 const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
+// ?phone=628xxx deep-link pre-fill (from WA invites / shared links).
+// We accept digits-only, with or without leading +. Stored on the input
+// via data-attribute so the inline script can pick it up.
+const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
 ---
 <!doctype html>
 <html lang="id">
@@ -124,10 +128,12 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
               type="tel"
               inputmode="tel"
               autocomplete="tel"
-              placeholder="+628****7890"
+              placeholder="+62 812 1234 5678"
               required
               pattern="^\+[1-9]\d{7,14}$"
+              data-prefill={phoneParam}
             />
+            <span class="small muted" id="phone-hint">Pakai awalan + (contoh: +62812xxxxx).</span>
           </label>
           <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
           <p class="small" style="margin-top:16px">
@@ -182,13 +188,41 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
       });
 
       let lastPhone = "";
+      let isSending = false;
 
-      $("#otp-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        hideMsg();
-        const phone = $("#phone").value.trim();
-        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
-        const btn = $("#send-btn"); btn.disabled = true; btn.textContent = "Mengirim…";
+      // ---- Phone normalization ----
+      // Accept digits-only ("628xxx", "812xxx", "08xxx"), strip non-digits,
+      // and if it looks like an Indonesian local (starts with 0 or 8 after
+      // stripping) prepend +62 so the user doesn't have to type the country
+      // code. The user can always backspace and type their own.
+      const phoneInput = $("#phone");
+      const prefill = (phoneInput.dataset.prefill || "").trim();
+      if (prefill) {
+        phoneInput.value = normalizePhone(prefill);
+      }
+      phoneInput.addEventListener("blur", () => {
+        const norm = normalizePhone(phoneInput.value);
+        if (norm && norm !== phoneInput.value) phoneInput.value = norm;
+      });
+
+      function normalizePhone(raw) {
+        const digits = String(raw).replace(/[^\d]/g, "");
+        if (!digits) return "";
+        // Strip leading 0 once (Indonesian local trunk), then prefix +62
+        // only if the user clearly meant ID. If they typed an explicit
+        // country code (starts with 1-9 and is long enough), keep it.
+        let core = digits;
+        if (core.startsWith("0")) core = core.slice(1);
+        if (/^8\d{6,12}$/.test(core)) return "+62" + core;          // 812xxx (ID mobile)
+        if (/^62\d{8,13}$/.test(core)) return "+" + core;           // already 62xxx
+        if (/^[1-9]\d{7,14}$/.test(core)) return "+" + core;        // generic E.164-ish
+        return ""; // let the regex validation surface the error
+      }
+
+      async function sendOtp(phone, btn) {
+        if (isSending) return false;
+        isSending = true;
+        if (btn) { btn.disabled = true; btn.textContent = "Mengirim…"; }
         try {
           const res = await fetch(`${API}/v1/auth/otp/request`, {
             method: "POST",
@@ -203,7 +237,7 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
             } else {
               showErr("Gagal kirim OTP. Coba lagi.");
             }
-            return;
+            return false;
           }
           lastPhone = phone;
           $("#otp-phone").textContent = phone;
@@ -217,11 +251,23 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
           } else {
             showInfo("OTP dikirim. Cek WhatsApp kamu.");
           }
+          return true;
         } catch (e) {
           showErr("Tidak bisa konek ke server. Coba lagi.");
+          return false;
         } finally {
-          btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp";
+          isSending = false;
+          if (btn) { btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp"; }
         }
+      }
+
+      $("#otp-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideMsg();
+        const phone = normalizePhone($("#phone").value.trim());
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
+        $("#phone").value = phone;
+        await sendOtp(phone, $("#send-btn"));
       });
 
       $("#verify-form").addEventListener("submit", async (e) => {
@@ -278,10 +324,17 @@ const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
         }
       });
 
-      $("#resend").addEventListener("click", () => {
-        $("#otp-form").style.display = "block";
-        $("#step2").classList.remove("show");
-        $("#verify-form").reset();
+      // Resend: actually re-call the OTP endpoint, then drop the user back
+      // into step 2 with the same phone.
+      $("#resend").addEventListener("click", async () => {
+        hideMsg();
+        const phone = lastPhone || normalizePhone($("#phone").value.trim());
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+          showErr("Nomor tidak valid. Balik ke step 1 dan masukin lagi.");
+          return;
+        }
+        const ok = await sendOtp(phone, null);
+        if (ok) showInfo("OTP baru dikirim. Cek WhatsApp kamu.");
       });
     </script>
   </body>

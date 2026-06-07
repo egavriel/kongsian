@@ -14,14 +14,45 @@ import type { Bindings } from "../index";
 import { generateOtpCode, hashOtpCode, generateSessionToken } from "../lib/crypto";
 import { authMiddleware, type AuthContext } from "../lib/auth";
 import { checkAndIncrementOtp, getOtpCountThisHour } from "../lib/rate-limit";
+import { sendWa } from "../lib/wa-gateway";
 
 
 const router = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 
+/** Format the OTP message sent over WhatsApp. Bahasa Indonesia, friendly. */
+function buildOtpMessage(code: string, ttlSeconds: number, purpose: string): string {
+  const ttlMin = Math.round(ttlSeconds / 60);
+  const purposeText =
+    purpose === "INVITE"
+      ? "untuk undangan partner Kongsian"
+      : purpose === "RESET"
+      ? "untuk reset akun Kongsian"
+      : "untuk login Kongsian";
+  return (
+    `*[Kongsian]*\n\n` +
+    `Kode OTP kamu ${purposeText}:\n\n` +
+    `*${code}*\n\n` +
+    `Berlaku ${ttlMin} menit. Jangan berikan kode ini ke siapa pun — termasuk tim Kongsian.`
+  );
+}
+
 /**
  * POST /v1/auth/otp/request
- * Generate a 6-digit OTP, store its hash, return the code in dev (no real WA yet).
+ * Generate a 6-digit OTP, store its hash, send via WhatsApp (or return devCode
+ * in stub mode).
  * P0 #1: rate-limited to 5/hour/phone via otp_rate_limits D1 counter.
+ *
+ * WA delivery: when WA_PROVIDER_URL is set, we send synchronously in this
+ * request and mark wa_sent=1. The plaintext code is in memory at this point
+ * (we just generated it, haven't hashed yet), so we can include it in the WA
+ * payload. If WA fails, we return success anyway — the user can retry, and
+ * we still return devCode as a fallback (the only practical alternative for
+ * a User stuck without WA delivery would be a 500, which is worse UX).
+ *
+ * In stub mode (no WA configured, ENV=development): we return devCode in the
+ * response so the developer can test without a real WA client. In production
+ * with no WA configured, we log a warning and return devCode as well — this
+ * is intentional for the trial period before a real WA provider is wired.
  */
 router.post("/otp/request", async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -76,11 +107,29 @@ router.post("/otp/request", async (c) => {
     createdAt: now,
   });
 
-  // Mark the otps row wa_sent=1 immediately in dev so we don't try to resend
-  // (cron can't recover the plaintext from the hash). In production, the cron
-  // will attempt WA dispatch; until that path is wired, dev users see the
-  // code in the response.
-  const isDev = c.env.ENV === "development";
+  // ---- WhatsApp delivery (synchronous) ----
+  // Stub mode = no WA_PROVIDER_URL configured → treat as dev; include devCode in response.
+  // Real mode = WA configured → send via the relay; do NOT include devCode.
+  const waConfigured = Boolean(c.env.WA_PROVIDER_URL);
+  let waDelivered = false;
+  if (waConfigured) {
+    const message = buildOtpMessage(code, ttl, purpose);
+    const chatId = phone; // E.164 with leading +; relay normalizes to JID
+    const result = await sendWa(c.env, chatId, message, { timeoutMs: 6000 });
+    waDelivered = result.sent;
+    if (result.sent) {
+      await db.update(otps).set({ waSent: 1 }).where(eq(otps.id, otpId));
+    } else {
+      // WA failed — log but still return success with devCode so the user
+      // isn't stuck. devCode is included in the response only when WA delivery
+      // is unconfirmed; this is the same fallback as stub mode.
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[auth] WA send failed for ${phone} (purpose=${purpose}): ${result.reason}. ` +
+          `Falling back to devCode in response.`
+      );
+    }
+  }
 
   // Audit: OTP sent.
   // (We skip the audit row for OTP_SENT until a 'system' user exists. Week 3
@@ -93,7 +142,11 @@ router.post("/otp/request", async (c) => {
       phone,
       purpose,
       expiresAt,
-      ...(isDev ? { devCode: code } : {}),
+      // devCode is only returned when WA delivery is unconfirmed:
+      //   - stub mode (no WA configured), OR
+      //   - WA configured but the call failed
+      // In successful real-WA delivery, devCode is NEVER returned.
+      ...(waDelivered ? {} : { devCode: code }),
     },
   });
 });

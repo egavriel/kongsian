@@ -2,9 +2,9 @@
  * Kongsian DB seed — inserts demo data using Drizzle into the local D1 SQLite file.
  *
  * What it creates:
- *   - 1 brand: "Hanniel" (owner phone +6281234567890)
+ *   - 1 brand: "Hanniel" (owner phone configurable via KONGSIAN_SEED_BRAND_OWNER_PHONE)
  *   - 3 SKUs under Hanniel (A, B, C — Overnight Oats variants, IDR 42.000, masa simpan 3 hari)
- *   - 2 tenants: Cafe Padel, Cafe Kedua
+ *   - 2 tenants: Cafe Padel (KONGSIAN_SEED_TENANT_PADEL_PHONE), Cafe Kedua
  *   - 1 ACTIVE partnership: Hanniel <-> Cafe Padel, 70/30 split (7000/3000 bps)
  *   - PartnershipSku entries linking all 3 SKUs to that partnership
  *   - 3 days of sample stock_movements:
@@ -13,6 +13,17 @@
  *       Day 3: TITIP  3×A, 3×B, 3×C   ;   TERJUAL  1×A
  *     All TITIP/TARIK submitted_by_user_id = Hanniel owner;
  *     All TERJUAL submitted_by_user_id = Cafe Padel PIC.
+ *
+ * Phone numbers:
+ *   Default placeholders are clearly-fake E.164 numbers (+6280000000001, etc.)
+ *   that pass the E.164 regex so the seed is always runnable. For the real
+ *   pilot, override via env vars at seed time, e.g.:
+ *     KONGSIAN_SEED_BRAND_OWNER_PHONE=+628123456789 \
+ *     KONGSIAN_SEED_TENANT_PADEL_PHONE=+628123456790 \
+ *     KONGSIAN_SEED_TENANT_KEDUA_PHONE=+628123456791 \
+ *     pnpm --filter @kongsian/db seed
+ *   Env values are validated against /^\+[1-9]\d{7,14}$/; bad values throw
+ *   with a clear message rather than silently writing garbage to D1.
  *
  * Idempotency:
  *   - All inserts use .onConflictDoNothing() against the unique indexes
@@ -63,9 +74,26 @@ import {
 import * as schemaBundle from "./src/schema";
 
 // ---------- Config ----------
+// Phone numbers default to clearly-marked E.164 placeholders. Override via
+// env vars at seed time for the real pilot (e.g. KONGSIAN_SEED_BRAND_OWNER_PHONE=+628xxxxxxxxxx).
+// All values are validated against the E.164 regex /^\+[1-9]\d{7,14}$/ at use.
+const E164_RE = /^\+[1-9]\d{7,14}$/;
+function reqEnv(name: string, fallback: string): string {
+  const v = process.env[name]?.trim();
+  if (v) {
+    if (!E164_RE.test(v)) {
+      throw new Error(`${name}="${v}" is not valid E.164 (expected /^\\+[1-9]\\d{7,14}$/)`);
+    }
+    return v;
+  }
+  if (!E164_RE.test(fallback)) {
+    throw new Error(`Default for ${name} ("${fallback}") is not valid E.164 — fix the seed file.`);
+  }
+  return fallback;
+}
 const BRAND_OWNER = {
-  phone: "+6281234567890",
-  name: "Hanniel Owner",
+  phone: reqEnv("KONGSIAN_SEED_BRAND_OWNER_PHONE", "+6280000000001"),
+  name: process.env.KONGSIAN_SEED_BRAND_OWNER_NAME?.trim() || "Hanniel Owner",
 };
 const BRAND = {
   name: "Hanniel",
@@ -87,8 +115,8 @@ const SKUS: Array<{
 ];
 
 const TENANTS: Array<{ name: string; slug: string; phone: string; address: string }> = [
-  { name: "Cafe Padel", slug: "cafe-padel", phone: "+6281234567891", address: "Batam Padel Club" },
-  { name: "Cafe Kedua", slug: "cafe-kedua", phone: "+6281234567892", address: "Batam Center"     },
+  { name: "Cafe Padel", slug: "cafe-padel", phone: reqEnv("KONGSIAN_SEED_TENANT_PADEL_PHONE", "+6280000000002"), address: "Batam Padel Club" },
+  { name: "Cafe Kedua", slug: "cafe-kedua", phone: reqEnv("KONGSIAN_SEED_TENANT_KEDUA_PHONE", "+6280000000003"), address: "Batam Center"     },
 ];
 
 const PARTNERSHIP = {
@@ -204,9 +232,9 @@ async function main() {
     picKedua: randomUUID(),
   };
   const userRows = [
-    { id: userIds.owner,    phone: BRAND_OWNER.phone,    name: BRAND_OWNER.name,    globalRole: "USER" as const },
-    { id: userIds.picPadel, phone: TENANTS[0].phone,    name: `PIC ${TENANTS[0].name}`, globalRole: "USER" as const },
-    { id: userIds.picKedua, phone: TENANTS[1].phone,    name: `PIC ${TENANTS[1].name}`, globalRole: "USER" as const },
+    { id: userIds.owner,    phoneE164: BRAND_OWNER.phone,    name: BRAND_OWNER.name,    globalRole: "USER" as const },
+    { id: userIds.picPadel, phoneE164: TENANTS[0].phone,    name: `PIC ${TENANTS[0].name}`, globalRole: "USER" as const },
+    { id: userIds.picKedua, phoneE164: TENANTS[1].phone,    name: `PIC ${TENANTS[1].name}`, globalRole: "USER" as const },
   ];
   for (const u of userRows) {
     const res = db.insert(users).values(u).onConflictDoNothing().run();

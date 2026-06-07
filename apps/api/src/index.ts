@@ -75,6 +75,12 @@ export type Bindings = {
   R2_BUCKET_NAME?: string;
   R2_PUBLIC_BASE?: string;
   CRON_SECRET?: string;
+  // Week-5 pilot: generic WA provider (decoupled from Meta Cloud API).
+  // The Worker POSTs to WA_PROVIDER_URL/send with a shared secret.
+  // A local Node relay (scripts/wa-relay.ts) bridges to the Hermes
+  // WhatsApp bridge (port 3000, already running).
+  WA_PROVIDER_URL?: string;
+  WA_PROVIDER_SECRET?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
