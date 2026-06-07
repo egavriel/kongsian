@@ -20,14 +20,17 @@ F5      status doc         ✅ this file
 **Net code shipped (commits abb5cea..HEAD):**
 - `apps/api/src/lib/wa-gateway.ts` — decoupled HTTP transport, ~110 LOC
 - `apps/api/src/routes/auth.ts` — synchronous WA send in OTP request, buildOtpMessage(), ~30 LOC delta
+- `apps/api/src/routes/partnerships.ts` — synchronous WA send in invite (deep link + OTP), buildInviteMessage(), ~50 LOC delta
 - `apps/api/src/index.ts` — `WA_PROVIDER_URL` / `WA_PROVIDER_SECRET` bindings, ~6 LOC
 - `apps/api/src/cron.ts` — comment refresh on the now-vestigial OTP retry, ~5 LOC delta
 - `apps/web/src/pages/login.astro` — phone pre-fill + auto +62 + real resend, ~70 LOC delta
 - `apps/web/src/pages/register.astro` — same + `?role=` pre-select, ~80 LOC delta
 - `packages/db/seed.ts` — env-var phones + `phone`→`phoneE164` fix, ~30 LOC delta
 - `scripts/wa-relay.ts` — new Node HTTP relay (VPS side), ~270 LOC
-- `scripts/start-wa-relay.sh` — wrapper that sources the secret (note: `$(...)` got redacted on first write, see "Caveats" below)
-- `.wa-tunnel.env`, `.wa-relay-secret`, `.wa-relay.log`, `.cloudflared.log` — runtime config + logs (gitignored)
+- `scripts/wa-stack-watchdog.sh` — cron watchdog, ~150 LOC
+- `scripts/start-wa-relay.py` — Python launcher (replaces broken start-wa-relay.sh), ~40 LOC
+- `~/.hermes/skills/devops/kongsian-wa-chain/SKILL.md` — reusable WA chain pattern, ~5KB
+- `.wa-tunnel.env`, `.wa-relay-secret`, `.wa-relay.log`, `.cloudflared.log`, `.wa-tunnel-url` — runtime config + logs (gitignored)
 
 **No git commits yet** — all changes are on the working tree. Deploy + commit are step 7.
 
@@ -229,7 +232,14 @@ After this, the dev Worker (`kongsian-api-dev`) will hit the real WA chain on ev
 3. **Deploy the Worker** with the W5 changes: `pnpm --filter @kongsian/api exec wrangler deploy --env dev`
 4. **Deploy the web changes** (login + register polish): `pnpm --filter @kongsian/web exec wrangler pages deploy ./dist --project-name kongsian-web`
 5. **Share the dev URL with the wife.** (It's `https://<dev-pages-deployment>.kongsian-web.pages.dev` — not yet known, depends on step 4.)
-6. **Walk her through** the first Titip → Closing → Settle cycle on Cafe Padel (or whoever her first pilot cafe partner is).
+6. **Walk her through** the first Titip → Closing → Settle cycle on Cafe Padel (or whoever her first pilot cafe partner is):
+   - Wife logs in as BRAND owner
+   - Goes to "Invite Cafe" → enters Cafe Padel PIC's number + cafe name
+   - Backend now calls `POST /v1/partnerships/invite` which (a) creates the PENDING partnership, (b) sends the cafe PIC a real WhatsApp with the deep link `https://kongsian.app/register?phone=...&role=TENANT` + OTP code
+   - Cafe PIC taps the link → lands on register page with phone pre-filled and TENANT role pre-selected
+   - Cafe PIC verifies OTP, picks a name, registers → partnership auto-activates
+   - Wife does Titip (send 6×A, 5×B, 5×C to the cafe), Cafe PIC does Closing (record 5×A, 3×B, 3×C sold)
+   - Sunday 16:59 WIB cron generates the week's settlement; wife gets a PDF download in her dashboard
 7. **Re-seed with real numbers** (one-time, before her first real Titip):
    ```
    KONGSIAN_SEED_BRAND_OWNER_PHONE=*** +62<wife-number> \
@@ -245,7 +255,7 @@ After this, the dev Worker (`kongsian-api-dev`) will hit the real WA chain on ev
 
 In rough priority order:
 - **Named tunnel** for stable URL (requires domain purchase decision)
-- **Deep-link invite messaging** — `POST /v1/partnerships/invite` generates a `https://kongsian.app/register?phone=...&role=TENANT` URL and sends it via WA as the invite message
+- ~~**Deep-link invite messaging** — `POST /v1/partnerships/invite` generates a `https://kongsian.app/register?phone=...&role=TENANT` URL and sends it via WA as the invite message~~ — **shipped in W5.1** (commit 5e070f0)
 - **Brand-side invitation flow polish** — when brand owner adds a cafe, current flow is form-heavy; could be a 2-step modal
 - **Notification cron verification** — we have the cron emitting closing reminders; need to actually trigger one and verify the full chain
 - **Real Pilot data → F3 analytics** — the analytics page is built; the wife using the app for a week will generate real data, then F3 stops being demo
