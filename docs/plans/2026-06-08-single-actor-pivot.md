@@ -1016,9 +1016,24 @@ Open `/dashboard/brand/settlements` — should show the new week with omzet + sp
 ## Out of scope (explicit YAGNI)
 
 - **Cafe invite flow / tenant user accounts.** Parked. Single-actor for now.
+- **Partnership setup wizard (Phase 2 — Erwin 2026-06-08 spec).** The user described the future on-boarding flow as: *after brand + SKU is registered, the add-partner function needs a partnership setup wizard that captures (a) which SKUs are active in this partnership, (b) per-SKU price override, (c) settlement split %, (d) settlement cadence (WEEKLY | MONTHLY), (e) cycle start day (e.g. Friday-to-next-Thursday).* **NOT building in this plan.** Deferred to Phase 2 (post-pivot validation). Spec captured here for the Phase 2 planner:
+  - **Schema additions needed** (Drizzle migration):
+    - `partnerships.settlement_cadence` text enum('WEEKLY','MONTHLY') default 'WEEKLY'
+    - `partnerships.cycle_start_day_of_week` integer 0-6 default 1 (Mon — current cron behavior) for WEEKLY
+    - `partnerships.cycle_start_day_of_month` integer 1-28 for MONTHLY
+  - **UI changes** (rebuild `dashboard/brand/partnerships.astro`):
+    - Invite form: add multi-step wizard (cafe → SKUs → pricing per SKU → split + cadence → review)
+    - Edit partnership page (split %, cadence, SKU list)
+    - Per-SKU price override input (writes to `partnership_skus.price_override_idr`)
+  - **Cron rewrite** (`apps/api/src/cron.ts`): currently hardcoded `59 16 * * 7` UTC (Sun 23:59 WIB). Needs to:
+    - Run daily (e.g. `5 0 * * *` UTC = 07:05 WIB), not weekly
+    - Query partnerships grouped by cadence, compute per-partnership cycle window
+    - For WEEKLY partnerships where `cycle_start_day_of_week = today.dayOfWeek - 1`, generate the just-completed cycle
+    - For MONTHLY partnerships where `cycle_start_day_of_month = today.date`, generate the just-completed month
+  - **Estimated effort**: 6-8 more tasks. Sequence after pivot validates.
 - **Dispute chat.** Parked.
 - **R2 photo upload on the Daily Ops form.** Each section can have it later, but skip for v1 — the titip/tarik rows are not the primary photo target (the closing photo is, and that's already in `closing_photos` table).
-- **Editing past closings.** The `isValidClosingDate` helper in closings.ts:74-79 already restricts to today + past 7 days. Out of scope to widen.
+- **Editing past closings.** The `isValidClosingDate` helper in closings.ts:74-79 already restricts to today + past 7 days (widened to 30 in T0). Out of scope to widen further.
 - **CSV export of the daily ops.** YAGNI — the settlement PDF export (W4 F1) covers reporting.
 - **Re-deriving settlements from stock_movements** (T4b). The T4a path is sufficient.
 - **Offline / PWA support.** YAGNI for trial.
