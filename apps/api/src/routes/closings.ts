@@ -70,12 +70,13 @@ async function assertPartnershipAccess(
   return { ok: false, code: 403, error: "FORBIDDEN" };
 }
 
-/** Allow today + past 7 days; reject future dates. */
+/** Allow today + past 30 days; reject future dates. Widened from 7 days for the
+ *  single-actor trial so Ervina can backfill a whole week at a time. */
 function isValidClosingDate(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
   const today = new Date().toISOString().slice(0, 10);
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  return date >= sevenDaysAgo && date <= today;
+  const pastWindow = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return date >= pastWindow && date <= today;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,7 +202,7 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings", async (c)
 
   const access = await assertPartnershipAccess(c.env, userId, partnershipId);
   if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
-  if (access.role !== "TENANT") return c.json({ ok: false, error: { code: "TENANT_ONLY" } }, 403);
+  if (access.role !== "TENANT" && access.role !== "BRAND") return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
 
   const body = await c.req.json().catch(() => ({}));
   const parsed = CreateClosingSchema.safeParse(body);
@@ -302,7 +303,7 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/terju
 
   const access = await assertPartnershipAccess(c.env, userId, partnershipId);
   if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
-  if (access.role !== "TENANT") return c.json({ ok: false, error: { code: "TENANT_ONLY" } }, 403);
+  if (access.role !== "TENANT" && access.role !== "BRAND") return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
 
   const body = await c.req.json().catch(() => ({}));
   const parsed = TerjualSchema.safeParse(body);
@@ -380,7 +381,7 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/sisa-
 
   const access = await assertPartnershipAccess(c.env, userId, partnershipId);
   if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
-  if (access.role !== "TENANT") return c.json({ ok: false, error: { code: "TENANT_ONLY" } }, 403);
+  if (access.role !== "TENANT" && access.role !== "BRAND") return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
 
   const body = await c.req.json().catch(() => ({}));
   const parsed = SisaFisikSchema.safeParse(body);
@@ -461,7 +462,7 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/photo
 
   const access = await assertPartnershipAccess(c.env, userId, partnershipId);
   if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
-  if (access.role !== "TENANT") return c.json({ ok: false, error: { code: "TENANT_ONLY" } }, 403);
+  if (access.role !== "TENANT" && access.role !== "BRAND") return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
 
   const body = await c.req.json().catch(() => ({}));
   const parsed = PhotoSchema.safeParse(body);
@@ -527,7 +528,7 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/submi
 
   const access = await assertPartnershipAccess(c.env, userId, partnershipId);
   if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
-  if (access.role !== "TENANT") return c.json({ ok: false, error: { code: "TENANT_ONLY" } }, 403);
+  if (access.role !== "TENANT" && access.role !== "BRAND") return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
 
   const db = getDb(c.env.kongsian_db);
 
@@ -547,7 +548,8 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/submi
   if (lines.length === 0)
     return c.json({ ok: false, error: { code: "NO_LINES", message: "At least one line is required." } }, 422);
 
-  if (photos.length === 0)
+  // TODO(trial): re-enable PHOTO_REQUIRED after real cafe partners onboard
+  if (false && photos.length === 0)
     return c.json({ ok: false, error: { code: "PHOTO_REQUIRED", message: "At least one photo is required." } }, 422);
 
   const now = Math.floor(Date.now() / 1000);
