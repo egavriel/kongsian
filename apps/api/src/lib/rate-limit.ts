@@ -39,6 +39,20 @@ export async function checkAndIncrementOtp(
   env: Bindings,
   phoneE164: string
 ): Promise<RateLimitResult> {
+  // Trial override: set OTP_RATE_LIMIT_DISABLED=1 (or any truthy value) as a
+  // Worker secret/env to skip rate limiting entirely. Used during pilot
+  // testing when the rate limit gets in the way of normal user flows.
+  // Production must never have this set.
+  if ((env as { OTP_RATE_LIMIT_DISABLED?: string }).OTP_RATE_LIMIT_DISABLED) {
+    return {
+      allowed: true,
+      count: 0,
+      limit: 0,
+      retryAfterSec: 0,
+      hourBucket: hourBucketUtc(),
+    };
+  }
+
   const db = getDb(env.kongsian_db);
   const now = Math.floor(Date.now() / 1000);
   const bucket = hourBucketUtc();
