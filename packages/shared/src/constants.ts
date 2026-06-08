@@ -49,7 +49,11 @@ export const BPS_DENOMINATOR = 10000;
 export const CORS_ALLOWLIST: string[] = [
   "https://kongsian.app",
   "https://www.kongsian.app",
-  // *.kongsian-web.pages.dev handled by regex in apps/api/src/index.ts
+  // Apex of the Pages project — what the user actually visits on
+  // https://kongsian-web.pages.dev. The deployment-specific subdomains
+  // (e.g. 9c3f65bf.kongsian-web.pages.dev) are matched by the regex
+  // in apps/api/src/index.ts.
+  "https://kongsian-web.pages.dev",
 ];
 
 /** OTP rate limit — max 5 requests per phone per rolling hour. P0 #1. */
