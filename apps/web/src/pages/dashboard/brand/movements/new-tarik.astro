@@ -1,0 +1,195 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../../../lib/api";
+const title = `Catat Tarik — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:14px; }
+      h1 { font-size:20px; margin:0; }
+      main { padding:20px; }
+      label { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; font-size:13px; }
+      .lbl { font-weight:600; }
+      select, input { background:#0b1220; border:1px solid #1e293b; color:#f1f5f9; padding:12px; border-radius:10px; font-size:16px; font-family:inherit; width:100%; min-height:48px; }
+      select:focus, input:focus { outline:none; border-color:#fbbf24; }
+      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:16px; min-height:48px; }
+      .btn-primary { background:#fbbf24; color:#0b1220; width:100%; }
+      .btn-primary:hover { background:#f59e0b; }
+      .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+      .sku-table { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:12px; margin-bottom:16px; }
+      .sk-row { display:grid; grid-template-columns:1fr 100px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b; }
+      .sk-row:last-child { border-bottom:none; }
+      .sk-label .code { color:#fbbf24; font-weight:700; margin-right:6px; }
+      .sk-label .name { color:#f1f5f9; }
+      .sk-label .meta { color:#94a3b8; font-size:12px; }
+      .sk-row input { padding:10px; text-align:center; font-size:16px; min-height:48px; }
+      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .section-title { font-size:13px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; margin:20px 0 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand/movements">← Movements</a>
+        <h1>Catat Tarik</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="ok" class="ok" style="display:none"></div>
+        <label>
+          <span class="lbl">Pilih partnership (cafe)</span>
+          <select id="partnership"></select>
+        </label>
+        <label>
+          <span class="lbl">Tanggal tarik</span>
+          <input id="date" type="date" required />
+        </label>
+        <div class="section-title">SKU yang ditarik (max = sisa sistem)</div>
+        <div id="sku-section" class="sku-table">
+          <div class="empty">Pilih partnership dulu.</div>
+        </div>
+        <button id="submit-btn" class="btn btn-primary" type="button" disabled>Simpan Tarik</button>
+      </main>
+    </div>
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+      async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const okEl = document.getElementById("ok");
+      const showErr = m => { errEl.textContent = m; errEl.style.display="block"; okEl.style.display="none"; };
+      const showOk = m => { okEl.textContent = m; okEl.style.display="block"; errEl.style.display="none"; };
+
+      const state = { brandId: null, partnerships: [], skus: [], sisaSistem: {}, partnershipId: null };
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
+
+      function attachQtyStrip() {
+        document.querySelectorAll("#sku-section input[data-sku]").forEach(el => {
+          el.addEventListener("input", () => {
+            const cleaned = el.value.replace(/\D/g, "").slice(0, 4);
+            if (el.value !== cleaned) el.value = cleaned;
+          });
+        });
+      }
+
+      async function loadPartnerships() {
+        const me = await jget("/v1/brands/me");
+        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
+        state.brandId = me.data.brandId;
+        const b = await jget(`/v1/brands/${state.brandId}`);
+        if (!b.ok) { showErr("Gagal muat partnerships: " + (b.error?.code || "?")); return; }
+        const active = (b.data.partnerships || []).filter(p => p.status === "ACTIVE");
+        if (active.length === 0) {
+          document.getElementById("partnership").innerHTML = `<option value="">— Belum ada cafe aktif —</option>`;
+          return;
+        }
+        document.getElementById("partnership").innerHTML = `<option value="">— Pilih cafe —</option>` +
+          active.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
+        state.partnerships = active;
+      }
+
+      async function renderSkus() {
+        const sec = document.getElementById("sku-section");
+        if (!state.partnershipId) { sec.innerHTML = `<div class="empty">Pilih partnership dulu.</div>`; document.getElementById("submit-btn").disabled = true; return; }
+        if (state.skus.length === 0) { sec.innerHTML = `<div class="empty">Belum ada SKU di brand ini.</div>`; document.getElementById("submit-btn").disabled = true; return; }
+        const upTo = document.getElementById("date").value;
+        const sisaR = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
+        state.sisaSistem = {};
+        if (sisaR.ok) {
+          for (const row of sisaR.data || []) state.sisaSistem[row.skuId] = row.qty;
+        }
+        sec.innerHTML = state.skus.map(s => {
+          const sisa = state.sisaSistem[s.id] ?? 0;
+          return `
+            <div class="sk-row">
+              <div class="sk-label">
+                <div><span class="code">${s.code}</span><span class="name">${s.name}</span></div>
+                <div class="meta">${fmtRp(s.priceIdr)} · Sisa: <strong>${sisa}</strong></div>
+              </div>
+              <input type="number" min="0" max="${sisa}" step="1" data-sku="${s.id}" placeholder="0" inputmode="numeric" ${sisa<=0?'disabled':''} />
+            </div>
+          `;
+        }).join("");
+        document.getElementById("submit-btn").disabled = false;
+        attachQtyStrip();
+      }
+
+      document.getElementById("partnership").addEventListener("change", async (e) => {
+        const pid = e.target.value;
+        state.partnershipId = pid || null;
+        if (!pid) { state.skus = []; renderSkus(); return; }
+        const r = await jget(`/v1/skus?brandId=${state.brandId}`);
+        state.skus = r.ok ? (r.data || []) : [];
+        renderSkus();
+      });
+      document.getElementById("date").addEventListener("change", () => { if (state.partnershipId) renderSkus(); });
+
+      document.getElementById("submit-btn").addEventListener("click", async () => {
+        errEl.style.display = "none"; okEl.style.display = "none";
+        if (!state.partnershipId) { showErr("Pilih partnership dulu."); return; }
+        const date = document.getElementById("date").value;
+        if (!date) { showErr("Tanggal wajib."); return; }
+        const rows = document.querySelectorAll("#sku-section input[data-sku]");
+        const items = [];
+        for (const inp of rows) {
+          const v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+          const sisa = state.sisaSistem[inp.dataset.sku] ?? 0;
+          if (v > 0) {
+            if (v > sisa) { showErr(`Qty untuk SKU melebihi sisa sistem (${sisa}).`); return; }
+            items.push({ skuId: inp.dataset.sku, kind: "TARIK", qty: v });
+          }
+        }
+        if (items.length === 0) { showErr("Isi minimal 1 SKU dengan qty > 0."); return; }
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true; btn.textContent = "Menyimpan…";
+        try {
+          // v2: idempotency in BODY (batchIdempotencyKey), not header
+          const batchIdempotencyKey = `tarik-${state.partnershipId}-${date}`;
+          const r = await fetch(API + "/v1/movements/batch", {
+            method: "POST",
+            headers: { ...authH },
+            body: JSON.stringify({
+              partnershipId: state.partnershipId,
+              movementDate: date,
+              items,
+              batchIdempotencyKey,
+            }),
+          });
+          const json = await r.json().catch(() => ({}));
+          if (r.ok && json.ok) {
+            showOk(`Berhasil: ${items.length} SKU ditarik.`);
+            setTimeout(() => { window.location.href = "/dashboard/brand/movements"; }, 800);
+            return;
+          }
+          showErr("Gagal: " + (json?.error?.code || `HTTP ${r.status}`));
+        } catch (e) {
+          showErr("Tidak bisa konek ke server.");
+        } finally {
+          btn.disabled = false; btn.textContent = "Simpan Tarik";
+        }
+      });
+
+      loadPartnerships();
+    </script>
+  </body>
+</html>
