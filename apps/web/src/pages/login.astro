@@ -150,7 +150,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
             <label>
               <span class="lbl">6-digit kode</span>
               <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
-                     pattern="\d{6}" maxlength="6" placeholder="123456" required />
+                     maxlength="6" placeholder="123456" required />
             </label>
             <button class="btn btn-primary" type="submit" id="verify-btn">Verifikasi</button>
             <button class="btn btn-ghost" type="button" id="resend" style="margin-top:8px">Kirim ulang</button>
@@ -272,13 +272,20 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
 
       // Strip non-digits from the OTP field on every input — the WhatsApp
       // message wraps the code in `*asterisks*` for emphasis and tap-to-copy
-      // sometimes grabs the asterisks too. Cleaning on input keeps the field
-      // pattern-compliant so the browser's native validation never fires.
+      // sometimes grabs the asterisks too. The input no longer has an HTML
+      // `pattern` attribute (it fires before JS and blocks submit on pasted
+      // asterisks); we rely on this oninput strip + the submit-time check.
+      const codeEl = $("#code");
+      if (codeEl) {
+        codeEl.addEventListener("input", () => {
+          const cleaned = codeEl.value.replace(/\D/g, "").slice(0, 6);
+          if (codeEl.value !== cleaned) codeEl.value = cleaned;
+        });
+      }
       function normalizeOtp() {
-        const el = $("#code");
-        if (!el) return;
-        const cleaned = el.value.replace(/\D/g, "").slice(0, 6);
-        if (el.value !== cleaned) el.value = cleaned;
+        if (!codeEl) return;
+        const cleaned = codeEl.value.replace(/\D/g, "").slice(0, 6);
+        if (codeEl.value !== cleaned) codeEl.value = cleaned;
       }
 
       $("#verify-form").addEventListener("submit", async (e) => {
