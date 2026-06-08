@@ -97,7 +97,14 @@ const title = `Catat Titip — ${APP_NAME}`;
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
       async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
-      function uuid() { return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4)).toString(16)); }
+      function attachQtyStrip() {
+        document.querySelectorAll("#sku-section input[data-sku]").forEach(el => {
+          el.addEventListener("input", () => {
+            const cleaned = el.value.replace(/\D/g, "").slice(0, 4);
+            if (el.value !== cleaned) el.value = cleaned;
+          });
+        });
+      }
 
       const errEl = document.getElementById("err");
       const okEl = document.getElementById("ok");
@@ -149,6 +156,7 @@ const title = `Catat Titip — ${APP_NAME}`;
           </div>
         `).join("");
         document.getElementById("submit-btn").disabled = false;
+        attachQtyStrip();
       }
 
       document.getElementById("partnership").addEventListener("change", async (e) => {
@@ -194,46 +202,33 @@ const title = `Catat Titip — ${APP_NAME}`;
         const date = document.getElementById("date").value;
         if (!date) { showErr("Tanggal wajib."); return; }
         const rows = document.querySelectorAll("#sku-section input[data-sku]");
-        const lines = [];
+        const items = [];
         for (const inp of rows) {
-          const v = parseInt(inp.value, 10);
-          if (v && v > 0) lines.push({ skuId: inp.dataset.sku, qty: v });
+          const v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+          if (v > 0) items.push({ skuId: inp.dataset.sku, kind: "TITIP", qty: v });
         }
-        if (lines.length === 0) { showErr("Isi minimal 1 SKU dengan qty > 0."); return; }
+        if (items.length === 0) { showErr("Isi minimal 1 SKU dengan qty > 0."); return; }
 
         const btn = document.getElementById("submit-btn");
         btn.disabled = true; btn.textContent = "Menyimpan…";
         try {
-          // Try batch first, fall back to one-per-SKU
-          const batchPath = `/v1/brands/${state.brandId}/partnerships/${state.partnershipId}/movements/titip`;
-          const idem = uuid();
-          const body = { movementDate: date, lines, fotoR2Url: uploadedFotoUrl || undefined };
-          const r = await fetch(API + batchPath, {
+          // v2: deterministic idempotency in BODY (server suffixes -<skuId> per row).
+          const batchIdempotencyKey = `titip-${state.partnershipId}-${date}`;
+          const r = await fetch(API + "/v1/movements/batch", {
             method: "POST",
-            headers: { ...authH, "Idempotency-Key": idem },
-            body: JSON.stringify(body),
+            headers: { ...authH },
+            body: JSON.stringify({
+              partnershipId: state.partnershipId,
+              movementDate: date,
+              items,
+              batchIdempotencyKey,
+              fotoR2Key: uploadedFotoUrl || undefined,
+            }),
           });
           const json = await r.json().catch(() => ({}));
           if (r.ok && json.ok) {
-            showOk(`Berhasil: ${lines.length} SKU dititipkan. Mengarahkan…`);
+            showOk(`Berhasil: ${items.length} SKU dititipkan.`);
             setTimeout(() => { window.location.href = "/dashboard/brand/movements"; }, 800);
-            return;
-          }
-          // Fallback: per-SKU
-          if (json?.error?.code === "BATCH_NOT_SUPPORTED" || r.status === 404 || r.status === 400) {
-            let okCount = 0;
-            for (const line of lines) {
-              const idem2 = uuid();
-              const singleBody = { movementDate: date, skuId: line.skuId, qty: line.qty, fotoR2Url: uploadedFotoUrl || undefined };
-              const r2 = await jpost(`/v1/brands/${state.brandId}/partnerships/${state.partnershipId}/movements/titip`, singleBody);
-              if (r2.ok) okCount++;
-            }
-            if (okCount === lines.length) {
-              showOk(`Berhasil: ${okCount} SKU. Mengarahkan…`);
-              setTimeout(() => { window.location.href = "/dashboard/brand/movements"; }, 800);
-              return;
-            }
-            showErr(`Hanya ${okCount}/${lines.length} yang tersimpan.`);
             return;
           }
           showErr("Gagal: " + (json?.error?.code || `HTTP ${r.status}`));
