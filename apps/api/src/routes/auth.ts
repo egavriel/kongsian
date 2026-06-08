@@ -272,7 +272,12 @@ router.post("/otp/verify", async (c) => {
       name: newName,
       globalRole: "USER",
       onboardingRole: newRole,
-      verificationStatus: "PENDING_VERIFICATION",
+      // W6 trial: auto-verify on first sign-in. The admin gate is still in
+      // place for accounts that get flagged for review (see brands.ts:95);
+      // we just default new self-registrations to VERIFIED so the trial
+      // user can immediately use brand/tenant features. Revisit when the
+      // admin onboarding flow ships.
+      verificationStatus: "VERIFIED",
       createdAt: now,
       lastLoginAt: now,
     });
