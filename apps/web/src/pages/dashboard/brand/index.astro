@@ -72,6 +72,14 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         background: #0f172a; border: 1px dashed #1e293b; border-radius: 12px;
         padding: 24px; text-align: center; color: #94a3b8;
       }
+      .sisa-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+      .sisa-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; }
+      .sisa-card .cafe { font-weight:600; margin-bottom:8px; }
+      .sisa-rows { display:flex; flex-wrap:wrap; gap:6px; }
+      .sisa-pill { background:#1e293b; padding:4px 8px; border-radius:6px; font-size:12px; }
+      .sisa-pill.zero { color:#94a3b8; }
+      .sisa-pill.low { color:#fb7185; font-weight:700; }
+      .sisa-pill.ok { color:#34d399; }
       .skus { display: flex; flex-wrap: wrap; gap: 6px; }
       .sku-pill { background: #1e293b; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: #fbbf24; }
       .err { background: rgba(251, 113, 133, .12); color: #fb7185; border: 1px solid rgba(251, 113, 133, .3); padding: 12px; border-radius: 10px; font-size: 14px; }
@@ -105,6 +113,11 @@ const title = `Brand Dashboard — ${APP_NAME}`;
             <div class="val" id="weekly-revenue">—</div>
             <div class="sub">semua cafe</div>
           </div>
+        </div>
+
+        <h2>Stok tersisa di cafe</h2>
+        <div id="sisa-list" class="sisa-list">
+          <div class="loading">Memuat…</div>
         </div>
 
         <h2>Aksi cepat</h2>
@@ -233,6 +246,31 @@ const title = `Brand Dashboard — ${APP_NAME}`;
               </div>
             </div>
           `).join("");
+        }
+
+        // Stok tersisa per cafe
+        const sisaEl = document.getElementById("sisa-list");
+        if (active.length === 0) {
+          sisaEl.innerHTML = `<div class="empty">Belum ada cafe aktif.</div>`;
+        } else {
+          const today = new Date().toISOString().slice(0, 10);
+          const cards = [];
+          for (const p of active) {
+            const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${p.id}&upTo=${today}`);
+            const rows = r.ok ? (r.data || []) : [];
+            if (rows.length === 0) {
+              cards.push(`<div class="sisa-card"><div class="cafe">${p.tenant?.name || "(tenant?)"}</div><div class="loading" style="padding:8px 0">Belum ada stok.</div></div>`);
+              continue;
+            }
+            const pills = rows.map(row => {
+              const sku = brand.skus.find(s => s.id === row.skuId);
+              if (!sku) return "";
+              const cls = row.qty <= 0 ? "zero" : row.qty < 5 ? "low" : "ok";
+              return `<span class="sisa-pill ${cls}">${sku.code}: ${row.qty}</span>`;
+            }).join("");
+            cards.push(`<div class="sisa-card"><div class="cafe">${p.tenant?.name || "(tenant?)"}</div><div class="sisa-rows">${pills}</div></div>`);
+          }
+          sisaEl.innerHTML = cards.join("");
         }
 
         // Weekly revenue: pull movements from active partnerships, sum TERJUAL_OPENING qty for this week
