@@ -78,7 +78,7 @@ const title = `Tenant Closings — ${APP_NAME}`;
       // Determine the brand ID from /v1/brands/me
       let brandId = null;
       const me = await jget("/v1/brands/me");
-      if (me.ok && me.data?.brand?.id) brandId = me.data.brand.id;
+      if (me.ok && me.data?.brandId) brandId = me.data.brandId;
       else { showErr("Brand tidak ditemukan."); listEl.innerHTML = ""; }
 
       const filter = document.getElementById("status-filter");
