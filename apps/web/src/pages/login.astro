@@ -270,9 +270,21 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
         await sendOtp(phone, $("#send-btn"));
       });
 
+      // Strip non-digits from the OTP field on every input — the WhatsApp
+      // message wraps the code in `*asterisks*` for emphasis and tap-to-copy
+      // sometimes grabs the asterisks too. Cleaning on input keeps the field
+      // pattern-compliant so the browser's native validation never fires.
+      function normalizeOtp() {
+        const el = $("#code");
+        if (!el) return;
+        const cleaned = el.value.replace(/\D/g, "").slice(0, 6);
+        if (el.value !== cleaned) el.value = cleaned;
+      }
+
       $("#verify-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         hideMsg();
+        normalizeOtp();
         const code = $("#code").value.trim();
         if (!/^\d{6}$/.test(code)) { showErr("Kode harus 6 digit angka."); return; }
         const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = "Memverifikasi…";

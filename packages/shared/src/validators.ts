@@ -12,11 +12,18 @@ export const PhoneSchema = z
   .max(16, "Phone too long")
   .regex(PHONE_E164_REGEX, "Phone must be E.164 (e.g. +628****7890)");
 
-/** 6-digit OTP code. */
+/** 6-digit OTP code. Accepts the WA message's literal *code* wrapper —
+ * the input is normalized (non-digits stripped) before the length/regex
+ * check, so copying the bolded code from WhatsApp works. */
 export const OtpCodeSchema = z
   .string()
-  .length(6, "OTP must be 6 digits")
-  .regex(/^\d{6}$/, "OTP must be 6 digits");
+  .transform((s) => s.replace(/\D/g, ""))
+  .pipe(
+    z
+      .string()
+      .length(6, "OTP must be 6 digits")
+      .regex(/^\d{6}$/, "OTP must be 6 digits")
+  );
 
 /** Display name for a new user. */
 export const UserNameSchema = z

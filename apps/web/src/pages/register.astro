@@ -274,9 +274,12 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
 
       // Verify button enable/disable
       function recheckVerify() {
-        const code = $("#code").value.trim();
+        const codeEl = $("#code");
+        // Strip non-digits before checking — see login.astro for context.
+        const cleaned = (codeEl?.value || "").replace(/\D/g, "").slice(0, 6);
+        if (codeEl && codeEl.value !== cleaned) codeEl.value = cleaned;
         const name = $("#name").value.trim();
-        const ok = chosenRole && /^\d{6}$/.test(code) && name.length >= 2;
+        const ok = chosenRole && /^\d{6}$/.test(cleaned) && name.length >= 2;
         $("#verify-btn").disabled = !ok;
       }
       ["#code", "#name"].forEach((sel) => {
@@ -337,7 +340,10 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
       $("#verify-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         hideMsg();
-        const code = $("#code").value.trim();
+        // Strip non-digits in case the input was pasted after the last input event.
+        const codeEl = $("#code");
+        if (codeEl) codeEl.value = codeEl.value.replace(/\D/g, "").slice(0, 6);
+        const code = codeEl.value.trim();
         const name = $("#name").value.trim();
         if (!/^\d{6}$/.test(code)) { showErr("Kode harus 6 digit angka."); return; }
         if (name.length < 2) { showErr("Nama minimal 2 karakter."); return; }
