@@ -193,7 +193,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         const { role, brandId, user } = me.data;
         if (!brandId) {
           document.querySelector("main").innerHTML =
-            '<div class="empty">Akun kamu belum punya brand. <a href="#">Daftar brand dulu</a>.</div>';
+            '<div class="empty">Akun kamu belum punya brand. <a href="/dashboard/brand/new">Daftar brand dulu</a>.</div>';
           return;
         }
         document.getElementById("greet").textContent = `Halo, ${user.name || user.phoneE164}`;
