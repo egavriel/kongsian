@@ -114,7 +114,11 @@ router.post("/otp/request", async (c) => {
   let waDelivered = false;
   if (waConfigured) {
     const message = buildOtpMessage(code, ttl, purpose);
-    const chatId = phone; // E.164 with leading +; relay normalizes to JID
+    // Bridge expects a JID (`<digits>@s.whatsapp.net`), not E.164. The
+    // earlier comment claimed the bridge handled the leading "+" — that was
+    // wrong; jidDecode() throws on "+"-prefixed strings. Normalize here so
+    // the relay can be a dumb passthrough.
+    const chatId = `${phone.replace(/^\+/, "")}@s.whatsapp.net`;
     const result = await sendWa(c.env, chatId, message, { timeoutMs: 6000 });
     waDelivered = result.sent;
     if (result.sent) {

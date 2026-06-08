@@ -447,7 +447,9 @@ router.post("/invite", async (c) => {
       code,
       ttlSeconds: ttl,
     });
-    const result = await sendWa(c.env, phone, message, { timeoutMs: 6000 });
+    // Same JID normalization as auth.ts: bridge chokes on E.164 with "+".
+    const chatId = `${phone.replace(/^\+/, "")}@s.whatsapp.net`;
+    const result = await sendWa(c.env, chatId, message, { timeoutMs: 6000 });
     waDelivered = result.sent;
     if (waDelivered) {
       await db.update(otps).set({ waSent: 1 }).where(eq(otps.id, otpId));
