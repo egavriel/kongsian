@@ -1,0 +1,286 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../../../lib/api";
+const title = `Catat Hari Ini — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
+      a { color:#38bdf8; text-decoration:none; }
+      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
+      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
+      .back { color:#94a3b8; font-size:14px; }
+      h1 { font-size:20px; margin:0; }
+      main { padding:20px; }
+      label { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; font-size:13px; }
+      .lbl { font-weight:600; }
+      select, input { background:#0b1220; border:1px solid #1e293b; color:#f1f5f9; padding:12px; border-radius:10px; font-size:16px; font-family:inherit; width:100%; min-height:48px; }
+      select:focus, input:focus { outline:none; border-color:#fbbf24; }
+      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:16px; min-height:48px; }
+      .btn-primary { background:#fbbf24; color:#0b1220; width:100%; }
+      .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+      .section { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:16px; }
+      .section h2 { margin:0 0 4px; font-size:16px; display:flex; align-items:center; gap:8px; }
+      .section h2 .ic { font-size:18px; }
+      .section .hint { font-size:12px; color:#94a3b8; margin:0 0 10px; }
+      .sk-row { display:grid; grid-template-columns:1fr 90px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b; }
+      .sk-row:last-child { border-bottom:none; }
+      .sk-label .code { color:#fbbf24; font-weight:700; margin-right:6px; }
+      .sk-label .name { color:#f1f5f9; }
+      .sk-label .meta { color:#94a3b8; font-size:12px; }
+      .sk-row input { padding:10px; text-align:center; font-size:16px; min-height:48px; }
+      .empty { padding:16px; text-align:center; color:#94a3b8; font-size:13px; }
+      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand">← Brand</a>
+        <h1>Catat Hari Ini</h1>
+        <span></span>
+      </header>
+      <main>
+        <div id="err" class="err" style="display:none"></div>
+        <div id="ok" class="ok" style="display:none"></div>
+        <label>
+          <span class="lbl">Tanggal</span>
+          <input id="date" type="date" required />
+        </label>
+        <label>
+          <span class="lbl">Cafe</span>
+          <select id="partnership"></select>
+        </label>
+
+        <div class="section">
+          <h2><span class="ic">📦</span> Titip (stok masuk)</h2>
+          <p class="hint">Isi berapa banyak tiap SKU yang kamu titipkan ke cafe hari ini.</p>
+          <div id="titip-section"><div class="empty">Pilih cafe dulu.</div></div>
+        </div>
+
+        <div class="section">
+          <h2><span class="ic">↩️</span> Tarik (stok kembali)</h2>
+          <p class="hint">Stok yang tidak terjual dan kamu bawa kembali. Max = sisa sistem.</p>
+          <div id="tarik-section"><div class="empty">Pilih cafe dulu.</div></div>
+        </div>
+
+        <div class="section">
+          <h2><span class="ic">💵</span> Terjual (closing)</h2>
+          <p class="hint">Berapa cup/pack terjual hari ini per SKU. Ini yang dihitung untuk settlement.</p>
+          <div id="terjual-section"><div class="empty">Pilih cafe dulu.</div></div>
+        </div>
+
+        <button id="submit-btn" class="btn btn-primary" type="button" disabled>Simpan Semua</button>
+      </main>
+    </div>
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+      async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const okEl = document.getElementById("ok");
+      const showErr = m => { errEl.textContent = m; errEl.style.display="block"; okEl.style.display="none"; window.scrollTo({ top: 0, behavior: "smooth" }); };
+      const showOk = m => { okEl.textContent = m; okEl.style.display="block"; errEl.style.display="none"; };
+      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
+
+      const state = { brandId: null, partnershipId: null, tenantId: null, skus: [], sisaSistem: {}, partnerships: [] };
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+
+      function attachQtyStrip(sel) {
+        document.querySelectorAll(sel + " input[data-sku]").forEach(el => {
+          el.addEventListener("input", () => {
+            const cleaned = el.value.replace(/\D/g, "").slice(0, 4);
+            if (el.value !== cleaned) el.value = cleaned;
+          });
+        });
+      }
+
+      function skuRow(s, kind, opts = {}) {
+        const max = opts.max != null ? `max="${opts.max}"` : "";
+        const dis = opts.disabled ? "disabled" : "";
+        const hint = opts.hint ? `<div class="meta">${opts.hint}</div>` : `<div class="meta">${fmtRp(s.priceIdr)}</div>`;
+        return `
+          <div class="sk-row">
+            <div class="sk-label">
+              <div><span class="code">${s.code}</span><span class="name">${s.name}</span></div>
+              ${hint}
+            </div>
+            <input type="number" min="0" ${max} step="1" data-sku="${s.id}" data-kind="${kind}" placeholder="0" inputmode="numeric" ${dis} />
+          </div>
+        `;
+      }
+
+      function renderSections() {
+        const disabled = !state.partnershipId || state.skus.length === 0;
+        document.getElementById("submit-btn").disabled = disabled;
+        if (!state.partnershipId) {
+          for (const id of ["titip-section","tarik-section","terjual-section"]) {
+            document.getElementById(id).innerHTML = `<div class="empty">Pilih cafe dulu.</div>`;
+          }
+          return;
+        }
+        if (state.skus.length === 0) {
+          for (const id of ["titip-section","tarik-section","terjual-section"]) {
+            document.getElementById(id).innerHTML = `<div class="empty">Belum ada SKU.</div>`;
+          }
+          return;
+        }
+        document.getElementById("titip-section").innerHTML = state.skus.map(s => skuRow(s, "titip")).join("");
+        document.getElementById("tarik-section").innerHTML = state.skus.map(s => {
+          const sisa = state.sisaSistem[s.id] ?? 0;
+          return skuRow(s, "tarik", { max: sisa, disabled: sisa <= 0, hint: `Sisa: ${sisa}` });
+        }).join("");
+        document.getElementById("terjual-section").innerHTML = state.skus.map(s => skuRow(s, "terjual")).join("");
+        attachQtyStrip("#titip-section"); attachQtyStrip("#tarik-section"); attachQtyStrip("#terjual-section");
+      }
+
+      async function refreshSisa() {
+        if (!state.partnershipId) { state.sisaSistem = {}; return; }
+        const upTo = document.getElementById("date").value;
+        const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
+        state.sisaSistem = {};
+        if (r.ok) for (const row of r.data || []) state.sisaSistem[row.skuId] = row.qty;
+      }
+
+      async function init() {
+        const me = await jget("/v1/brands/me");
+        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
+        state.brandId = me.data.brandId;
+        const b = await jget(`/v1/brands/${state.brandId}`);
+        if (!b.ok) { showErr("Gagal muat brand: " + (b.error?.code || "?")); return; }
+        const active = (b.data.partnerships || []).filter(p => p.status === "ACTIVE");
+        state.partnerships = active;
+        const sel = document.getElementById("partnership");
+        if (active.length === 0) {
+          sel.innerHTML = `<option value="">— Belum ada cafe aktif —</option>`;
+        } else {
+          sel.innerHTML = `<option value="">— Pilih cafe —</option>` +
+            active.map(p => `<option value="${p.id}" data-tenant="${p.tenant?.id || ""}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
+        }
+        sel.addEventListener("change", async (e) => {
+          const opt = e.target.selectedOptions[0];
+          state.partnershipId = e.target.value || null;
+          state.tenantId = opt ? opt.dataset.tenant : null;
+          if (!state.partnershipId) { renderSections(); return; }
+          const r = await jget(`/v1/skus?brandId=${state.brandId}`);
+          state.skus = r.ok ? (r.data || []) : [];
+          await refreshSisa();
+          renderSections();
+        });
+        document.getElementById("date").addEventListener("change", async () => {
+          if (state.partnershipId) { await refreshSisa(); renderSections(); }
+        });
+      }
+
+      function readSectionItems(sectionSel, kind) {
+        // For movements/batch: each item is { skuId, kind, qty }
+        const items = [];
+        document.querySelectorAll(sectionSel + " input[data-sku]").forEach(inp => {
+          if (inp.disabled) return;
+          const v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+          if (v > 0) items.push({ skuId: inp.dataset.sku, kind, qty: v });
+        });
+        return items;
+      }
+      function readTerjualLines(sectionSel) {
+        // For closings/:date/terjual: each line is { skuId, terjual } (not qty!)
+        const lines = [];
+        document.querySelectorAll(sectionSel + " input[data-sku]").forEach(inp => {
+          if (inp.disabled) return;
+          const v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+          if (v > 0) lines.push({ skuId: inp.dataset.sku, terjual: v });
+        });
+        return lines;
+      }
+
+      document.getElementById("submit-btn").addEventListener("click", async () => {
+        errEl.style.display = "none"; okEl.style.display = "none";
+        if (!state.partnershipId) { showErr("Pilih cafe dulu."); return; }
+        if (!state.tenantId) { showErr("Tenant ID tidak ditemukan di partnership ini."); return; }
+        const date = document.getElementById("date").value;
+        if (!date) { showErr("Tanggal wajib."); return; }
+        // Sections: items per (kind) for movements, lines per (terjual) for closing.
+        const titipItems = readSectionItems("#titip-section", "TITIP");
+        const tarikItems = readSectionItems("#tarik-section", "TARIK");
+        const terjualLines = readTerjualLines("#terjual-section");
+        // Validate tarik vs sisa
+        for (const it of tarikItems) {
+          const sisa = state.sisaSistem[it.skuId] ?? 0;
+          if (it.qty > sisa) { showErr(`Tarik SKU melebihi sisa sistem (${sisa}).`); return; }
+        }
+        if (titipItems.length + tarikItems.length + terjualLines.length === 0) {
+          showErr("Minimal isi satu kolom (Titip, Tarik, atau Terjual)."); return;
+        }
+
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true; btn.textContent = "Menyimpan…";
+        try {
+          // 1) Titip batch — v2: idempotency in body
+          if (titipItems.length > 0) {
+            const r = await fetch(API + "/v1/movements/batch", {
+              method: "POST",
+              headers: { ...authH },
+              body: JSON.stringify({
+                partnershipId: state.partnershipId,
+                movementDate: date,
+                items: titipItems,
+                batchIdempotencyKey: `titip-${state.partnershipId}-${date}`,
+              }),
+            });
+            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error("Titip gagal: " + (j?.error?.code || r.status)); }
+          }
+          // 2) Tarik batch — v2: idempotency in body
+          if (tarikItems.length > 0) {
+            const r = await fetch(API + "/v1/movements/batch", {
+              method: "POST",
+              headers: { ...authH },
+              body: JSON.stringify({
+                partnershipId: state.partnershipId,
+                movementDate: date,
+                items: tarikItems,
+                batchIdempotencyKey: `tarik-${state.partnershipId}-${date}`,
+              }),
+            });
+            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error("Tarik gagal: " + (j?.error?.code || r.status)); }
+          }
+          // 3) Terjual via closings: create draft → upsert lines → submit
+          if (terjualLines.length > 0) {
+            // 3a) Create/return draft closing (idempotent on (partnership,date))
+            const createUrl = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings`;
+            const cr = await jpost(createUrl, { closingDate: date });
+            if (!cr.ok) throw new Error("Closing buat gagal: " + (cr.error?.code || "?"));
+            // 3b) Upsert terjual lines — v2: field is `terjual` not `qty`
+            const tjUrl = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/terjual`;
+            const tr = await jpost(tjUrl, { lines: terjualLines });
+            if (!tr.ok) throw new Error("Terjual upsert gagal: " + (tr.error?.code || "?"));
+            // 3c) Submit — Task 0 loosened PHOTO_REQUIRED for the trial
+            const subUrl = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/submit`;
+            const sr = await jpost(subUrl, {});
+            if (!sr.ok) throw new Error("Submit closing gagal: " + (sr.error?.code || "?"));
+          }
+          showOk(`Berhasil disimpan. Mengarahkan…`);
+          setTimeout(() => { window.location.href = "/dashboard/brand/movements"; }, 1000);
+        } catch (e) {
+          showErr(e.message || "Tidak bisa konek ke server.");
+        } finally {
+          btn.disabled = false; btn.textContent = "Simpan Semua";
+        }
+      });
+
+      init();
+    </script>
+  </body>
+</html>
