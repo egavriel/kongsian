@@ -58,6 +58,11 @@ const title = `Closing Harian — ${APP_NAME}`;
       :global(.sk-row .diff) { font-size:13px; text-align:center; color:#94a3b8; min-height:48px; display:flex; align-items:center; justify-content:center; }
       :global(.sk-row .diff.match) { color:#34d399; }
       :global(.sk-row .diff.miss) { color:#fbbf24; }
+      :global(.stepper) { display:grid; grid-template-columns:36px 1fr 36px; gap:4px; align-items:stretch; }
+      :global(.stepper .step-btn) { background:#0b1220; border:1px solid #1e293b; color:#f1f5f9; border-radius:8px; font-size:18px; font-weight:700; min-height:48px; cursor:pointer; padding:0; line-height:1; }
+      :global(.stepper .step-btn:active) { background:#1e293b; }
+      :global(.stepper .step-btn:disabled) { opacity:.4; cursor:not-allowed; }
+      :global(.stepper input) { width:100%; }
 
       .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
       .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
@@ -180,12 +185,40 @@ const title = `Closing Harian — ${APP_NAME}`;
                 <div><span class="code">${s.code}</span><span class="name">${s.name}</span></div>
                 <div class="stok">Stok sistem: ${stokSistem}</div>
               </div>
-              <input type="number" min="0" max="999" step="1" data-field="terjual" placeholder="0" inputmode="numeric" />
-              <input type="number" min="0" max="999" step="1" data-field="sisa" placeholder="0" inputmode="numeric" />
+              <div class="stepper">
+                <button type="button" class="step-btn minus" aria-label="Kurangi">−</button>
+                <input type="number" min="0" max="999" step="1" data-field="terjual" placeholder="0" inputmode="numeric" />
+                <button type="button" class="step-btn plus" aria-label="Tambah">+</button>
+              </div>
+              <div class="stepper">
+                <button type="button" class="step-btn minus" aria-label="Kurangi">−</button>
+                <input type="number" min="0" max="999" step="1" data-field="sisa" placeholder="0" inputmode="numeric" />
+                <button type="button" class="step-btn plus" aria-label="Tambah">+</button>
+              </div>
             </div>
           `;
         }).join("");
         document.getElementById("submit-btn").disabled = false;
+
+        // Wire stepper buttons + clamp on input
+        document.querySelectorAll("#sku-rows .stepper").forEach(stepper => {
+          const inp = stepper.querySelector("input[data-field]");
+          const minus = stepper.querySelector(".step-btn.minus");
+          const plus = stepper.querySelector(".step-btn.plus");
+          if (!inp) return;
+          const clamp = () => {
+            const max = inp.hasAttribute("max") ? parseInt(inp.getAttribute("max"), 10) : 999;
+            let v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+            if (v < 0) v = 0;
+            if (max != null && v > max) v = max;
+            if (String(v) !== inp.value) inp.value = String(v);
+            if (minus) minus.disabled = v <= 0;
+            if (plus) plus.disabled = v >= max;
+          };
+          inp.addEventListener("input", clamp);
+          if (minus) minus.addEventListener("click", () => { inp.value = String(Math.max(0, (parseInt((inp.value||"0").replace(/\D/g,""),10)||0) - 1)); clamp(); inp.dispatchEvent(new Event("input")); });
+          if (plus)  plus.addEventListener("click", () => { inp.value = String(((parseInt((inp.value||"0").replace(/\D/g,""),10)||0) + 1)); clamp(); inp.dispatchEvent(new Event("input")); });
+        });
 
         // Live diff calculation
         const sumSkuEl = document.getElementById("sum-skus");

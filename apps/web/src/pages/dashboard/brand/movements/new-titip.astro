@@ -36,13 +36,18 @@ const title = `Catat Titip — ${APP_NAME}`;
       .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
       .sku-table { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:12px; margin-bottom:16px; }
       .sku-table h2 { margin:0 0 10px; font-size:15px; color:#fbbf24; }
-      :global(.sk-row) { display:grid; grid-template-columns:1fr 100px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b; }
+      :global(.sk-row) { display:grid; grid-template-columns:1fr 150px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b; }
       :global(.sk-row:last-child) { border-bottom:none; }
       :global(.sk-label) { font-size:14px; }
       :global(.sk-label .code) { color:#fbbf24; font-weight:700; margin-right:6px; }
       :global(.sk-label .name) { color:#f1f5f9; }
       :global(.sk-label .meta) { color:#94a3b8; font-size:12px; }
       :global(.sk-row input) { padding:10px; text-align:center; font-size:16px; min-height:48px; }
+      :global(.stepper) { display:grid; grid-template-columns:44px 1fr 44px; gap:6px; align-items:stretch; }
+      :global(.stepper .step-btn) { background:#0b1220; border:1px solid #1e293b; color:#f1f5f9; border-radius:10px; font-size:20px; font-weight:700; min-height:48px; cursor:pointer; padding:0; line-height:1; }
+      :global(.stepper .step-btn:active) { background:#1e293b; }
+      :global(.stepper .step-btn:disabled) { opacity:.4; cursor:not-allowed; }
+      :global(.stepper input) { width:100%; }
       .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
       .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
       .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
@@ -98,11 +103,24 @@ const title = `Catat Titip — ${APP_NAME}`;
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
       async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
       function attachQtyStrip() {
-        document.querySelectorAll("#sku-section input[data-sku]").forEach(el => {
-          el.addEventListener("input", () => {
-            const cleaned = el.value.replace(/\D/g, "").slice(0, 4);
-            if (el.value !== cleaned) el.value = cleaned;
-          });
+        document.querySelectorAll("#sku-section .stepper").forEach(stepper => {
+          const inp = stepper.querySelector("input[data-sku]");
+          const minus = stepper.querySelector(".step-btn.minus");
+          const plus = stepper.querySelector(".step-btn.plus");
+          if (!inp) return;
+          const clamp = () => {
+            const max = inp.hasAttribute("max") ? parseInt(inp.getAttribute("max"), 10) : null;
+            let v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+            if (v < 0) v = 0;
+            if (max != null && v > max) v = max;
+            if (String(v) !== inp.value) inp.value = String(v);
+            if (minus) minus.disabled = v <= 0;
+            if (plus) plus.disabled = (max != null && v >= max);
+          };
+          inp.addEventListener("input", clamp);
+          if (minus) minus.addEventListener("click", () => { if (inp.disabled) return; inp.value = String(Math.max(0, (parseInt((inp.value||"0").replace(/\D/g,""),10)||0) - 1)); clamp(); });
+          if (plus)  plus.addEventListener("click", () => { if (inp.disabled) return; inp.value = String(((parseInt((inp.value||"0").replace(/\D/g,""),10)||0) + 1)); clamp(); });
+          clamp();
         });
       }
 
@@ -152,7 +170,11 @@ const title = `Catat Titip — ${APP_NAME}`;
               <div><span class="code">${s.code}</span><span class="name">${s.name}</span></div>
               <div class="meta">${fmtRp(s.priceIdr)}</div>
             </div>
-            <input type="number" min="0" max="999" step="1" data-sku="${s.id}" placeholder="0" inputmode="numeric" />
+            <div class="stepper">
+              <button type="button" class="step-btn minus" aria-label="Kurangi">−</button>
+              <input type="number" min="0" max="999" step="1" data-sku="${s.id}" placeholder="0" inputmode="numeric" />
+              <button type="button" class="step-btn plus" aria-label="Tambah">+</button>
+            </div>
           </div>
         `).join("");
         document.getElementById("submit-btn").disabled = false;

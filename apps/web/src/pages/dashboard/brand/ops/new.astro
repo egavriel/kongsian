@@ -31,12 +31,17 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
       .section h2 { margin:0 0 4px; font-size:16px; display:flex; align-items:center; gap:8px; }
       .section h2 .ic { font-size:18px; }
       .section .hint { font-size:12px; color:#94a3b8; margin:0 0 10px; }
-      .sk-row, :global(.sk-row) { display:grid; grid-template-columns:1fr 90px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b; }
+      .sk-row, :global(.sk-row) { display:grid; grid-template-columns:1fr 150px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b; }
       :global(.sk-row:last-child) { border-bottom:none; }
       :global(.sk-label .code) { color:#fbbf24; font-weight:700; margin-right:6px; }
       :global(.sk-label .name) { color:#f1f5f9; }
       :global(.sk-label .meta) { color:#94a3b8; font-size:12px; }
       :global(.sk-row input) { padding:10px; text-align:center; font-size:16px; min-height:48px; }
+      :global(.stepper) { display:grid; grid-template-columns:44px 1fr 44px; gap:6px; align-items:stretch; }
+      :global(.stepper .step-btn) { background:#0b1220; border:1px solid #1e293b; color:#f1f5f9; border-radius:10px; font-size:20px; font-weight:700; min-height:48px; cursor:pointer; padding:0; line-height:1; }
+      :global(.stepper .step-btn:active) { background:#1e293b; }
+      :global(.stepper .step-btn:disabled) { opacity:.4; cursor:not-allowed; }
+      :global(.stepper input) { width:100%; }
       .empty { padding:16px; text-align:center; color:#94a3b8; font-size:13px; }
       .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
       .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
@@ -100,11 +105,25 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
       document.getElementById("date").value = new Date().toISOString().slice(0, 10);
 
       function attachQtyStrip(sel) {
-        document.querySelectorAll(sel + " input[data-sku]").forEach(el => {
-          el.addEventListener("input", () => {
-            const cleaned = el.value.replace(/\D/g, "").slice(0, 4);
-            if (el.value !== cleaned) el.value = cleaned;
-          });
+        // Strip non-digits on the hidden number input + wire minus/plus buttons.
+        document.querySelectorAll(sel + " .stepper").forEach(stepper => {
+          const inp = stepper.querySelector("input[data-sku]");
+          const minus = stepper.querySelector(".step-btn.minus");
+          const plus = stepper.querySelector(".step-btn.plus");
+          if (!inp) return;
+          const clamp = () => {
+            const max = inp.hasAttribute("max") ? parseInt(inp.getAttribute("max"), 10) : null;
+            let v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+            if (v < 0) v = 0;
+            if (max != null && v > max) v = max;
+            if (String(v) !== inp.value) inp.value = String(v);
+            if (minus) minus.disabled = v <= 0;
+            if (plus) plus.disabled = (max != null && v >= max);
+          };
+          inp.addEventListener("input", clamp);
+          if (minus) minus.addEventListener("click", () => { if (inp.disabled) return; inp.value = String(Math.max(0, (parseInt((inp.value||"0").replace(/\D/g,""),10)||0) - 1)); clamp(); });
+          if (plus)  plus.addEventListener("click", () => { if (inp.disabled) return; inp.value = String(((parseInt((inp.value||"0").replace(/\D/g,""),10)||0) + 1)); clamp(); });
+          clamp();
         });
       }
 
@@ -118,7 +137,11 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
               <div><span class="code">${s.code}</span><span class="name">${s.name}</span></div>
               ${hint}
             </div>
-            <input type="number" min="0" ${max} step="1" data-sku="${s.id}" data-kind="${kind}" placeholder="0" inputmode="numeric" ${dis} />
+            <div class="stepper">
+              <button type="button" class="step-btn minus" aria-label="Kurangi" ${dis}>−</button>
+              <input type="number" min="0" ${max} step="1" data-sku="${s.id}" data-kind="${kind}" placeholder="0" inputmode="numeric" ${dis} />
+              <button type="button" class="step-btn plus" aria-label="Tambah" ${dis}>+</button>
+            </div>
           </div>
         `;
       }
