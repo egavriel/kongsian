@@ -45,19 +45,19 @@ const title = `Closing Harian — ${APP_NAME}`;
 
       .table-wrap { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:12px; margin-bottom:16px; overflow-x:auto; }
       .table-wrap h2 { margin:0 0 10px; font-size:15px; color:#fbbf24; }
-      .sk-row {
+      :global(.sk-row) {
         display:grid; grid-template-columns: 1fr 80px 80px;
         gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid #1e293b;
       }
-      .sk-row:last-child { border-bottom:none; }
-      .sk-row.head { color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; font-weight:700; }
-      .sk-label .code { color:#fbbf24; font-weight:700; margin-right:6px; }
-      .sk-label .name { color:#f1f5f9; font-weight:600; font-size:14px; }
-      .sk-label .stok { color:#94a3b8; font-size:12px; }
-      .sk-row input { padding:10px; text-align:center; font-size:16px; min-height:48px; }
-      .sk-row .diff { font-size:13px; text-align:center; color:#94a3b8; min-height:48px; display:flex; align-items:center; justify-content:center; }
-      .sk-row .diff.match { color:#34d399; }
-      .sk-row .diff.miss { color:#fbbf24; }
+      :global(.sk-row:last-child) { border-bottom:none; }
+      :global(.sk-row.head) { color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; font-weight:700; }
+      :global(.sk-label .code) { color:#fbbf24; font-weight:700; margin-right:6px; }
+      :global(.sk-label .name) { color:#f1f5f9; font-weight:600; font-size:14px; }
+      :global(.sk-label .stok) { color:#94a3b8; font-size:12px; }
+      :global(.sk-row input) { padding:10px; text-align:center; font-size:16px; min-height:48px; }
+      :global(.sk-row .diff) { font-size:13px; text-align:center; color:#94a3b8; min-height:48px; display:flex; align-items:center; justify-content:center; }
+      :global(.sk-row .diff.match) { color:#34d399; }
+      :global(.sk-row .diff.miss) { color:#fbbf24; }
 
       .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
       .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
