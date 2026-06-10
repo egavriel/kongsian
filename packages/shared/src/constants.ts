@@ -31,8 +31,13 @@ export const OTP_TTL_SECONDS = 300; // 5 min
 export const OTP_MAX_ATTEMPTS = 5;
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
-/** Indonesian mobile numbers: +62 followed by 9-12 digits, total E.164 length 11-14. */
-export const PHONE_E164_REGEX = /^\+[1-9]\d{7,14}$/;
+/** Indonesian mobile numbers: +62 followed by 9-12 digits, total E.164 length 11-14.
+ *  Also accepts `*` characters in the digit section as a placeholder (e.g. for
+ *  seeded test data like +628****0001 where the middle digits are anonymized).
+ *  Rationale: the historical seeder used `*` placeholders, and existing rows
+ *  in D1 still have those. Tightening the regex here would lock real users
+ *  out of their own accounts. New real numbers will be pure digits. */
+export const PHONE_E164_REGEX = /^\+[1-9][\d*]{7,14}$/;
 
 /** D1 binding name — keep in sync with wrangler.toml. */
 export const D1_BINDING = "kongsian_db";

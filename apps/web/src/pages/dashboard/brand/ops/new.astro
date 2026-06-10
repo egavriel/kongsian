@@ -2,6 +2,8 @@
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../../lib/api";
 const title = `Catat Hari Ini — ${APP_NAME}`;
+export const prerender = false;
+export const ssr = false;
 ---
 <!doctype html>
 <html lang="id">
@@ -45,6 +47,21 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
       .empty { padding:16px; text-align:center; color:#94a3b8; font-size:13px; }
       .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
       .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .status { padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+      .diag { display:block; }
+      .summary-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:14px; }
+      .summary-card .cafe { font-weight:700; margin-bottom:10px; font-size:13px; color:#94a3b8; }
+      .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+      .summary-card .label { font-size: 11px; color:#94a3b8; text-transform: uppercase; letter-spacing:.08em; font-weight:700; }
+      .summary-card .value { font-size: 26px; font-weight: 800; color:#f1f5f9; }
+      .summary-card .sub { font-size: 12px; color:#94a3b8; margin-top:6px; }
+      .section.stok-awal { border-color:#a78bfa; background:rgba(167,139,250,.04); }
+      .section.stok-awal h2 .ic { color:#a78bfa; }
+      .section.stok-awal .badge { display:inline-block; background:rgba(167,139,250,.15); color:#a78bfa; border:1px solid rgba(167,139,250,.3); border-radius:999px; font-size:10px; padding:2px 8px; font-weight:700; letter-spacing:.05em; margin-left:6px; vertical-align:middle; }
+      :global(.sk-row .set-once-hint) { color:#a78bfa; font-size:11px; }
+      .summary-card .stok-awal-row { grid-column:1 / -1; padding:10px 0; border-bottom:1px solid #1e293b; margin-bottom:6px; }
+      .summary-card .stok-awal-row .label { color:#a78bfa; }
+      .summary-card .stok-awal-row .value { color:#a78bfa; }
     </style>
   </head>
   <body>
@@ -65,6 +82,22 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
           <span class="lbl">Cafe</span>
           <select id="partnership"></select>
         </label>
+        <div id="ops-summary" class="summary-card" style="display:none">
+          <div class="cafe" id="ops-summary-cafe">—</div>
+          <div class="summary-grid">
+            <div class="stok-awal-row"><div class="label">Stok Awal</div><div class="value" id="ops-summary-stok-awal">0</div></div>
+            <div><div class="label">Titip</div><div class="value" id="ops-summary-titip">0</div></div>
+            <div><div class="label">Tarik</div><div class="value" id="ops-summary-tarik">0</div></div>
+            <div><div class="label">Terjual</div><div class="value" id="ops-summary-terjual">0</div></div>
+            <div><div class="label">Sisa sistem</div><div class="value" id="ops-summary-sisa">0</div></div>
+          </div>
+        </div>
+
+        <div class="section stok-awal">
+          <h2><span class="ic">🌱</span> Stok Awal<span class="badge">SEKALI</span></h2>
+          <p class="hint">Stok yang SUDAH ada di cafe <b>sebelum</b> mulai pakai Kongsian. Cukup diisi sekali di hari pertama partnership — sistem akan menambahkannya ke sisa. Untuk tambah stok baru pakai kolom Titip di bawah.</p>
+          <div id="stok-awal-section"><div class="empty">Pilih cafe dulu.</div></div>
+        </div>
 
         <div class="section">
           <h2><span class="ic">📦</span> Titip (stok masuk)</h2>
@@ -85,6 +118,7 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
         </div>
 
         <button id="submit-btn" class="btn btn-primary" type="button" disabled>Simpan Semua</button>
+        <div id="ops-status" class="status" style="display:none"></div>
       </main>
     </div>
     <script define:vars={{ API_BASE_URL }}>
@@ -101,7 +135,8 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
       const showOk = m => { okEl.textContent = m; okEl.style.display="block"; errEl.style.display="none"; };
       function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
 
-      const state = { brandId: null, partnershipId: null, tenantId: null, skus: [], sisaSistem: {}, partnerships: [] };
+      const state = { brandId: null, partnershipId: null, tenantId: null, skus: [], sisaSistem: {}, partnerships: [], stokAwal: {} };
+      const STOK_AWAL_REASON = "Stok awal partnership";
       document.getElementById("date").value = new Date().toISOString().slice(0, 10);
 
       function attachQtyStrip(sel) {
@@ -119,6 +154,7 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
             if (String(v) !== inp.value) inp.value = String(v);
             if (minus) minus.disabled = v <= 0;
             if (plus) plus.disabled = (max != null && v >= max);
+            try { updateSummary(); } catch (e) {}
           };
           inp.addEventListener("input", clamp);
           if (minus) minus.addEventListener("click", () => { if (inp.disabled) return; inp.value = String(Math.max(0, (parseInt((inp.value||"0").replace(/\D/g,""),10)||0) - 1)); clamp(); });
@@ -150,24 +186,46 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
         const disabled = !state.partnershipId || state.skus.length === 0;
         document.getElementById("submit-btn").disabled = disabled;
         if (!state.partnershipId) {
-          for (const id of ["titip-section","tarik-section","terjual-section"]) {
+          for (const id of ["stok-awal-section","titip-section","tarik-section","terjual-section"]) {
             document.getElementById(id).innerHTML = `<div class="empty">Pilih cafe dulu.</div>`;
           }
           return;
         }
         if (state.skus.length === 0) {
-          for (const id of ["titip-section","tarik-section","terjual-section"]) {
+          for (const id of ["stok-awal-section","titip-section","tarik-section","terjual-section"]) {
             document.getElementById(id).innerHTML = `<div class="empty">Belum ada SKU.</div>`;
           }
           return;
         }
+        document.getElementById("stok-awal-section").innerHTML = state.skus.map(s => {
+          const existing = state.stokAwal[s.id] ?? 0;
+          const hint = existing > 0
+            ? `<div class="meta set-once-hint">✓ Sudah diisi: ${existing} (edit jika perlu)</div>`
+            : `<div class="meta">${fmtRp(s.priceIdr)}</div>`;
+          return skuRow(s, "stok-awal", { hint });
+        }).join("");
         document.getElementById("titip-section").innerHTML = state.skus.map(s => skuRow(s, "titip")).join("");
         document.getElementById("tarik-section").innerHTML = state.skus.map(s => {
           const sisa = state.sisaSistem[s.id] ?? 0;
           return skuRow(s, "tarik", { max: sisa, disabled: sisa <= 0, hint: `Sisa: ${sisa}` });
         }).join("");
         document.getElementById("terjual-section").innerHTML = state.skus.map(s => skuRow(s, "terjual")).join("");
-        attachQtyStrip("#titip-section"); attachQtyStrip("#tarik-section"); attachQtyStrip("#terjual-section");
+        attachQtyStrip("#stok-awal-section"); attachQtyStrip("#titip-section"); attachQtyStrip("#tarik-section"); attachQtyStrip("#terjual-section");
+      }
+
+      async function refreshStokAwal() {
+        if (!state.partnershipId) { state.stokAwal = {}; return; }
+        const date = document.getElementById("date").value;
+        const r = await jget(`/v1/movements?partnershipId=${state.partnershipId}`);
+        state.stokAwal = {};
+        if (r.ok) {
+          for (const mv of r.data || []) {
+            if (mv.kind === "ADJUSTMENT" && mv.reason === STOK_AWAL_REASON && mv.movementDate === date) {
+              // signQty(ADJUSTMENT, +qty) returns +qty as stored. qty is signed; only positive seed counts.
+              if ((mv.qty || 0) > 0) state.stokAwal[mv.skuId] = mv.qty;
+            }
+          }
+        }
       }
 
       async function refreshSisa() {
@@ -176,6 +234,23 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
         const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
         state.sisaSistem = {};
         if (r.ok) for (const row of r.data || []) state.sisaSistem[row.skuId] = row.qty;
+      }
+
+      function updateSummary() {
+        const box = document.getElementById("ops-summary");
+        const cafeName = document.getElementById("partnership")?.selectedOptions?.[0]?.text?.trim() || "(cafe)";
+        const stokAwal = [...document.querySelectorAll("#stok-awal-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
+        const titip = [...document.querySelectorAll("#titip-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
+        const tarik = [...document.querySelectorAll("#tarik-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
+        const terjual = [...document.querySelectorAll("#terjual-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
+        const sisa = Object.values(state.sisaSistem || {}).reduce((a, v) => a + (v || 0), 0);
+        document.getElementById("ops-summary-cafe").textContent = cafeName;
+        document.getElementById("ops-summary-stok-awal").textContent = stokAwal.toLocaleString("id-ID");
+        document.getElementById("ops-summary-titip").textContent = titip.toLocaleString("id-ID");
+        document.getElementById("ops-summary-tarik").textContent = tarik.toLocaleString("id-ID");
+        document.getElementById("ops-summary-terjual").textContent = terjual.toLocaleString("id-ID");
+        document.getElementById("ops-summary-sisa").textContent = sisa.toLocaleString("id-ID");
+        box.style.display = "block";
       }
 
       async function init() {
@@ -197,14 +272,20 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
           const opt = e.target.selectedOptions[0];
           state.partnershipId = e.target.value || null;
           state.tenantId = opt ? opt.dataset.tenant : null;
-          if (!state.partnershipId) { renderSections(); return; }
-          const r = await jget(`/v1/skus?brandId=${state.brandId}`);
-          state.skus = r.ok ? (r.data || []) : [];
-          await refreshSisa();
+          renderSections();
+          if (!state.partnershipId) return;
+          try {
+            const r = await jget(`/v1/skus?brandId=${state.brandId}`);
+            state.skus = r.ok ? (r.data || []) : [];
+          } catch (err) {
+            state.skus = [];
+          }
+          try { await refreshSisa(); } catch (e) { state.sisaSistem = {}; }
+          try { await refreshStokAwal(); } catch (e) { state.stokAwal = {}; }
           renderSections();
         });
         document.getElementById("date").addEventListener("change", async () => {
-          if (state.partnershipId) { await refreshSisa(); renderSections(); }
+          if (state.partnershipId) { await refreshSisa(); await refreshStokAwal(); renderSections(); }
         });
       }
 
@@ -215,6 +296,16 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
           if (inp.disabled) return;
           const v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
           if (v > 0) items.push({ skuId: inp.dataset.sku, kind, qty: v });
+        });
+        return items;
+      }
+      function readStokAwalItems(sectionSel) {
+        // Stok Awal is an ADJUSTMENT with a fixed reason, stored as positive qty.
+        const items = [];
+        document.querySelectorAll(sectionSel + " input[data-sku]").forEach(inp => {
+          if (inp.disabled) return;
+          const v = parseInt((inp.value || "0").replace(/\D/g, ""), 10) || 0;
+          if (v > 0) items.push({ skuId: inp.dataset.sku, kind: "ADJUSTMENT", qty: v, reason: STOK_AWAL_REASON });
         });
         return items;
       }
@@ -236,6 +327,7 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
         const date = document.getElementById("date").value;
         if (!date) { showErr("Tanggal wajib."); return; }
         // Sections: items per (kind) for movements, lines per (terjual) for closing.
+        const stokAwalItems = readStokAwalItems("#stok-awal-section");
         const titipItems = readSectionItems("#titip-section", "TITIP");
         const tarikItems = readSectionItems("#tarik-section", "TARIK");
         const terjualLines = readTerjualLines("#terjual-section");
@@ -244,13 +336,27 @@ const title = `Catat Hari Ini — ${APP_NAME}`;
           const sisa = state.sisaSistem[it.skuId] ?? 0;
           if (it.qty > sisa) { showErr(`Tarik SKU melebihi sisa sistem (${sisa}).`); return; }
         }
-        if (titipItems.length + tarikItems.length + terjualLines.length === 0) {
-          showErr("Minimal isi satu kolom (Titip, Tarik, atau Terjual)."); return;
+        if (stokAwalItems.length + titipItems.length + tarikItems.length + terjualLines.length === 0) {
+          showErr("Minimal isi satu kolom (Stok Awal, Titip, Tarik, atau Terjual)."); return;
         }
 
         const btn = document.getElementById("submit-btn");
         btn.disabled = true; btn.textContent = "Menyimpan…";
         try {
+          // 0) Stok Awal — ADJUSTMENT batch, signed positive. Idempotent per (partnership, date).
+          if (stokAwalItems.length > 0) {
+            const r = await fetch(API + "/v1/movements/batch", {
+              method: "POST",
+              headers: { ...authH },
+              body: JSON.stringify({
+                partnershipId: state.partnershipId,
+                movementDate: date,
+                items: stokAwalItems,
+                batchIdempotencyKey: `stokAwal-${state.partnershipId}-${date}`,
+              }),
+            });
+            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error("Stok Awal gagal: " + (j?.error?.code || r.status)); }
+          }
           // 1) Titip batch — v2: idempotency in body
           if (titipItems.length > 0) {
             const r = await fetch(API + "/v1/movements/batch", {

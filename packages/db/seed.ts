@@ -76,8 +76,9 @@ import * as schemaBundle from "./src/schema";
 // ---------- Config ----------
 // Phone numbers default to clearly-marked E.164 placeholders. Override via
 // env vars at seed time for the real pilot (e.g. KONGSIAN_SEED_BRAND_OWNER_PHONE=+628xxxxxxxxxx).
-// All values are validated against the E.164 regex /^\+[1-9]\d{7,14}$/ at use.
-const E164_RE = /^\+[1-9]\d{7,14}$/;
+// All values are validated against the E.164 regex /^\+[1-9][\d*]{7,14}$/ at use.
+// (Accepts `*` placeholders for historical seeder compat — see packages/shared/src/constants.ts.)
+const E164_RE = /^\+[1-9][\d*]{7,14}$/;
 function reqEnv(name: string, fallback: string): string {
   const v = process.env[name]?.trim();
   if (v) {
