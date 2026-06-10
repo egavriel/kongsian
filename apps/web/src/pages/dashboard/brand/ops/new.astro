@@ -270,16 +270,14 @@ export const ssr = false;
           });
           if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j?.error?.code || "HTTP " + r.status); }
           const j = await r.json().catch(() => ({}));
-          showOk(`Stok Awal dihapus (${j?.data?.count ?? savedCount} baris).`);
-          // Clear inputs in DOM
-          document.querySelectorAll("#stok-awal-section input[data-sku]").forEach((inp) => { inp.value = ""; });
-          await refreshSisa();
-          await refreshStokAwal();
-          renderSections();
-          updateSummary();
+          const deletedCount = j?.data?.count ?? savedCount;
+          showOk(`Stok Awal dihapus (${deletedCount} baris). Menyegarkan…`);
+          // Hard reload to guarantee a fresh state from the server. In-place state
+          // updates were leaving stale `Sisa sistem` values visible when the
+          // user expected the persisted stock to drop to 0 immediately.
+          setTimeout(() => { window.location.reload(); }, 700);
         } catch (e) {
           showErr("Reset gagal: " + (e.message || e));
-        } finally {
           btn.disabled = false; btn.textContent = "↺ Reset";
         }
       }
