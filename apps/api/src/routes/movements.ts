@@ -20,7 +20,7 @@
  * This is the unified formula the auto-recalc uses.
  */
 import { Hono } from "hono";
-import { and, desc, eq, gte, lte, sum } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sum, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   getDb,
@@ -306,6 +306,79 @@ router.post("/batch", async (c) => {
     });
   }
   return c.json({ ok: true, data: { movementIds: inserted, count: inserted.length } });
+});
+
+/**
+ * DELETE /v1/movements — remove ADJUSTMENT rows for a partnership.
+ * Brand-only. Used by the Catat Hari Ini "Reset Stok Awal" button.
+ *
+ * Body:
+ *   { partnershipId: string, movementDate: 'YYYY-MM-DD', reason: string }
+ *
+ * Deletes every row matching (partnershipId, movementDate, kind='ADJUSTMENT',
+ * reason). Tenant access is denied — brand-side bookkeeping only.
+ * Each deletion is recorded in audit_log with the row's prior state.
+ */
+const DeleteSchema = z.object({
+  partnershipId: z.string().min(1),
+  movementDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reason: z.string().min(1).max(280),
+});
+
+router.delete("/", async (c) => {
+  const { userId } = c.get("auth");
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = DeleteSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ ok: false, error: { code: "INVALID_INPUT", issues: parsed.error.flatten() } }, 400);
+  }
+  const v = parsed.data;
+  const access = await assertPartnershipAccess(c.env, userId, v.partnershipId);
+  if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
+  if (access.role !== "BRAND") {
+    return c.json(
+      { ok: false, error: { code: "TENANT_FORBIDDEN", message: "Hanya brand yang boleh menghapus Stok Awal." } },
+      403
+    );
+  }
+
+  const db = getDb(c.env.kongsian_db);
+  const now = Math.floor(Date.now() / 1000);
+  const targets = await db
+    .select()
+    .from(stockMovements)
+    .where(
+      and(
+        eq(stockMovements.partnershipId, v.partnershipId),
+        eq(stockMovements.movementDate, v.movementDate),
+        eq(stockMovements.kind, "ADJUSTMENT"),
+        eq(stockMovements.reason, v.reason)
+      )
+    );
+
+  if (targets.length === 0) {
+    return c.json({ ok: true, data: { deletedIds: [], count: 0 } });
+  }
+
+  const deletedIds = targets.map((t) => t.id);
+  await db.delete(stockMovements).where(inArray(stockMovements.id, deletedIds));
+
+  for (const t of targets) {
+    await db.insert(auditLog).values({
+      id: crypto.randomUUID(),
+      userId,
+      action: "MOVEMENT_DELETED",
+      entityType: "stock_movement",
+      entityId: t.id,
+      beforeJson: JSON.stringify(t),
+      afterJson: null,
+      ip: c.req.header("cf-connecting-ip") ?? null,
+      userAgent: c.req.header("user-agent") ?? null,
+      createdAt: now,
+    });
+  }
+
+  return c.json({ ok: true, data: { deletedIds, count: deletedIds.length } });
 });
 
 export { router as movements };

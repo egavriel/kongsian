@@ -62,6 +62,12 @@ export const ssr = false;
       .summary-card .stok-awal-row { grid-column:1 / -1; padding:10px 0; border-bottom:1px solid #1e293b; margin-bottom:6px; }
       .summary-card .stok-awal-row .label { color:#a78bfa; }
       .summary-card .stok-awal-row .value { color:#a78bfa; }
+      .section-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+      .section-head h2 { margin:0; }
+      .btn-ghost { background:transparent; border:1px solid #1e293b; color:#a78bfa; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; min-height:32px; }
+      .btn-ghost:hover { background:rgba(167,139,250,.08); border-color:#a78bfa; }
+      .btn-ghost:active { background:rgba(167,139,250,.16); }
+      .btn-ghost:disabled { opacity:.4; cursor:not-allowed; }
     </style>
   </head>
   <body>
@@ -94,7 +100,10 @@ export const ssr = false;
         </div>
 
         <div class="section stok-awal">
-          <h2><span class="ic">🌱</span> Stok Awal<span class="badge">SEKALI</span></h2>
+          <div class="section-head">
+            <h2><span class="ic">🌱</span> Stok Awal<span class="badge">SEKALI</span></h2>
+            <button type="button" id="stok-awal-reset" class="btn-ghost" style="display:none" aria-label="Reset Stok Awal">↺ Reset</button>
+          </div>
           <p class="hint">Stok yang SUDAH ada di cafe <b>sebelum</b> mulai pakai Kongsian. Cukup diisi sekali di hari pertama partnership — sistem akan menambahkannya ke sisa. Untuk tambah stok baru pakai kolom Titip di bawah.</p>
           <div id="stok-awal-section"><div class="empty">Pilih cafe dulu.</div></div>
         </div>
@@ -166,6 +175,7 @@ export const ssr = false;
       function skuRow(s, kind, opts = {}) {
         const max = opts.max != null ? `max="${opts.max}"` : "";
         const dis = opts.disabled ? "disabled" : "";
+        const val = opts.value != null && opts.value !== 0 ? `value="${opts.value}"` : "";
         const hint = opts.hint ? `<div class="meta">${opts.hint}</div>` : `<div class="meta">${fmtRp(s.priceIdr)}</div>`;
         return `
           <div class="sk-row">
@@ -175,7 +185,7 @@ export const ssr = false;
             </div>
             <div class="stepper">
               <button type="button" class="step-btn minus" aria-label="Kurangi" ${dis}>−</button>
-              <input type="number" min="0" ${max} step="1" data-sku="${s.id}" data-kind="${kind}" placeholder="0" inputmode="numeric" ${dis} />
+              <input type="number" min="0" ${max} ${val} step="1" data-sku="${s.id}" data-kind="${kind}" placeholder="0" inputmode="numeric" ${dis} />
               <button type="button" class="step-btn plus" aria-label="Tambah" ${dis}>+</button>
             </div>
           </div>
@@ -202,7 +212,7 @@ export const ssr = false;
           const hint = existing > 0
             ? `<div class="meta set-once-hint">✓ Sudah diisi: ${existing} (edit jika perlu)</div>`
             : `<div class="meta">${fmtRp(s.priceIdr)}</div>`;
-          return skuRow(s, "stok-awal", { hint });
+          return skuRow(s, "stok-awal", { hint, value: existing > 0 ? existing : undefined });
         }).join("");
         document.getElementById("titip-section").innerHTML = state.skus.map(s => skuRow(s, "titip")).join("");
         document.getElementById("tarik-section").innerHTML = state.skus.map(s => {
@@ -226,6 +236,52 @@ export const ssr = false;
             }
           }
         }
+        updateStokAwalResetButton();
+      }
+
+      function updateStokAwalResetButton() {
+        const btn = document.getElementById("stok-awal-reset");
+        if (!btn) return;
+        const hasSaved = Object.values(state.stokAwal || {}).some((v) => (v || 0) > 0);
+        btn.style.display = (state.partnershipId && hasSaved) ? "inline-block" : "none";
+      }
+
+      async function resetStokAwal() {
+        if (!state.partnershipId) return;
+        const date = document.getElementById("date").value;
+        const savedCount = Object.values(state.stokAwal || {}).filter((v) => (v || 0) > 0).length;
+        if (savedCount === 0) return;
+        const ok = window.confirm(
+          `Hapus ${savedCount} entri Stok Awal yang tersimpan untuk tanggal ${date}?\n\n` +
+          `Tindakan ini akan mempengaruhi Sisa Sistem. Tidak bisa di-undo (kecuali kamu input ulang).`
+        );
+        if (!ok) return;
+        const btn = document.getElementById("stok-awal-reset");
+        btn.disabled = true; btn.textContent = "Menghapus…";
+        try {
+          const r = await fetch(API + "/v1/movements", {
+            method: "DELETE",
+            headers: { ...authH },
+            body: JSON.stringify({
+              partnershipId: state.partnershipId,
+              movementDate: date,
+              reason: STOK_AWAL_REASON,
+            }),
+          });
+          if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error(j?.error?.code || "HTTP " + r.status); }
+          const j = await r.json().catch(() => ({}));
+          showOk(`Stok Awal dihapus (${j?.data?.count ?? savedCount} baris).`);
+          // Clear inputs in DOM
+          document.querySelectorAll("#stok-awal-section input[data-sku]").forEach((inp) => { inp.value = ""; });
+          await refreshSisa();
+          await refreshStokAwal();
+          renderSections();
+          updateSummary();
+        } catch (e) {
+          showErr("Reset gagal: " + (e.message || e));
+        } finally {
+          btn.disabled = false; btn.textContent = "↺ Reset";
+        }
       }
 
       async function refreshSisa() {
@@ -233,7 +289,7 @@ export const ssr = false;
         const upTo = document.getElementById("date").value;
         const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
         state.sisaSistem = {};
-        if (r.ok) for (const row of r.data || []) state.sisaSistem[row.skuId] = row.qty;
+        if (r.ok) for (const row of r.data?.bySku || []) state.sisaSistem[row.skuId] = row.sisa ?? 0;
       }
 
       function updateSummary() {
@@ -320,6 +376,7 @@ export const ssr = false;
         return lines;
       }
 
+      document.getElementById("stok-awal-reset").addEventListener("click", resetStokAwal);
       document.getElementById("submit-btn").addEventListener("click", async () => {
         errEl.style.display = "none"; okEl.style.display = "none";
         if (!state.partnershipId) { showErr("Pilih cafe dulu."); return; }

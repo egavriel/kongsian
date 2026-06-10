@@ -262,7 +262,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           const cards = [];
           for (const p of active) {
             const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${p.id}&upTo=${today}`);
-            const rows = r.ok ? (r.data || []) : [];
+            const rows = r.ok ? (r.data?.bySku || []) : [];
             if (rows.length === 0) {
               cards.push(`<div class="sisa-card"><div class="cafe">${p.tenant?.name || "(tenant?)"}</div><div class="loading" style="padding:8px 0">Belum ada stok.</div></div>`);
               continue;
@@ -270,8 +270,9 @@ const title = `Brand Dashboard — ${APP_NAME}`;
             const pills = rows.map(row => {
               const sku = brand.skus.find(s => s.id === row.skuId);
               if (!sku) return "";
-              const cls = row.qty <= 0 ? "zero" : row.qty < 5 ? "low" : "ok";
-              return `<span class="sisa-pill ${cls}">${sku.code}: ${row.qty}</span>`;
+              const qty = row.sisa ?? 0;
+              const cls = qty <= 0 ? "zero" : qty < 5 ? "low" : "ok";
+              return `<span class="sisa-pill ${cls}">${sku.code}: ${qty}</span>`;
             }).join("");
             cards.push(`<div class="sisa-card"><div class="cafe">${p.tenant?.name || "(tenant?)"}</div><div class="sisa-rows">${pills}</div></div>`);
           }
