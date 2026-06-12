@@ -56,18 +56,18 @@ const title = `Partnerships — ${APP_NAME}`;
     <div class="shell">
       <header class="top">
         <a class="back" href="/dashboard/brand">← Brand</a>
-        <h1>Cafe Partner</h1>
+        <h1>Partner</h1>
         <span></span>
       </header>
       <main>
         <div class="card">
-          <h2>Invite Cafe Baru</h2>
+          <h2>Invite Partner Baru</h2>
           <div id="err" class="err" style="display:none"></div>
           <div id="ok" class="ok" style="display:none"></div>
           <form id="invite-form">
             <label>
-              <span class="lbl">Nama Cafe</span>
-              <input id="cafe" name="cafe" maxlength="60" placeholder="Cafe Barista" required />
+              <span class="lbl">Nama Partner</span>
+              <input id="cafe" name="cafe" maxlength="60" placeholder="Partner Barista" required />
             </label>
             <div class="row2">
               <label>
@@ -114,7 +114,7 @@ const title = `Partnerships — ${APP_NAME}`;
         if (!b.ok || !b.data) { list.innerHTML = `<div class="empty">Gagal memuat.</div>`; return; }
         const ps = b.data.partnerships || [];
         if (ps.length === 0) {
-          list.innerHTML = `<div class="empty">Belum ada partnership. Invite cafe pertama di atas.</div>`;
+          list.innerHTML = `<div class="empty">Belum ada partnership. Invite partner pertama di atas.</div>`;
           return;
         }
         list.innerHTML = ps.map(p => `

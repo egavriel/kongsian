@@ -157,7 +157,7 @@ const title = `Movements — ${APP_NAME}`;
         state.partnerships = b.data.partnerships || [];
         state.skus = b.data.skus || [];
         if (state.partnerships.length === 0) {
-          listEl.innerHTML = `<div class="empty">Belum ada partnership. <a href="/dashboard/brand/partnerships">Invite cafe dulu</a>.</div>`;
+          listEl.innerHTML = `<div class="empty">Belum ada partnership. <a href="/dashboard/brand/partnerships">Invite partner dulu</a>.</div>`;
           return;
         }
         pickEl.innerHTML = state.partnerships.map(p => `

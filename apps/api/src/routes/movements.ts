@@ -20,7 +20,7 @@
  * This is the unified formula the auto-recalc uses.
  */
 import { Hono } from "hono";
-import { and, desc, eq, gte, lte, sum, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, lte, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   getDb,
@@ -141,41 +141,46 @@ router.get("/sisa-sistem", async (c) => {
   if (!access.ok) return c.json({ ok: false, error: { code: access.error } }, access.code as 403 | 404);
 
   const db = getDb(c.env.kongsian_db);
-  // SELECT sku_id, SUM(qty) FROM stock_movements WHERE partnershipId=? AND movementDate <= upTo GROUP BY sku_id
-  const rows = await db
+  // Single LEFT JOIN: SKU display info + SUM(qty) per SKU for this partnership up to upTo.
+  // Index idx_mov_psd(partnership_id, sku_id, movement_date) covers the SUM filter.
+  // The COALESCE(SUM(qty), 0) keeps SKUs with zero movements in the result so the
+  // client doesn't have to handle missing rows.
+  const result = await db
     .select({
-      skuId: stockMovements.skuId,
-      total: sum(stockMovements.qty),
+      skuId: skus.id,
+      code: skus.code,
+      name: skus.name,
+      priceIdr: skus.priceIdr,
+      masaSimpanHari: skus.masaSimpanHari,
+      sisa: sql<number>`COALESCE(SUM(CASE WHEN ${stockMovements.movementDate} <= ${upTo} THEN ${stockMovements.qty} END), 0)`,
     })
-    .from(stockMovements)
-    .where(
-      and(
-        eq(stockMovements.partnershipId, partnershipId),
-        lte(stockMovements.movementDate, upTo)
-      )
-    )
-    .groupBy(stockMovements.skuId);
-
-  // Also pull SKU display info.
-  const skuList = await db
-    .select()
     .from(skus)
     .innerJoin(partnershipSkus, eq(partnershipSkus.skuId, skus.id))
-    .where(eq(partnershipSkus.partnershipId, partnershipId));
+    .leftJoin(
+      stockMovements,
+      and(
+        eq(stockMovements.skuId, skus.id),
+        eq(stockMovements.partnershipId, partnershipId)
+      )
+    )
+    .where(eq(partnershipSkus.partnershipId, partnershipId))
+    .groupBy(skus.id);
 
-  const result = skuList.map((s) => {
-    const tot = rows.find((r) => r.skuId === s.skus.id);
-    return {
-      skuId: s.skus.id,
-      code: s.skus.code,
-      name: s.skus.name,
-      priceIdr: s.skus.priceIdr,
-      masaSimpanHari: s.skus.masaSimpanHari,
-      sisa: Number(tot?.total ?? 0),
-    };
+  return c.json({
+    ok: true,
+    data: {
+      upTo,
+      partnershipId,
+      bySku: result.map((r) => ({
+        skuId: r.skuId,
+        code: r.code,
+        name: r.name,
+        priceIdr: r.priceIdr,
+        masaSimpanHari: r.masaSimpanHari,
+        sisa: Number(r.sisa ?? 0),
+      })),
+    },
   });
-
-  return c.json({ ok: true, data: { upTo, partnershipId, bySku: result } });
 });
 
 /** POST /v1/movements — submit a single movement. Idempotent by idempotencyKey. */

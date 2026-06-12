@@ -74,7 +74,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
       }
       .sisa-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
       .sisa-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; }
-      .sisa-card .cafe { font-weight:600; margin-bottom:8px; }
+      .sisa-card .partner { font-weight:600; margin-bottom:8px; }
       .sisa-rows { display:flex; flex-wrap:wrap; gap:6px; }
       .sisa-pill { background:#1e293b; padding:4px 8px; border-radius:6px; font-size:12px; }
       .sisa-pill.zero { color:#94a3b8; }
@@ -104,18 +104,18 @@ const title = `Brand Dashboard — ${APP_NAME}`;
 
         <div class="stats">
           <div class="stat">
-            <div class="lbl">Cafe aktif</div>
+            <div class="lbl">Partner aktif</div>
             <div class="val" id="active-count">—</div>
             <div class="sub">partnerships</div>
           </div>
           <div class="stat">
             <div class="lbl">Omzet minggu ini</div>
             <div class="val" id="weekly-revenue">—</div>
-            <div class="sub">semua cafe</div>
+            <div class="sub">semua partner</div>
           </div>
         </div>
 
-        <h2>Stok tersisa di cafe</h2>
+        <h2>Stok tersisa di partner</h2>
         <div id="sisa-list" class="sisa-list">
           <div class="loading">Memuat…</div>
         </div>
@@ -130,7 +130,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           <a class="action" href="/dashboard/brand/movements/new-titip">
             <span class="ic">📦</span>
             <span class="tt">Catat Titip</span>
-            <span class="sub">Stok masuk ke cafe</span>
+            <span class="sub">Stok masuk ke partner</span>
           </a>
           <a class="action" href="/dashboard/brand/movements/new-tarik">
             <span class="ic">↩️</span>
@@ -144,7 +144,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           </a>
           <a class="action" href="/dashboard/brand/partnerships">
             <span class="ic">🤝</span>
-            <span class="tt">Invite Cafe</span>
+            <span class="tt">Invite Partner</span>
             <span class="sub">Tambah partnership</span>
           </a>
           <a class="action" href="/dashboard/brand/closings">
@@ -164,7 +164,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           </a>
         </div>
 
-        <h2>Cafe partner</h2>
+        <h2>Partner</h2>
         <div id="partnerships" class="partnerships">
           <div class="loading">Memuat…</div>
         </div>
@@ -238,7 +238,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         const ps = brand.partnerships || [];
         const pEl = document.getElementById("partnerships");
         if (ps.length === 0) {
-          pEl.innerHTML = '<div class="empty">Belum ada cafe partner. <a href="/dashboard/brand/partnerships">Invite cafe pertama</a>.</div>';
+          pEl.innerHTML = '<div class="empty">Belum ada partner. <a href="/dashboard/brand/partnerships">Invite partner pertama</a>.</div>';
         } else {
           pEl.innerHTML = ps.map(p => `
             <div class="partner">
@@ -253,10 +253,10 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           `).join("");
         }
 
-        // Stok tersisa per cafe
+        // Stok tersisa per partner
         const sisaEl = document.getElementById("sisa-list");
         if (active.length === 0) {
-          sisaEl.innerHTML = `<div class="empty">Belum ada cafe aktif.</div>`;
+          sisaEl.innerHTML = `<div class="empty">Belum ada partner aktif.</div>`;
         } else {
           const today = new Date().toISOString().slice(0, 10);
           const cards = [];
@@ -264,7 +264,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
             const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${p.id}&upTo=${today}`);
             const rows = r.ok ? (r.data?.bySku || []) : [];
             if (rows.length === 0) {
-              cards.push(`<div class="sisa-card"><div class="cafe">${p.tenant?.name || "(tenant?)"}</div><div class="loading" style="padding:8px 0">Belum ada stok.</div></div>`);
+              cards.push(`<div class="sisa-card"><div class="partner">${p.tenant?.name || "(tenant?)"}</div><div class="loading" style="padding:8px 0">Belum ada stok.</div></div>`);
               continue;
             }
             const pills = rows.map(row => {
@@ -274,7 +274,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
               const cls = qty <= 0 ? "zero" : qty < 5 ? "low" : "ok";
               return `<span class="sisa-pill ${cls}">${sku.code}: ${qty}</span>`;
             }).join("");
-            cards.push(`<div class="sisa-card"><div class="cafe">${p.tenant?.name || "(tenant?)"}</div><div class="sisa-rows">${pills}</div></div>`);
+            cards.push(`<div class="sisa-card"><div class="partner">${p.tenant?.name || "(tenant?)"}</div><div class="sisa-rows">${pills}</div></div>`);
           }
           sisaEl.innerHTML = cards.join("");
         }

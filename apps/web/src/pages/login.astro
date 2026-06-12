@@ -253,7 +253,13 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
           }
           return true;
         } catch (e) {
-          showErr("Tidak bisa konek ke server. Coba lagi.");
+          // Surface the real error to console so a phone-browser user (no
+          // DevTools) can copy/paste it from a remote-debug session or the
+          // Auth-bus logs. Old message swallowed the cause entirely.
+          // eslint-disable-next-line no-console
+          console.error("[login] sendOtp fetch failed:", e, { url: `${API}/v1/auth/otp/request` });
+          const cause = (e && (e.message || e.name)) || "unknown";
+          showErr(`Tidak bisa konek ke server (${cause}). Hard-refresh (Ctrl+Shift+R) lalu coba lagi.`);
           return false;
         } finally {
           isSending = false;

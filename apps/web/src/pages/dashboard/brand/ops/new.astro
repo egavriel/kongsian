@@ -50,7 +50,7 @@ export const ssr = false;
       .status { padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
       .diag { display:block; }
       .summary-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:14px; }
-      .summary-card .cafe { font-weight:700; margin-bottom:10px; font-size:13px; color:#94a3b8; }
+      .summary-card .partner { font-weight:700; margin-bottom:10px; font-size:13px; color:#94a3b8; }
       .summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
       .summary-card .label { font-size: 11px; color:#94a3b8; text-transform: uppercase; letter-spacing:.08em; font-weight:700; }
       .summary-card .value { font-size: 26px; font-weight: 800; color:#f1f5f9; }
@@ -68,6 +68,13 @@ export const ssr = false;
       .btn-ghost:hover { background:rgba(167,139,250,.08); border-color:#a78bfa; }
       .btn-ghost:active { background:rgba(167,139,250,.16); }
       .btn-ghost:disabled { opacity:.4; cursor:not-allowed; }
+      /* Skeleton loaders — shown while partnership-scoped data is fetching */
+      :global(.skeleton) { background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%); background-size: 200% 100%; animation: sk-shimmer 1.2s linear infinite; border-radius:6px; }
+      @keyframes sk-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+      :global(.skeleton-row) { display:grid; grid-template-columns:1fr 150px; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid #1e293b; }
+      :global(.skeleton-row:last-child) { border-bottom:none; }
+      :global(.skeleton-block) { height:14px; }
+      :global(.skeleton-stepper) { height:36px; }
     </style>
   </head>
   <body>
@@ -85,11 +92,13 @@ export const ssr = false;
           <input id="date" type="date" required />
         </label>
         <label>
-          <span class="lbl">Cafe</span>
-          <select id="partnership"></select>
+          <span class="lbl">Partner</span>
+          <select id="partnership" disabled>
+            <option value="">— Memuat… —</option>
+          </select>
         </label>
         <div id="ops-summary" class="summary-card" style="display:none">
-          <div class="cafe" id="ops-summary-cafe">—</div>
+          <div class="partner" id="ops-summary-partner">—</div>
           <div class="summary-grid">
             <div class="stok-awal-row"><div class="label">Stok Awal</div><div class="value" id="ops-summary-stok-awal">0</div></div>
             <div><div class="label">Titip</div><div class="value" id="ops-summary-titip">0</div></div>
@@ -104,26 +113,26 @@ export const ssr = false;
             <h2><span class="ic">🌱</span> Stok Awal<span class="badge">SEKALI</span></h2>
             <button type="button" id="stok-awal-reset" class="btn-ghost" style="display:none" aria-label="Reset Stok Awal">↺ Reset</button>
           </div>
-          <p class="hint">Stok yang SUDAH ada di cafe <b>sebelum</b> mulai pakai Kongsian. Cukup diisi sekali di hari pertama partnership — sistem akan menambahkannya ke sisa. Untuk tambah stok baru pakai kolom Titip di bawah.</p>
-          <div id="stok-awal-section"><div class="empty">Pilih cafe dulu.</div></div>
+          <p class="hint">Stok yang SUDAH ada di partner <b>sebelum</b> mulai pakai Kongsian. Cukup diisi sekali di hari pertama partnership — sistem akan menambahkannya ke sisa. Untuk tambah stok baru pakai kolom Titip di bawah.</p>
+          <div id="stok-awal-section"><div class="empty">Pilih partner dulu.</div></div>
         </div>
 
         <div class="section">
           <h2><span class="ic">📦</span> Titip (stok masuk)</h2>
-          <p class="hint">Isi berapa banyak tiap SKU yang kamu titipkan ke cafe hari ini.</p>
-          <div id="titip-section"><div class="empty">Pilih cafe dulu.</div></div>
+          <p class="hint">Isi berapa banyak tiap SKU yang kamu titipkan ke partner hari ini.</p>
+          <div id="titip-section"><div class="empty">Pilih partner dulu.</div></div>
         </div>
 
         <div class="section">
           <h2><span class="ic">↩️</span> Tarik (stok kembali)</h2>
           <p class="hint">Stok yang tidak terjual dan kamu bawa kembali. Max = sisa sistem.</p>
-          <div id="tarik-section"><div class="empty">Pilih cafe dulu.</div></div>
+          <div id="tarik-section"><div class="empty">Pilih partner dulu.</div></div>
         </div>
 
         <div class="section">
           <h2><span class="ic">💵</span> Terjual (closing)</h2>
           <p class="hint">Berapa cup/pack terjual hari ini per SKU. Ini yang dihitung untuk settlement.</p>
-          <div id="terjual-section"><div class="empty">Pilih cafe dulu.</div></div>
+          <div id="terjual-section"><div class="empty">Pilih partner dulu.</div></div>
         </div>
 
         <button id="submit-btn" class="btn btn-primary" type="button" disabled>Simpan Semua</button>
@@ -147,6 +156,31 @@ export const ssr = false;
       const state = { brandId: null, partnershipId: null, tenantId: null, skus: [], sisaSistem: {}, partnerships: [], stokAwal: {} };
       const STOK_AWAL_REASON = "Stok awal partnership";
       document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+
+      // Race guard: bump this on every partnership/date change. A response whose
+      // sequence number is < the current one is stale (user picked a different
+      // option before the previous fetch finished) and must NOT touch state.
+      let loadSeq = 0;
+
+      function renderSkeletons() {
+        const skel = `
+          <div class="skeleton-row">
+            <div><div class="skeleton skeleton-block" style="width:55%"></div><div class="skeleton skeleton-block" style="width:35%; margin-top:6px"></div></div>
+            <div class="skeleton skeleton-stepper"></div>
+          </div>
+          <div class="skeleton-row">
+            <div><div class="skeleton skeleton-block" style="width:50%"></div><div class="skeleton skeleton-block" style="width:30%; margin-top:6px"></div></div>
+            <div class="skeleton skeleton-stepper"></div>
+          </div>
+          <div class="skeleton-row">
+            <div><div class="skeleton skeleton-block" style="width:60%"></div><div class="skeleton skeleton-block" style="width:40%; margin-top:6px"></div></div>
+            <div class="skeleton skeleton-stepper"></div>
+          </div>
+        `;
+        for (const id of ["stok-awal-section","titip-section","tarik-section","terjual-section"]) {
+          document.getElementById(id).innerHTML = skel;
+        }
+      }
 
       function attachQtyStrip(sel) {
         // Strip non-digits on the hidden number input + wire minus/plus buttons.
@@ -197,7 +231,7 @@ export const ssr = false;
         document.getElementById("submit-btn").disabled = disabled;
         if (!state.partnershipId) {
           for (const id of ["stok-awal-section","titip-section","tarik-section","terjual-section"]) {
-            document.getElementById(id).innerHTML = `<div class="empty">Pilih cafe dulu.</div>`;
+            document.getElementById(id).innerHTML = `<div class="empty">Pilih partner dulu.</div>`;
           }
           return;
         }
@@ -223,10 +257,15 @@ export const ssr = false;
         attachQtyStrip("#stok-awal-section"); attachQtyStrip("#titip-section"); attachQtyStrip("#tarik-section"); attachQtyStrip("#terjual-section");
       }
 
-      async function refreshStokAwal() {
+      async function refreshStokAwal(seq) {
         if (!state.partnershipId) { state.stokAwal = {}; return; }
         const date = document.getElementById("date").value;
-        const r = await jget(`/v1/movements?partnershipId=${state.partnershipId}`);
+        // Pass an explicit from/to window so the server only loads the rows we
+        // actually care about (one day + a small slack for safety). The previous
+        // code pulled LIMIT 500 unfiltered rows and filtered in JS — slow once
+        // a partnership has months of history.
+        const r = await jget(`/v1/movements?partnershipId=${state.partnershipId}&from=${date}&to=${date}`);
+        if (seq !== loadSeq) return; // stale
         state.stokAwal = {};
         if (r.ok) {
           for (const mv of r.data || []) {
@@ -282,23 +321,24 @@ export const ssr = false;
         }
       }
 
-      async function refreshSisa() {
+      async function refreshSisa(seq) {
         if (!state.partnershipId) { state.sisaSistem = {}; return; }
         const upTo = document.getElementById("date").value;
         const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
+        if (seq !== loadSeq) return; // stale
         state.sisaSistem = {};
         if (r.ok) for (const row of r.data?.bySku || []) state.sisaSistem[row.skuId] = row.sisa ?? 0;
       }
 
       function updateSummary() {
         const box = document.getElementById("ops-summary");
-        const cafeName = document.getElementById("partnership")?.selectedOptions?.[0]?.text?.trim() || "(cafe)";
+        const partnerName = document.getElementById("partnership")?.selectedOptions?.[0]?.text?.trim() || "(partner)";
         const stokAwal = [...document.querySelectorAll("#stok-awal-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
         const titip = [...document.querySelectorAll("#titip-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
         const tarik = [...document.querySelectorAll("#tarik-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
         const terjual = [...document.querySelectorAll("#terjual-section input[data-sku]")].reduce((a, i) => a + (parseInt(i.value || "0", 10) || 0), 0);
         const sisa = Object.values(state.sisaSistem || {}).reduce((a, v) => a + (v || 0), 0);
-        document.getElementById("ops-summary-cafe").textContent = cafeName;
+        document.getElementById("ops-summary-partner").textContent = partnerName;
         document.getElementById("ops-summary-stok-awal").textContent = stokAwal.toLocaleString("id-ID");
         document.getElementById("ops-summary-titip").textContent = titip.toLocaleString("id-ID");
         document.getElementById("ops-summary-tarik").textContent = tarik.toLocaleString("id-ID");
@@ -307,39 +347,62 @@ export const ssr = false;
         box.style.display = "block";
       }
 
+      async function loadPartnershipScopedData() {
+        if (!state.partnershipId) return;
+        const seq = ++loadSeq;        // invalidate any in-flight previous load
+        renderSkeletons();             // show shimmer immediately so the user sees the page is working
+        // Fire all three reads in parallel. Each checks `seq` before mutating
+        // state so the most-recent selection always wins.
+        const tasks = [
+          refreshSisa(seq),
+          refreshStokAwal(seq),
+        ];
+        // SKUs are brand-scoped, not partnership-scoped. Load them once on
+        // init() and skip re-fetching here. (The original code refetched
+        // /v1/skus on every partnership change — pure waste.)
+        await Promise.allSettled(tasks);
+        if (seq !== loadSeq) return; // user changed selection while we were loading
+        renderSections();
+        updateSummary();
+      }
+
       async function init() {
         const me = await jget("/v1/brands/me");
         if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
         state.brandId = me.data.brandId;
-        const b = await jget(`/v1/brands/${state.brandId}`);
+
+        // Load brand detail (gives us SKUs once) and the lightweight active-
+        // partnerships list (gives us the partner dropdown) in parallel. The
+        // old flow used /v1/brands/:id which also returned all SKUs and all
+        // partnerships — fine for 3 partners, slow once the brand grows.
+        const [b, pp] = await Promise.all([
+          jget(`/v1/brands/${state.brandId}`),
+          jget(`/v1/brands/${state.brandId}/partnerships?status=ACTIVE`),
+        ]);
         if (!b.ok) { showErr("Gagal muat brand: " + (b.error?.code || "?")); return; }
-        const active = (b.data.partnerships || []).filter(p => p.status === "ACTIVE");
+        state.skus = b.data?.skus || [];
+        const active = (pp.ok ? (pp.data?.partnerships || []) : (b.data.partnerships || [])).filter(p => p.status === "ACTIVE");
         state.partnerships = active;
         const sel = document.getElementById("partnership");
         if (active.length === 0) {
-          sel.innerHTML = `<option value="">— Belum ada cafe aktif —</option>`;
+          sel.innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
         } else {
-          sel.innerHTML = `<option value="">— Pilih cafe —</option>` +
+          sel.innerHTML = `<option value="">— Pilih partner —</option>` +
             active.map(p => `<option value="${p.id}" data-tenant="${p.tenant?.id || ""}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
         }
+        sel.disabled = false;
+
         sel.addEventListener("change", async (e) => {
           const opt = e.target.selectedOptions[0];
           state.partnershipId = e.target.value || null;
           state.tenantId = opt ? opt.dataset.tenant : null;
           renderSections();
+          updateSummary();
           if (!state.partnershipId) return;
-          try {
-            const r = await jget(`/v1/skus?brandId=${state.brandId}`);
-            state.skus = r.ok ? (r.data || []) : [];
-          } catch (err) {
-            state.skus = [];
-          }
-          try { await refreshSisa(); } catch (e) { state.sisaSistem = {}; }
-          try { await refreshStokAwal(); } catch (e) { state.stokAwal = {}; }
-          renderSections();
+          await loadPartnershipScopedData();
         });
         document.getElementById("date").addEventListener("change", async () => {
-          if (state.partnershipId) { await refreshSisa(); await refreshStokAwal(); renderSections(); }
+          if (state.partnershipId) { await loadPartnershipScopedData(); }
         });
       }
 
@@ -377,7 +440,7 @@ export const ssr = false;
       document.getElementById("stok-awal-reset").addEventListener("click", resetStokAwal);
       document.getElementById("submit-btn").addEventListener("click", async () => {
         errEl.style.display = "none"; okEl.style.display = "none";
-        if (!state.partnershipId) { showErr("Pilih cafe dulu."); return; }
+        if (!state.partnershipId) { showErr("Pilih partner dulu."); return; }
         if (!state.tenantId) { showErr("Tenant ID tidak ditemukan di partnership ini."); return; }
         const date = document.getElementById("date").value;
         if (!date) { showErr("Tanggal wajib."); return; }

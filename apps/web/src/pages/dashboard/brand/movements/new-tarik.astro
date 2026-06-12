@@ -57,7 +57,7 @@ const title = `Catat Tarik — ${APP_NAME}`;
         <div id="err" class="err" style="display:none"></div>
         <div id="ok" class="ok" style="display:none"></div>
         <label>
-          <span class="lbl">Pilih partnership (cafe)</span>
+          <span class="lbl">Pilih partnership (partner)</span>
           <select id="partnership"></select>
         </label>
         <label>
@@ -118,10 +118,10 @@ const title = `Catat Tarik — ${APP_NAME}`;
         if (!b.ok) { showErr("Gagal muat partnerships: " + (b.error?.code || "?")); return; }
         const active = (b.data.partnerships || []).filter(p => p.status === "ACTIVE");
         if (active.length === 0) {
-          document.getElementById("partnership").innerHTML = `<option value="">— Belum ada cafe aktif —</option>`;
+          document.getElementById("partnership").innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
           return;
         }
-        document.getElementById("partnership").innerHTML = `<option value="">— Pilih cafe —</option>` +
+        document.getElementById("partnership").innerHTML = `<option value="">— Pilih partner —</option>` +
           active.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
         state.partnerships = active;
       }

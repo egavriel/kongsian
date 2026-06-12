@@ -178,6 +178,60 @@ router.get("/:id", async (c) => {
   });
 });
 
+/** GET /v1/brands/:id/partnerships — active partnerships only (light, for dropdowns).
+ *  Lightweight alternative to /v1/brands/:id which loads full SKU list + all partnerships.
+ *  Used by the "Catat Hari Ini" partner picker, dashboard cards, etc. */
+router.get("/:id/partnerships", async (c) => {
+  const { userId } = c.get("auth");
+  const id = c.req.param("id");
+  const statusFilter = c.req.query("status"); // optional: ACTIVE | PENDING | ENDED | ...
+  const db = getDb(c.env.kongsian_db);
+
+  const [brand] = await db.select({ id: brands.id, userId: brands.userId }).from(brands).where(eq(brands.id, id)).limit(1);
+  if (!brand) return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND" } }, 404);
+
+  if (brand.userId !== userId) {
+    const [membership] = await db
+      .select()
+      .from(tenantMemberships)
+      .innerJoin(partnerships, eq(partnerships.tenantId, tenantMemberships.tenantId))
+      .where(
+        and(
+          eq(tenantMemberships.userId, userId),
+          eq(partnerships.brandId, id)
+        )
+      )
+      .limit(1);
+    if (!membership) {
+      return c.json(
+        { ok: false, error: { code: "FORBIDDEN", message: "Not your brand." } },
+        403
+      );
+    }
+  }
+
+  const conditions = [eq(partnerships.brandId, id)];
+  if (statusFilter) conditions.push(eq(partnerships.status, statusFilter as "ACTIVE" | "PENDING" | "ENDED"));
+
+  const partnershipRows = await db
+    .select({
+      partnership: partnerships,
+      tenant: tenants,
+    })
+    .from(partnerships)
+    .innerJoin(tenants, eq(tenants.id, partnerships.tenantId))
+    .where(and(...conditions))
+    .orderBy(desc(partnerships.createdAt));
+
+  return c.json({
+    ok: true,
+    data: {
+      partnerships: partnershipRows.map((r) => ({ ...r.partnership, tenant: r.tenant })),
+      isOwner: brand.userId === userId,
+    },
+  });
+});
+
 /** POST /v1/brands — create a brand for the current user. */
 router.post("/", async (c) => {
   const { userId } = c.get("auth");
