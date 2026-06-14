@@ -222,7 +222,7 @@ router.post("/combined-save", async (c) => {
     // Upsert movement helper
     const upsertMovement = async (
       skuId: string,
-      kind: "TITIP" | "TARIK" | "ADJUSTMENT",
+      kind: "TITIP" | "TARIK" | "ADJUSTMENT" | "TERJUAL_OPENING",
       qty: number,
       reason?: string,
       idempotencyKey?: string
@@ -230,9 +230,7 @@ router.post("/combined-save", async (c) => {
       const idem = idempotencyKey || `${kind.toLowerCase()}-${v.partnershipId}-${v.movementDate}-${skuId}`;
 
       if (qty === 0) {
-        if (kind === "ADJUSTMENT" && reason === "Stok awal partnership") {
-          await tx.delete(stockMovements).where(eq(stockMovements.idempotencyKey, idem));
-        }
+        await tx.delete(stockMovements).where(eq(stockMovements.idempotencyKey, idem));
         return;
       }
 
@@ -355,7 +353,7 @@ router.post("/combined-save", async (c) => {
         });
       }
 
-      // Upsert lines
+      // Upsert lines & stock movements
       for (const line of v.terjualLines) {
         const [existingLine] = await tx
           .select()
@@ -379,6 +377,9 @@ router.post("/combined-save", async (c) => {
             selisih: 0,
           });
         }
+
+        const idem = `terjual-${v.partnershipId}-${v.movementDate}-${line.skuId}`;
+        await upsertMovement(line.skuId, "TERJUAL_OPENING", line.terjual, `Closing terjual ${line.terjual} cup`, idem);
       }
 
       await tx.insert(auditLog).values({

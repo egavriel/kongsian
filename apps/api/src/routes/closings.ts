@@ -323,6 +323,81 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/terju
 
   const now = Math.floor(Date.now() / 1000);
 
+  // Upsert movement helper for daily closing terjual lines
+  const upsertMovement = async (
+    skuId: string,
+    qty: number
+  ) => {
+    const idem = `terjual-${partnershipId}-${date}-${skuId}`;
+
+    if (qty === 0) {
+      await db.delete(stockMovements).where(eq(stockMovements.idempotencyKey, idem));
+      return;
+    }
+
+    const signedQty = -Math.abs(qty); // TERJUAL_OPENING is always negative
+    const [existing] = await db
+      .select()
+      .from(stockMovements)
+      .where(eq(stockMovements.idempotencyKey, idem))
+      .limit(1);
+
+    if (existing) {
+      if (existing.qty !== signedQty) {
+        await db
+          .update(stockMovements)
+          .set({ qty: signedQty, submittedAt: now })
+          .where(eq(stockMovements.id, existing.id));
+
+        await db.insert(auditLog).values({
+          id: crypto.randomUUID(),
+          userId,
+          action: "MOVEMENT_UPDATED",
+          entityType: "stock_movement",
+          entityId: existing.id,
+          beforeJson: JSON.stringify(existing),
+          afterJson: JSON.stringify({ ...existing, qty: signedQty, submittedAt: now }),
+          ip: c.req.header("cf-connecting-ip") ?? null,
+          userAgent: c.req.header("user-agent") ?? null,
+          createdAt: now,
+        });
+      }
+    } else {
+      const id = crypto.randomUUID();
+      await db.insert(stockMovements).values({
+        id,
+        partnershipId,
+        skuId,
+        movementDate: date,
+        kind: "TERJUAL_OPENING",
+        qty: signedQty,
+        reason: `Closing terjual ${qty} cup`,
+        submittedByUserId: userId,
+        submittedAt: now,
+        idempotencyKey: idem,
+      });
+
+      await db.insert(auditLog).values({
+        id: crypto.randomUUID(),
+        userId,
+        action: "MOVEMENT_SUBMITTED",
+        entityType: "stock_movement",
+        entityId: id,
+        beforeJson: null,
+        afterJson: JSON.stringify({
+          partnershipId,
+          skuId,
+          kind: "TERJUAL_OPENING",
+          qty: signedQty,
+          movementDate: date,
+        }),
+        ip: c.req.header("cf-connecting-ip") ?? null,
+        userAgent: c.req.header("user-agent") ?? null,
+        createdAt: now,
+      });
+    }
+  };
+
   for (const line of parsed.data.lines) {
     const [existing] = await db
       .select()
@@ -348,6 +423,8 @@ tenantClosings.post("/:tenantId/partnerships/:partnershipId/closings/:date/terju
         selisih: 0,
       });
     }
+
+    await upsertMovement(line.skuId, line.terjual);
   }
 
   await db.insert(auditLog).values({
