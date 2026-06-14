@@ -208,233 +208,232 @@ router.post("/combined-save", async (c) => {
   const now = Math.floor(Date.now() / 1000);
 
   try {
-    await db.transaction(async (tx) => {
-      // 1) Validate tarik vs sisa
-      const sisaMap = await computeSisaSistemBatch(tx as any, v.partnershipId, v.movementDate);
-      for (const it of v.tarikItems) {
-        if (it.qty === 0) continue;
-        const sisa = sisaMap.get(it.skuId) ?? 0;
-        if (it.qty > sisa) {
-          throw new Error(`Tarik SKU melebihi sisa sistem (${sisa}).`);
+    const tx = db;
+    // 1) Validate tarik vs sisa
+    const sisaMap = await computeSisaSistemBatch(tx as any, v.partnershipId, v.movementDate);
+    for (const it of v.tarikItems) {
+      if (it.qty === 0) continue;
+      const sisa = sisaMap.get(it.skuId) ?? 0;
+      if (it.qty > sisa) {
+        throw new Error(`Tarik SKU melebihi sisa sistem (${sisa}).`);
+      }
+    }
+
+    // Upsert movement helper
+    const upsertMovement = async (
+      skuId: string,
+      kind: "TITIP" | "TARIK" | "ADJUSTMENT",
+      qty: number,
+      reason?: string,
+      idempotencyKey?: string
+    ) => {
+      const idem = idempotencyKey || `${kind.toLowerCase()}-${v.partnershipId}-${v.movementDate}-${skuId}`;
+
+      if (qty === 0) {
+        if (kind === "ADJUSTMENT" && reason === "Stok awal partnership") {
+          await tx.delete(stockMovements).where(eq(stockMovements.idempotencyKey, idem));
         }
+        return;
       }
 
-      // Upsert movement helper
-      const upsertMovement = async (
-        skuId: string,
-        kind: "TITIP" | "TARIK" | "ADJUSTMENT",
-        qty: number,
-        reason?: string,
-        idempotencyKey?: string
-      ) => {
-        const idem = idempotencyKey || `${kind.toLowerCase()}-${v.partnershipId}-${v.movementDate}-${skuId}`;
+      const signedQty = signQty(kind, qty);
+      const [existing] = await tx
+        .select()
+        .from(stockMovements)
+        .where(eq(stockMovements.idempotencyKey, idem))
+        .limit(1);
 
-        if (qty === 0) {
-          if (kind === "ADJUSTMENT" && reason === "Stok awal partnership") {
-            await tx.delete(stockMovements).where(eq(stockMovements.idempotencyKey, idem));
-          }
-          return;
-        }
-
-        const signedQty = signQty(kind, qty);
-        const [existing] = await tx
-          .select()
-          .from(stockMovements)
-          .where(eq(stockMovements.idempotencyKey, idem))
-          .limit(1);
-
-        if (existing) {
-          if (existing.qty !== signedQty) {
-            await tx
-              .update(stockMovements)
-              .set({ qty: signedQty, submittedAt: now })
-              .where(eq(stockMovements.id, existing.id));
-
-            await tx.insert(auditLog).values({
-              id: crypto.randomUUID(),
-              userId,
-              action: "MOVEMENT_UPDATED",
-              entityType: "stock_movement",
-              entityId: existing.id,
-              beforeJson: JSON.stringify(existing),
-              afterJson: JSON.stringify({ ...existing, qty: signedQty, submittedAt: now }),
-              ip: c.req.header("cf-connecting-ip") ?? null,
-              userAgent: c.req.header("user-agent") ?? null,
-              createdAt: now,
-            });
-          }
-        } else {
-          const id = crypto.randomUUID();
-          await tx.insert(stockMovements).values({
-            id,
-            partnershipId: v.partnershipId,
-            skuId,
-            movementDate: v.movementDate,
-            kind,
-            qty: signedQty,
-            reason: reason ?? null,
-            submittedByUserId: userId,
-            submittedAt: now,
-            idempotencyKey: idem,
-          });
+      if (existing) {
+        if (existing.qty !== signedQty) {
+          await tx
+            .update(stockMovements)
+            .set({ qty: signedQty, submittedAt: now })
+            .where(eq(stockMovements.id, existing.id));
 
           await tx.insert(auditLog).values({
             id: crypto.randomUUID(),
             userId,
-            action: "MOVEMENT_SUBMITTED",
+            action: "MOVEMENT_UPDATED",
             entityType: "stock_movement",
-            entityId: id,
-            beforeJson: null,
-            afterJson: JSON.stringify({
-              partnershipId: v.partnershipId,
-              skuId,
-              kind,
-              qty: signedQty,
-              movementDate: v.movementDate,
-            }),
+            entityId: existing.id,
+            beforeJson: JSON.stringify(existing),
+            afterJson: JSON.stringify({ ...existing, qty: signedQty, submittedAt: now }),
             ip: c.req.header("cf-connecting-ip") ?? null,
             userAgent: c.req.header("user-agent") ?? null,
             createdAt: now,
           });
         }
-      };
-
-      // 2) Process Stok Awal
-      for (const item of v.stokAwalItems) {
-        const idem = `stokAwal-${v.partnershipId}-${v.movementDate}-${item.skuId}`;
-        await upsertMovement(item.skuId, "ADJUSTMENT", item.qty, "Stok awal partnership", idem);
-      }
-
-      // 3) Process Titip
-      for (const item of v.titipItems) {
-        const idem = `titip-${v.partnershipId}-${v.movementDate}-${item.skuId}`;
-        await upsertMovement(item.skuId, "TITIP", item.qty, undefined, idem);
-      }
-
-      // 4) Process Tarik
-      for (const item of v.tarikItems) {
-        const idem = `tarik-${v.partnershipId}-${v.movementDate}-${item.skuId}`;
-        await upsertMovement(item.skuId, "TARIK", item.qty, undefined, idem);
-      }
-
-      // 5) Process Terjual / closings
-      if (v.terjualLines.length > 0) {
-        let [closing] = await tx
-          .select()
-          .from(dailyClosings)
-          .where(and(eq(dailyClosings.partnershipId, v.partnershipId), eq(dailyClosings.closingDate, v.movementDate)))
-          .limit(1);
-
-        let closingId = closing?.id;
-
-        if (closing) {
-          if (closing.status !== "OPEN") {
-            throw new Error("Closing harian sudah disubmit dan tidak dapat diubah.");
-          }
-        } else {
-          closingId = crypto.randomUUID();
-          await tx.insert(dailyClosings).values({
-            id: closingId,
-            partnershipId: v.partnershipId,
-            closingDate: v.movementDate,
-            status: "OPEN",
-            createdAt: now,
-          });
-
-          await tx.insert(auditLog).values({
-            id: crypto.randomUUID(),
-            userId,
-            action: "CLOSING_CREATED",
-            entityType: "daily_closing",
-            entityId: closingId,
-            beforeJson: null,
-            afterJson: JSON.stringify({ partnershipId: v.partnershipId, closingDate: v.movementDate }),
-            ip: c.req.header("cf-connecting-ip") ?? null,
-            userAgent: c.req.header("user-agent") ?? null,
-            createdAt: now,
-          });
-        }
-
-        // Upsert lines
-        for (const line of v.terjualLines) {
-          const [existingLine] = await tx
-            .select()
-            .from(dailyClosingLines)
-            .where(and(eq(dailyClosingLines.dailyClosingId, closingId), eq(dailyClosingLines.skuId, line.skuId)))
-            .limit(1);
-
-          if (existingLine) {
-            await tx
-              .update(dailyClosingLines)
-              .set({ terjual: line.terjual })
-              .where(eq(dailyClosingLines.id, existingLine.id));
-          } else {
-            await tx.insert(dailyClosingLines).values({
-              id: crypto.randomUUID(),
-              dailyClosingId: closingId,
-              skuId: line.skuId,
-              terjual: line.terjual,
-              sisaFisik: 0,
-              sisaSistem: 0,
-              selisih: 0,
-            });
-          }
-        }
+      } else {
+        const id = crypto.randomUUID();
+        await tx.insert(stockMovements).values({
+          id,
+          partnershipId: v.partnershipId,
+          skuId,
+          movementDate: v.movementDate,
+          kind,
+          qty: signedQty,
+          reason: reason ?? null,
+          submittedByUserId: userId,
+          submittedAt: now,
+          idempotencyKey: idem,
+        });
 
         await tx.insert(auditLog).values({
           id: crypto.randomUUID(),
           userId,
-          action: "CLOSING_TERJUAL_UPSERT",
+          action: "MOVEMENT_SUBMITTED",
+          entityType: "stock_movement",
+          entityId: id,
+          beforeJson: null,
+          afterJson: JSON.stringify({
+            partnershipId: v.partnershipId,
+            skuId,
+            kind,
+            qty: signedQty,
+            movementDate: v.movementDate,
+          }),
+          ip: c.req.header("cf-connecting-ip") ?? null,
+          userAgent: c.req.header("user-agent") ?? null,
+          createdAt: now,
+        });
+      }
+    };
+
+    // 2) Process Stok Awal
+    for (const item of v.stokAwalItems) {
+      const idem = `stokAwal-${v.partnershipId}-${v.movementDate}-${item.skuId}`;
+      await upsertMovement(item.skuId, "ADJUSTMENT", item.qty, "Stok awal partnership", idem);
+    }
+
+    // 3) Process Titip
+    for (const item of v.titipItems) {
+      const idem = `titip-${v.partnershipId}-${v.movementDate}-${item.skuId}`;
+      await upsertMovement(item.skuId, "TITIP", item.qty, undefined, idem);
+    }
+
+    // 4) Process Tarik
+    for (const item of v.tarikItems) {
+      const idem = `tarik-${v.partnershipId}-${v.movementDate}-${item.skuId}`;
+      await upsertMovement(item.skuId, "TARIK", item.qty, undefined, idem);
+    }
+
+    // 5) Process Terjual / closings
+    if (v.terjualLines.length > 0) {
+      let [closing] = await tx
+        .select()
+        .from(dailyClosings)
+        .where(and(eq(dailyClosings.partnershipId, v.partnershipId), eq(dailyClosings.closingDate, v.movementDate)))
+        .limit(1);
+
+      let closingId = closing?.id;
+
+      if (closing) {
+        if (closing.status !== "OPEN") {
+          throw new Error("Closing harian sudah disubmit dan tidak dapat diubah.");
+        }
+      } else {
+        closingId = crypto.randomUUID();
+        await tx.insert(dailyClosings).values({
+          id: closingId,
+          partnershipId: v.partnershipId,
+          closingDate: v.movementDate,
+          status: "OPEN",
+          createdAt: now,
+        });
+
+        await tx.insert(auditLog).values({
+          id: crypto.randomUUID(),
+          userId,
+          action: "CLOSING_CREATED",
           entityType: "daily_closing",
           entityId: closingId,
           beforeJson: null,
-          afterJson: JSON.stringify({ lines: v.terjualLines }),
-          ip: c.req.header("cf-connecting-ip") ?? null,
-          userAgent: c.req.header("user-agent") ?? null,
-          createdAt: now,
-        });
-
-        // Submit the closing
-        const result = await tx
-          .update(dailyClosings)
-          .set({ status: "SUBMITTED", submittedAt: now, submittedByUserId: userId })
-          .where(and(eq(dailyClosings.id, closingId), eq(dailyClosings.status, "OPEN")))
-          .returning();
-
-        if (result.length === 0) {
-          throw new Error("Closing harian gagal disubmit.");
-        }
-
-        // Freeze sisaSistem & selisih
-        const frozenSisaMap = await computeSisaSistemBatch(tx as any, v.partnershipId, v.movementDate);
-        const lines = await tx
-          .select()
-          .from(dailyClosingLines)
-          .where(eq(dailyClosingLines.dailyClosingId, closingId));
-
-        for (const line of lines) {
-          const sisaSistem = frozenSisaMap.get(line.skuId) ?? 0;
-          const selisih = sisaSistem - line.sisaFisik;
-          await tx
-            .update(dailyClosingLines)
-            .set({ sisaSistem, selisih })
-            .where(eq(dailyClosingLines.id, line.id));
-        }
-
-        await tx.insert(auditLog).values({
-          id: crypto.randomUUID(),
-          userId,
-          action: "CLOSING_SUBMITTED",
-          entityType: "daily_closing",
-          entityId: closingId,
-          beforeJson: JSON.stringify({ status: "OPEN" }),
-          afterJson: JSON.stringify({ status: "SUBMITTED", submittedAt: now }),
+          afterJson: JSON.stringify({ partnershipId: v.partnershipId, closingDate: v.movementDate }),
           ip: c.req.header("cf-connecting-ip") ?? null,
           userAgent: c.req.header("user-agent") ?? null,
           createdAt: now,
         });
       }
-    });
+
+      // Upsert lines
+      for (const line of v.terjualLines) {
+        const [existingLine] = await tx
+          .select()
+          .from(dailyClosingLines)
+          .where(and(eq(dailyClosingLines.dailyClosingId, closingId), eq(dailyClosingLines.skuId, line.skuId)))
+          .limit(1);
+
+        if (existingLine) {
+          await tx
+            .update(dailyClosingLines)
+            .set({ terjual: line.terjual })
+            .where(eq(dailyClosingLines.id, existingLine.id));
+        } else {
+          await tx.insert(dailyClosingLines).values({
+            id: crypto.randomUUID(),
+            dailyClosingId: closingId,
+            skuId: line.skuId,
+            terjual: line.terjual,
+            sisaFisik: 0,
+            sisaSistem: 0,
+            selisih: 0,
+          });
+        }
+      }
+
+      await tx.insert(auditLog).values({
+        id: crypto.randomUUID(),
+        userId,
+        action: "CLOSING_TERJUAL_UPSERT",
+        entityType: "daily_closing",
+        entityId: closingId,
+        beforeJson: null,
+        afterJson: JSON.stringify({ lines: v.terjualLines }),
+        ip: c.req.header("cf-connecting-ip") ?? null,
+        userAgent: c.req.header("user-agent") ?? null,
+        createdAt: now,
+      });
+
+      // Submit the closing
+      const result = await tx
+        .update(dailyClosings)
+        .set({ status: "SUBMITTED", submittedAt: now, submittedByUserId: userId })
+        .where(and(eq(dailyClosings.id, closingId), eq(dailyClosings.status, "OPEN")))
+        .returning();
+
+      if (result.length === 0) {
+        throw new Error("Closing harian gagal disubmit.");
+      }
+
+      // Freeze sisaSistem & selisih
+      const frozenSisaMap = await computeSisaSistemBatch(tx as any, v.partnershipId, v.movementDate);
+      const lines = await tx
+        .select()
+        .from(dailyClosingLines)
+        .where(eq(dailyClosingLines.dailyClosingId, closingId));
+
+      for (const line of lines) {
+        const sisaSistem = frozenSisaMap.get(line.skuId) ?? 0;
+        const selisih = sisaSistem - line.sisaFisik;
+        await tx
+          .update(dailyClosingLines)
+          .set({ sisaSistem, selisih })
+          .where(eq(dailyClosingLines.id, line.id));
+      }
+
+      await tx.insert(auditLog).values({
+        id: crypto.randomUUID(),
+        userId,
+        action: "CLOSING_SUBMITTED",
+        entityType: "daily_closing",
+        entityId: closingId,
+        beforeJson: JSON.stringify({ status: "OPEN" }),
+        afterJson: JSON.stringify({ status: "SUBMITTED", submittedAt: now }),
+        ip: c.req.header("cf-connecting-ip") ?? null,
+        userAgent: c.req.header("user-agent") ?? null,
+        createdAt: now,
+      });
+    }
 
     return c.json({ ok: true });
   } catch (e: any) {
