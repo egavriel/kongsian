@@ -24,11 +24,11 @@ const title = `Partnerships — ${APP_NAME}`;
       .card h2 { margin:0 0 12px; font-size:15px; color:#fbbf24; }
       label { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:13px; }
       .lbl { font-weight:600; }
-      input {
+      input, select {
         background:#0b1220; border:1px solid #1e293b; color:#f1f5f9;
         padding:12px; border-radius:10px; font-size:15px; font-family:inherit; width:100%;
       }
-      input:focus { outline:none; border-color:#fbbf24; }
+      input:focus, select:focus { outline:none; border-color:#fbbf24; }
       .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
       .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:14px; }
       .btn-primary { background:#fbbf24; color:#0b1220; }
@@ -79,6 +79,32 @@ const title = `Partnerships — ${APP_NAME}`;
                 <input id="address" name="address" maxlength="100" placeholder="Jl. ..." />
               </label>
             </div>
+            <div class="row2">
+              <label>
+                <span class="lbl">Mulai Siklus Mingguan</span>
+                <select id="start-day" name="start-day" required>
+                  <option value="SUNDAY" selected>Minggu (Rekomendasi)</option>
+                  <option value="MONDAY">Senin</option>
+                  <option value="TUESDAY">Selasa</option>
+                  <option value="WEDNESDAY">Rabu</option>
+                  <option value="THURSDAY">Kamis</option>
+                  <option value="FRIDAY">Jumat</option>
+                  <option value="SATURDAY">Sabtu</option>
+                </select>
+              </label>
+              <label>
+                <span class="lbl">Tutup Buku (Cut-off)</span>
+                <select id="end-day" name="end-day" required>
+                  <option value="SUNDAY">Minggu</option>
+                  <option value="MONDAY">Senin</option>
+                  <option value="TUESDAY">Selasa</option>
+                  <option value="WEDNESDAY">Rabu</option>
+                  <option value="THURSDAY">Kamis</option>
+                  <option value="FRIDAY">Jumat</option>
+                  <option value="SATURDAY" selected>Sabtu (Rekomendasi)</option>
+                </select>
+              </label>
+            </div>
             <button class="btn btn-primary" type="submit" style="width:100%">Kirim Invite</button>
           </form>
         </div>
@@ -117,19 +143,33 @@ const title = `Partnerships — ${APP_NAME}`;
           list.innerHTML = `<div class="empty">Belum ada partnership. Invite partner pertama di atas.</div>`;
           return;
         }
-        list.innerHTML = ps.map(p => `
-          <div class="row">
-            <div>
-              <div class="name">${p.tenant?.name || "(?)"}</div>
-              <div class="meta">PIC: ${p.tenant?.picPhoneE164 || "-"} · split ${(p.revenueSplitBrandBps/100).toFixed(0)}/${(p.revenueSplitTenantBps/100).toFixed(0)}</div>
+        const dayMap = {
+          SUNDAY: "Minggu",
+          MONDAY: "Senin",
+          TUESDAY: "Selasa",
+          WEDNESDAY: "Rabu",
+          THURSDAY: "Kamis",
+          FRIDAY: "Jumat",
+          SATURDAY: "Sabtu"
+        };
+        list.innerHTML = ps.map(p => {
+          const startDayText = dayMap[p.settlementStartDay] || "Senin";
+          const endDayText = dayMap[p.settlementEndDay] || "Minggu";
+          return `
+            <div class="row">
+              <div>
+                <div class="name">${p.tenant?.name || "(?)"}</div>
+                <div class="meta">PIC: ${p.tenant?.picPhoneE164 || "-"} · split ${(p.revenueSplitBrandBps/100).toFixed(0)}/${(p.revenueSplitTenantBps/100).toFixed(0)}</div>
+                <div class="meta" style="margin-top:4px; color:#fbbf24">Siklus Settlement: ${startDayText} - ${endDayText}</div>
+              </div>
+              <div class="actions">
+                <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
+                ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}">Aktifkan</button>` : ""}
+                ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}">Suspend</button>` : ""}
+              </div>
             </div>
-            <div class="actions">
-              <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
-              ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}">Aktifkan</button>` : ""}
-              ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}">Suspend</button>` : ""}
-            </div>
-          </div>
-        `).join("");
+          `;
+        }).join("");
         list.querySelectorAll("button[data-act]").forEach(btn => {
           btn.addEventListener("click", async () => {
             const id = btn.dataset.id;
@@ -153,9 +193,18 @@ const title = `Partnerships — ${APP_NAME}`;
         const cafe = document.getElementById("cafe").value.trim();
         const phone = document.getElementById("phone").value.trim();
         const address = document.getElementById("address").value.trim();
+        const startDay = document.getElementById("start-day").value;
+        const endDay = document.getElementById("end-day").value;
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Format HP harus +62xxx."); return; }
         const me = await jget("/v1/brands/me");
-        const r = await jpost("/v1/partnerships/invite", { brandId: me.data.brandId, phone, cafeName: cafe, address: address || undefined });
+        const r = await jpost("/v1/partnerships/invite", {
+          brandId: me.data.brandId,
+          phone,
+          cafeName: cafe,
+          address: address || undefined,
+          settlementStartDay: startDay,
+          settlementEndDay: endDay
+        });
         if (!r.ok) {
           const c = r.error?.code;
           if (c === "INVITE_RATE_LIMITED") showErr("Kebanyakan invite ke nomor itu. Coba ~1 jam.");

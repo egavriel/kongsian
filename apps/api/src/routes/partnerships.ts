@@ -74,6 +74,8 @@ const CreateSchema = z
     tenantId: z.string().min(1),
     revenueSplitBrandBps: z.number().int().min(0).max(10000).optional(),
     revenueSplitTenantBps: z.number().int().min(0).max(10000).optional(),
+    settlementStartDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
+    settlementEndDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
   })
   .refine(
     (v) =>
@@ -91,6 +93,8 @@ const InviteSchema = z.object({
   address: z.string().max(200).optional(),
   revenueSplitBrandBps: z.number().int().min(0).max(10000).optional(),
   revenueSplitTenantBps: z.number().int().min(0).max(10000).optional(),
+  settlementStartDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
+  settlementEndDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
 });
 
 /** GET /v1/partnerships — list scoped by query. IDOR fix (P0 #2): even when
@@ -282,6 +286,8 @@ router.post("/", async (c) => {
     revenueSplitBrandBps: splitBrand,
     revenueSplitTenantBps: splitTenant,
     status: "PENDING",
+    settlementStartDay: parsed.data.settlementStartDay ?? "MONDAY",
+    settlementEndDay: parsed.data.settlementEndDay ?? "SUNDAY",
     createdAt: now,
     activatedAt: null,
   });
@@ -332,7 +338,7 @@ router.post("/invite", async (c) => {
   if (!parsed.success) {
     return c.json({ ok: false, error: { code: "INVALID_INPUT", issues: parsed.error.flatten() } }, 400);
   }
-  const { brandId, phone, cafeName, address } = parsed.data;
+  const { brandId, phone, cafeName, address, settlementStartDay, settlementEndDay } = parsed.data;
   const splitBrand = parsed.data.revenueSplitBrandBps ?? DEFAULT_SPLIT_BRAND_BPS;
   const splitTenant = parsed.data.revenueSplitTenantBps ?? DEFAULT_SPLIT_TENANT_BPS;
   if (splitBrand + splitTenant !== 10000) {
@@ -399,6 +405,8 @@ router.post("/invite", async (c) => {
       revenueSplitBrandBps: splitBrand,
       revenueSplitTenantBps: splitTenant,
       status: "PENDING",
+      settlementStartDay: settlementStartDay ?? "MONDAY",
+      settlementEndDay: settlementEndDay ?? "SUNDAY",
       createdAt: now,
       activatedAt: null,
     });
