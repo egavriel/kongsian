@@ -50,6 +50,16 @@ const title = `Partnerships — ${APP_NAME}`;
       .btn-ghost { background:transparent; color:#f1f5f9; border-color:#1e293b; }
       .btn-ghost:hover { border-color:#94a3b8; }
       .dev-code { font-family:ui-monospace,monospace; font-size:14px; background:#0b1220; border:1px dashed #fbbf24; padding:8px 12px; border-radius:8px; color:#fbbf24; margin-top:8px; }
+      .modal {
+        position:fixed; top:0; left:0; right:0; bottom:0;
+        background:rgba(11,18,32,.85); backdrop-filter:blur(8px);
+        display:flex; align-items:center; justify-content:center;
+        z-index:100; padding:20px;
+      }
+      .modal-content {
+        width:100%; max-width:400px;
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+      }
     </style>
   </head>
   <body>
@@ -115,6 +125,57 @@ const title = `Partnerships — ${APP_NAME}`;
         </div>
       </main>
     </div>
+
+    <!-- Edit Partnership Modal -->
+    <div id="edit-modal" class="modal" style="display:none">
+      <div class="modal-content card" style="margin: 0;">
+        <h2>Edit Siklus & Split</h2>
+        <div id="edit-err" class="err" style="display:none"></div>
+        <form id="edit-form">
+          <input type="hidden" id="edit-id" />
+          <div class="row2">
+            <label>
+              <span class="lbl">Mulai Siklus</span>
+              <select id="edit-start-day" required>
+                <option value="SUNDAY">Minggu</option>
+                <option value="MONDAY">Senin</option>
+                <option value="TUESDAY">Selasa</option>
+                <option value="WEDNESDAY">Rabu</option>
+                <option value="THURSDAY">Kamis</option>
+                <option value="FRIDAY">Jumat</option>
+                <option value="SATURDAY">Sabtu</option>
+              </select>
+            </label>
+            <label>
+              <span class="lbl">Tutup Buku (Cut-off)</span>
+              <select id="edit-end-day" required>
+                <option value="SUNDAY">Minggu</option>
+                <option value="MONDAY">Senin</option>
+                <option value="TUESDAY">Selasa</option>
+                <option value="WEDNESDAY">Rabu</option>
+                <option value="THURSDAY">Kamis</option>
+                <option value="FRIDAY">Jumat</option>
+                <option value="SATURDAY">Sabtu</option>
+              </select>
+            </label>
+          </div>
+          <div class="row2">
+            <label>
+              <span class="lbl">Split Brand (%)</span>
+              <input type="number" id="edit-split-brand" min="0" max="100" required />
+            </label>
+            <label>
+              <span class="lbl">Split Cafe (%)</span>
+              <input type="number" id="edit-split-tenant" min="0" max="100" required />
+            </label>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:8px;">
+            <button type="button" class="btn btn-ghost" id="edit-cancel" style="flex:1">Batal</button>
+            <button type="submit" class="btn btn-primary" style="flex:1">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
     <script define:vars={{ API_BASE_URL }}>
       const API = API_BASE_URL.replace(/\/$/, "");
       const tok = localStorage.getItem("kongsian_session");
@@ -122,6 +183,7 @@ const title = `Partnerships — ${APP_NAME}`;
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
       async function jpost(p,b) { return (await fetch(API+p, { method:"POST", headers:authH, body:JSON.stringify(b) })).json().catch(()=>({})); }
+      async function jpatch(p,b) { return (await fetch(API+p, { method:"PATCH", headers:authH, body:JSON.stringify(b) })).json().catch(()=>({})); }
 
       const errEl = document.getElementById("err");
       const okEl = document.getElementById("ok");
@@ -164,6 +226,7 @@ const title = `Partnerships — ${APP_NAME}`;
               </div>
               <div class="actions">
                 <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
+                <button class="btn btn-ghost btn-sm" data-act="edit" data-id="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">Edit Siklus</button>
                 ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}">Aktifkan</button>` : ""}
                 ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}">Suspend</button>` : ""}
               </div>
@@ -182,6 +245,14 @@ const title = `Partnerships — ${APP_NAME}`;
               const r = await jpost(`/v1/partnerships/${id}/suspend`, {});
               if (!r.ok) showErr("Gagal suspend: " + (r.error?.code || "?"));
               else { showOk("Partnership disuspend."); load(); }
+            } else if (btn.dataset.act === "edit") {
+              document.getElementById("edit-id").value = id;
+              document.getElementById("edit-start-day").value = btn.dataset.start;
+              document.getElementById("edit-end-day").value = btn.dataset.end;
+              document.getElementById("edit-split-brand").value = Math.round(Number(btn.dataset.splitBrand) / 100);
+              document.getElementById("edit-split-tenant").value = Math.round(Number(btn.dataset.splitTenant) / 100);
+              document.getElementById("edit-modal").style.display = "flex";
+              document.getElementById("edit-err").style.display = "none";
             }
           });
         });
@@ -218,6 +289,40 @@ const title = `Partnerships — ${APP_NAME}`;
         showOk(`Invite terkirim ke ${phone}. Tenant: <b>${r.data.tenant.name}</b> (${r.data.isNewTenant ? "baru" : "existing"}). ${extra}`, extra);
         document.getElementById("invite-form").reset();
         load();
+      });
+
+      document.getElementById("edit-cancel").addEventListener("click", () => {
+        document.getElementById("edit-modal").style.display = "none";
+      });
+
+      document.getElementById("edit-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("edit-id").value;
+        const startDay = document.getElementById("edit-start-day").value;
+        const endDay = document.getElementById("edit-end-day").value;
+        const splitBrand = Number(document.getElementById("edit-split-brand").value) * 100;
+        const splitTenant = Number(document.getElementById("edit-split-tenant").value) * 100;
+        if (splitBrand + splitTenant !== 10000) {
+          const editErr = document.getElementById("edit-err");
+          editErr.textContent = "Total split harus 100% (contoh: 70% dan 30%).";
+          editErr.style.display = "block";
+          return;
+        }
+        const r = await jpatch(`/v1/partnerships/${id}`, {
+          settlementStartDay: startDay,
+          settlementEndDay: endDay,
+          revenueSplitBrandBps: splitBrand,
+          revenueSplitTenantBps: splitTenant
+        });
+        if (!r.ok) {
+          const editErr = document.getElementById("edit-err");
+          editErr.textContent = "Gagal simpan: " + (r.error?.code || "?");
+          editErr.style.display = "block";
+        } else {
+          document.getElementById("edit-modal").style.display = "none";
+          showOk("Siklus settlement berhasil diupdate.");
+          load();
+        }
       });
 
       load();

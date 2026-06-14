@@ -97,6 +97,25 @@ const InviteSchema = z.object({
   settlementEndDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
 });
 
+const UpdatePartnershipSchema = z
+  .object({
+    settlementStartDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
+    settlementEndDay: z.enum(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]).optional(),
+    revenueSplitBrandBps: z.number().int().min(0).max(10000).optional(),
+    revenueSplitTenantBps: z.number().int().min(0).max(10000).optional(),
+  })
+  .refine(
+    (v) => {
+      const b = v.revenueSplitBrandBps;
+      const t = v.revenueSplitTenantBps;
+      if (b !== undefined && t !== undefined) {
+        return b + t === 10000;
+      }
+      return true;
+    },
+    { message: "revenue splits must sum to 10000 bps" }
+  );
+
 /** GET /v1/partnerships — list scoped by query. IDOR fix (P0 #2): even when
  *  the caller supplies ?brandId or ?tenantId, we additionally assert the
  *  user is the brand owner OR a tenant membership of the given tenant.
@@ -570,6 +589,61 @@ router.post("/:id/suspend", async (c) => {
     userAgent: c.req.header("user-agent") ?? null,
     createdAt: now,
   });
+  return c.json({ ok: true, data: { partnership: after } });
+});
+
+/** PATCH /v1/partnerships/:id — Brand owner only: update cycle days and splits */
+router.patch("/:id", async (c) => {
+  const { userId } = c.get("auth");
+  const id = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = UpdatePartnershipSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ ok: false, error: { code: "INVALID_INPUT", issues: parsed.error.flatten() } }, 400);
+  }
+  const db = getDb(c.env.kongsian_db);
+  const [p] = await db.select().from(partnerships).where(eq(partnerships.id, id)).limit(1);
+  if (!p) return c.json({ ok: false, error: { code: "PARTNERSHIP_NOT_FOUND" } }, 404);
+  const [brand] = await db.select().from(brands).where(eq(brands.id, p.brandId)).limit(1);
+  if (!brand || brand.userId !== userId) {
+    return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+  }
+
+  const updates: Partial<typeof partnerships.$inferInsert> = {};
+  if (parsed.data.settlementStartDay !== undefined) {
+    updates.settlementStartDay = parsed.data.settlementStartDay;
+  }
+  if (parsed.data.settlementEndDay !== undefined) {
+    updates.settlementEndDay = parsed.data.settlementEndDay;
+  }
+  if (parsed.data.revenueSplitBrandBps !== undefined) {
+    updates.revenueSplitBrandBps = parsed.data.revenueSplitBrandBps;
+  }
+  if (parsed.data.revenueSplitTenantBps !== undefined) {
+    updates.revenueSplitTenantBps = parsed.data.revenueSplitTenantBps;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return c.json({ ok: true, data: { partnership: p } });
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  await db.update(partnerships).set(updates).where(eq(partnerships.id, id));
+  const [after] = await db.select().from(partnerships).where(eq(partnerships.id, id)).limit(1);
+
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId,
+    action: "PARTNERSHIP_UPDATED",
+    entityType: "partnership",
+    entityId: id,
+    beforeJson: JSON.stringify(p),
+    afterJson: JSON.stringify(after),
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: now,
+  });
+
   return c.json({ ok: true, data: { partnership: after } });
 });
 
