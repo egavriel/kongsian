@@ -100,7 +100,8 @@ app.use(
       if (!origin) return CORS_ALLOWLIST[0] || "https://kongsian.app";
       const allow =
         CORS_ALLOWLIST.includes(origin) ||
-        /^https:\/\/[a-z0-9-]+\.kongsian-web\.pages\.dev$/i.test(origin);
+        /^https:\/\/[a-z0-9-]+\.kongsian-web\.pages\.dev$/i.test(origin) ||
+        /^http:\/\/localhost:\d+$/i.test(origin);
       return allow ? origin : CORS_ALLOWLIST[0] || "https://kongsian.app";
     },
     credentials: true,

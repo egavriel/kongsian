@@ -10,116 +10,365 @@ const title = `Partnerships — ${APP_NAME}`;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
-      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; }
-      a { color:#38bdf8; text-decoration:none; }
-      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
-      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
-      .back { color:#94a3b8; font-size:14px; }
-      h1 { font-size:20px; margin:0; }
-      main { padding:20px; }
-      .card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:16px; margin-bottom:20px; }
-      .card h2 { margin:0 0 12px; font-size:15px; color:#fbbf24; }
-      label { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:13px; }
-      .lbl { font-weight:600; }
-      input, select {
-        background:#0b1220; border:1px solid #1e293b; color:#f1f5f9;
-        padding:12px; border-radius:10px; font-size:15px; font-family:inherit; width:100%;
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top, #0b1220 0%, #030712 100%);
+        background-attachment: fixed;
+        color: #f1f5f9;
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
       }
-      input:focus, select:focus { outline:none; border-color:#fbbf24; }
-      .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-      .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:10px; font-weight:600; border:1px solid transparent; cursor:pointer; font-size:14px; }
-      .btn-primary { background:#fbbf24; color:#0b1220; }
-      .btn-primary:hover { background:#f59e0b; }
-      .btn:disabled { opacity:.5; cursor:not-allowed; }
-      .list { display:flex; flex-direction:column; gap:10px; }
-      .row { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
-      .name { font-weight:600; }
-      .meta { font-size:12px; color:#94a3b8; }
-      .badge { font-size:11px; padding:4px 10px; border-radius:999px; font-weight:700; letter-spacing:0.04em; }
-      .badge.active { background:rgba(52,211,153,.15); color:#34d399; }
-      .badge.pending { background:rgba(251,191,36,.15); color:#fbbf24; }
-      .badge.suspended { background:rgba(251,113,133,.15); color:#fb7185; }
-      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
-      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
-      .ok { background:rgba(52,211,153,.12); color:#34d399; border:1px solid rgba(52,211,153,.3); padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
-      .actions { display:flex; gap:6px; flex-wrap:wrap; }
-      .btn-sm { padding:6px 10px; font-size:12px; }
-      .btn-ghost { background:transparent; color:#f1f5f9; border-color:#1e293b; }
-      .btn-ghost:hover { border-color:#94a3b8; }
-      .dev-code { font-family:ui-monospace,monospace; font-size:14px; background:#0b1220; border:1px dashed #fbbf24; padding:8px 12px; border-radius:8px; color:#fbbf24; margin-top:8px; }
+      a { color: #38bdf8; text-decoration: none; transition: color 0.15s ease; }
+      a:hover { color: #7dd3fc; }
+      
+      .shell { max-width: 480px; margin: 0 auto; padding: 0 0 100px; }
+      
+      header.top {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; border-bottom: 2px solid #1e293b;
+        position: sticky; top: 0; background: rgba(3, 7, 18, 0.85);
+        backdrop-filter: blur(20px); z-index: 50;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      }
+      .brand-name { font-weight: 900; font-size: 16px; color: #f8fafc; letter-spacing: -0.02em; }
+      .role-tag { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1.5px solid rgba(168, 85, 247, 0.2); font-weight: 800; letter-spacing: 0.06em; }
+      .back { color: #94a3b8; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+      .back:hover { color: #fbbf24; }
+      
+      main { padding: 20px; }
+      
+      /* Quest Header Panel */
+      .quest-header-panel {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+        box-shadow: 4px 4px 0px 0px #020617;
+      }
+      .quest-header-layout {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .quest-tracker-icon {
+        font-size: 28px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 2px solid rgba(16, 185, 129, 0.2);
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .quest-tracker-info {
+        flex: 1;
+      }
+      .quest-tracker-title {
+        font-size: 10px;
+        font-weight: 800;
+        color: #10b981;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .quest-tracker-subtitle {
+        font-size: 16px;
+        font-weight: 800;
+        color: #ffffff;
+      }
+      
+      /* Neobrutalist RPG Card */
+      .rpg-card {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        box-shadow: 4px 4px 0px 0px #020617;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+      .rpg-card:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0px 0px #020617;
+        border-color: #334155;
+      }
+      
+      .invite-card {
+        padding: 20px;
+        margin-bottom: 28px;
+      }
+      .invite-card h2 {
+        margin: 0 0 16px;
+        font-size: 16px;
+        color: #fbbf24;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+      
+      input, select {
+        background: #090d16;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        padding: 12px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: 600;
+        width: 100%;
+        min-height: 48px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      input:focus, select:focus {
+        outline: none;
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+      }
+      
+      .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        border: 2.5px solid transparent;
+        cursor: pointer;
+        font-size: 15px;
+        min-height: 48px;
+        transition: all 0.15s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+      .btn-primary {
+        background: #fbbf24;
+        color: #0b1220;
+        border-color: #d97706;
+        box-shadow: 3px 3px 0px 0px #78350f;
+        width: 100%;
+      }
+      .btn-primary:hover:not(:disabled) {
+        background: #f59e0b;
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #78350f;
+      }
+      .btn-primary:active:not(:disabled) {
+        transform: translate(1px, 1px);
+        box-shadow: 2px 2px 0px 0px #78350f;
+      }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      
+      .btn-ghost {
+        background: transparent;
+        color: #f1f5f9;
+        border-color: #334155;
+        box-shadow: 2px 2px 0px 0px #020617;
+      }
+      .btn-ghost:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: #475569;
+      }
+      .btn-danger {
+        background: rgba(244, 63, 94, 0.1);
+        color: #f43f5e;
+        border-color: rgba(244, 63, 94, 0.3);
+        box-shadow: 2px 2px 0px 0px #4c0519;
+      }
+      .btn-danger:hover {
+        background: rgba(244, 63, 94, 0.18);
+        border-color: #f43f5e;
+      }
+      .btn-sm {
+        padding: 8px 12px;
+        font-size: 11px;
+        min-height: 32px;
+        border-radius: 8px;
+      }
+      
+      /* Section Title */
+      .section-title {
+        font-size: 11px;
+        font-weight: 900;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 28px 0 12px;
+      }
+      
+      /* Partner List */
+      .list { display: flex; flex-direction: column; gap: 12px; }
+      .row {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 3px 3px 0px 0px #020617;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .row:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #020617;
+        border-color: #334155;
+      }
+      
+      .name-layout {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .alliance-crest {
+        font-size: 20px;
+        width: 44px;
+        height: 44px;
+        background: rgba(16, 185, 129, 0.08);
+        border: 2px solid rgba(16, 185, 129, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .alliance-crest.pending {
+        background: rgba(251, 191, 36, 0.08);
+        border-color: rgba(251, 191, 36, 0.2);
+      }
+      .alliance-crest.suspended {
+        background: rgba(244, 63, 94, 0.08);
+        border-color: rgba(244, 63, 94, 0.2);
+      }
+      
+      .name { font-weight: 800; font-size: 15px; color: #f8fafc; }
+      .meta { font-size: 11px; color: #94a3b8; font-weight: 700; }
+      .dot-separator { color: #475569; }
+      
+      .badge {
+        font-size: 9px;
+        font-weight: 900;
+        padding: 3px 8px;
+        border-radius: 6px;
+        letter-spacing: 0.05em;
+        border: 1px solid transparent;
+        display: inline-block;
+      }
+      .badge.active { background: rgba(52, 211, 153, 0.1); color: #34d399; border-color: rgba(52, 211, 153, 0.2); }
+      .badge.pending { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: rgba(251, 191, 36, 0.2); }
+      .badge.suspended { background: rgba(251, 113, 133, 0.1); color: #fb7185; border-color: rgba(251, 113, 133, 0.2); }
+      
+      .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+      
+      .empty {
+        background: rgba(15, 23, 42, 0.45);
+        border: 2.5 dashed #1e293b;
+        border-radius: 16px;
+        padding: 32px 20px;
+        text-align: center;
+        color: #94a3b8;
+        font-weight: 700;
+      }
+      
+      .err { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 2px solid rgba(244, 63, 94, 0.2); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+      .ok { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 2px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+      
+      .dev-code { font-family: ui-monospace, monospace; font-size: 13px; background: #090d16; border: 2px dashed #fbbf24; padding: 10px; border-radius: 8px; color: #fbbf24; margin-top: 12px; font-weight: 700; }
+      
+      /* Modals */
       .modal {
-        position:fixed; top:0; left:0; right:0; bottom:0;
-        background:rgba(11,18,32,.85); backdrop-filter:blur(8px);
-        display:flex; align-items:center; justify-content:center;
-        z-index:100; padding:20px;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 100; padding: 20px;
       }
       .modal-content {
-        width:100%; max-width:400px;
-        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+        width: 100%; max-width: 400px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
       }
     </style>
   </head>
   <body>
     <div class="shell">
       <header class="top">
-        <a class="back" href="/dashboard/brand">← Brand</a>
-        <h1>Partner</h1>
-        <span></span>
+        <a class="back" href="/dashboard/brand">← Brand Dashboard</a>
+        <h1 class="brand-name">Partner</h1>
+        <span class="role-tag">ALLIANCE</span>
       </header>
       <main>
-        <div class="card">
-          <h2>Invite Partner Baru</h2>
+        <div class="quest-header-panel">
+          <div class="quest-header-layout">
+            <div class="quest-tracker-icon">🤝</div>
+            <div class="quest-tracker-info">
+              <div class="quest-tracker-title">Guild Registry</div>
+              <div class="quest-tracker-subtitle">Draft & Manage Alliances</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rpg-card invite-card">
+          <h2>📜 Draft Alliance Pact</h2>
           <div id="err" class="err" style="display:none"></div>
           <div id="ok" class="ok" style="display:none"></div>
           <form id="invite-form">
             <label>
-              <span class="lbl">Nama Partner</span>
+              <span class="lbl">Guild / Cafe Name</span>
               <input id="cafe" name="cafe" maxlength="60" placeholder="Partner Barista" required />
             </label>
             <div class="row2">
               <label>
-                <span class="lbl">No. HP PIC (+62)</span>
+                <span class="lbl">PIC Phone (+62)</span>
                 <input id="phone" name="phone" type="tel" placeholder="+628****1234" pattern="^\+[1-9]\d{7,14}$" required />
               </label>
               <label>
-                <span class="lbl">Alamat (opsional)</span>
+                <span class="lbl">Territory / Address</span>
                 <input id="address" name="address" maxlength="100" placeholder="Jl. ..." />
               </label>
             </div>
             <div class="row2">
               <label>
-                <span class="lbl">Mulai Siklus Mingguan</span>
+                <span class="lbl">Cycle Start Day</span>
                 <select id="start-day" name="start-day" required>
-                  <option value="SUNDAY" selected>Minggu (Rekomendasi)</option>
-                  <option value="MONDAY">Senin</option>
-                  <option value="TUESDAY">Selasa</option>
-                  <option value="WEDNESDAY">Rabu</option>
-                  <option value="THURSDAY">Kamis</option>
-                  <option value="FRIDAY">Jumat</option>
-                  <option value="SATURDAY">Sabtu</option>
+                  <option value="SUNDAY" selected>Sunday (Recommended)</option>
+                  <option value="MONDAY">Monday</option>
+                  <option value="TUESDAY">Tuesday</option>
+                  <option value="WEDNESDAY">Wednesday</option>
+                  <option value="THURSDAY">Thursday</option>
+                  <option value="FRIDAY">Friday</option>
+                  <option value="SATURDAY">Saturday</option>
                 </select>
               </label>
               <label>
-                <span class="lbl">Tutup Buku (Cut-off)</span>
+                <span class="lbl">Cycle End Day (Cut-off)</span>
                 <select id="end-day" name="end-day" required>
-                  <option value="SUNDAY">Minggu</option>
-                  <option value="MONDAY">Senin</option>
-                  <option value="TUESDAY">Selasa</option>
-                  <option value="WEDNESDAY">Rabu</option>
-                  <option value="THURSDAY">Kamis</option>
-                  <option value="FRIDAY">Jumat</option>
-                  <option value="SATURDAY" selected>Sabtu (Rekomendasi)</option>
+                  <option value="SUNDAY">Sunday</option>
+                  <option value="MONDAY">Monday</option>
+                  <option value="TUESDAY">Tuesday</option>
+                  <option value="WEDNESDAY">Wednesday</option>
+                  <option value="THURSDAY">Thursday</option>
+                  <option value="FRIDAY">Friday</option>
+                  <option value="SATURDAY" selected>Saturday (Recommended)</option>
                 </select>
               </label>
             </div>
-            <button class="btn btn-primary" type="submit" style="width:100%">Kirim Invite</button>
+            <button class="btn btn-primary" type="submit">Draft Pact Invitation</button>
           </form>
         </div>
 
-        <h2 style="font-size:15px;color:#94a3b8;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.06em">Daftar Partnership</h2>
+        <h2 class="section-title">🤝 Alliance Guilds</h2>
         <div class="list" id="list">
           <div class="empty">Memuat…</div>
         </div>
@@ -128,50 +377,50 @@ const title = `Partnerships — ${APP_NAME}`;
 
     <!-- Edit Partnership Modal -->
     <div id="edit-modal" class="modal" style="display:none">
-      <div class="modal-content card" style="margin: 0;">
-        <h2>Edit Siklus & Split</h2>
+      <div class="modal-content rpg-card card" style="margin: 0; padding: 20px;">
+        <h2 style="margin:0 0 16px; font-size:16px; color:#fbbf24; font-weight:900; text-transform:uppercase; letter-spacing:0.05em;">Edit Alliance Terms</h2>
         <div id="edit-err" class="err" style="display:none"></div>
         <form id="edit-form">
           <input type="hidden" id="edit-id" />
           <div class="row2">
             <label>
-              <span class="lbl">Mulai Siklus</span>
+              <span class="lbl">Cycle Start Day</span>
               <select id="edit-start-day" required>
-                <option value="SUNDAY">Minggu</option>
-                <option value="MONDAY">Senin</option>
-                <option value="TUESDAY">Selasa</option>
-                <option value="WEDNESDAY">Rabu</option>
-                <option value="THURSDAY">Kamis</option>
-                <option value="FRIDAY">Jumat</option>
-                <option value="SATURDAY">Sabtu</option>
+                <option value="SUNDAY">Sunday</option>
+                <option value="MONDAY">Monday</option>
+                <option value="TUESDAY">Tuesday</option>
+                <option value="WEDNESDAY">Wednesday</option>
+                <option value="THURSDAY">Thursday</option>
+                <option value="FRIDAY">Friday</option>
+                <option value="SATURDAY">Saturday</option>
               </select>
             </label>
             <label>
-              <span class="lbl">Tutup Buku (Cut-off)</span>
+              <span class="lbl">Cycle End Day</span>
               <select id="edit-end-day" required>
-                <option value="SUNDAY">Minggu</option>
-                <option value="MONDAY">Senin</option>
-                <option value="TUESDAY">Selasa</option>
-                <option value="WEDNESDAY">Rabu</option>
-                <option value="THURSDAY">Kamis</option>
-                <option value="FRIDAY">Jumat</option>
-                <option value="SATURDAY">Sabtu</option>
+                <option value="SUNDAY">Sunday</option>
+                <option value="MONDAY">Monday</option>
+                <option value="TUESDAY">Tuesday</option>
+                <option value="WEDNESDAY">Wednesday</option>
+                <option value="THURSDAY">Thursday</option>
+                <option value="FRIDAY">Friday</option>
+                <option value="SATURDAY">Saturday</option>
               </select>
             </label>
           </div>
           <div class="row2">
             <label>
-              <span class="lbl">Split Brand (%)</span>
+              <span class="lbl">Brand Share (%)</span>
               <input type="number" id="edit-split-brand" min="0" max="100" required />
             </label>
             <label>
-              <span class="lbl">Split Cafe (%)</span>
+              <span class="lbl">Cafe Share (%)</span>
               <input type="number" id="edit-split-tenant" min="0" max="100" required />
             </label>
           </div>
-          <div style="display:flex; gap:10px; margin-top:8px;">
-            <button type="button" class="btn btn-ghost" id="edit-cancel" style="flex:1">Batal</button>
-            <button type="submit" class="btn btn-primary" style="flex:1">Simpan</button>
+          <div style="display:flex; gap:12px; margin-top:16px;">
+            <button type="button" class="btn btn-ghost" id="edit-cancel" style="flex:1">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex:1">Save Terms</button>
           </div>
         </form>
       </div>
@@ -217,18 +466,33 @@ const title = `Partnerships — ${APP_NAME}`;
         list.innerHTML = ps.map(p => {
           const startDayText = dayMap[p.settlementStartDay] || "Senin";
           const endDayText = dayMap[p.settlementEndDay] || "Minggu";
+          const statusLower = p.status.toLowerCase();
+          
+          let crestEmoji = "🛡️";
+          if (statusLower === "pending") crestEmoji = "📜";
+          else if (statusLower === "suspended") crestEmoji = "⚠️";
+          
           return `
             <div class="row">
-              <div>
-                <div class="name">${p.tenant?.name || "(?)"}</div>
-                <div class="meta">PIC: ${p.tenant?.picPhoneE164 || "-"} · split ${(p.revenueSplitBrandBps/100).toFixed(0)}/${(p.revenueSplitTenantBps/100).toFixed(0)}</div>
-                <div class="meta" style="margin-top:4px; color:#fbbf24">Siklus Settlement: ${startDayText} - ${endDayText}</div>
+              <div style="flex: 1;">
+                <div class="name-layout">
+                  <div class="alliance-crest ${statusLower}">${crestEmoji}</div>
+                  <div>
+                    <div class="name">${p.tenant?.name || "(?)"}</div>
+                    <div class="meta">PIC: ${p.tenant?.picPhoneE164 || "-"} <span class="dot-separator">·</span> Split ${(p.revenueSplitBrandBps/100).toFixed(0)}/${(p.revenueSplitTenantBps/100).toFixed(0)}</div>
+                  </div>
+                </div>
+                <div class="meta" style="margin-top:10px; color:#fbbf24; display:flex; align-items:center; gap:6px;">
+                  <span>⏳ Cycle: ${startDayText} - ${endDayText}</span>
+                </div>
+                <div class="actions">
+                  <button class="btn btn-ghost btn-sm" data-act="edit" data-id="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">Terms</button>
+                  ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}" style="color:#34d399; border-color:rgba(52,211,153,0.3)">Activate</button>` : ""}
+                  ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}" style="color:#fb7185; border-color:rgba(251,113,133,0.3)">Suspend</button>` : ""}
+                </div>
               </div>
-              <div class="actions">
-                <span class="badge ${p.status.toLowerCase()}">${p.status}</span>
-                <button class="btn btn-ghost btn-sm" data-act="edit" data-id="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">Edit Siklus</button>
-                ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}">Aktifkan</button>` : ""}
-                ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}">Suspend</button>` : ""}
+              <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span class="badge ${statusLower}">${p.status}</span>
               </div>
             </div>
           `;
