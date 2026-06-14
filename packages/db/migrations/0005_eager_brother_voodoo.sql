@@ -17,7 +17,7 @@ CREATE TABLE `__new_partnerships` (
 INSERT INTO `__new_partnerships`("id", "brand_id", "tenant_id", "revenue_split_brand_bps", "revenue_split_tenant_bps", "status", "settlement_start_day", "settlement_end_day", "created_at", "activated_at") SELECT "id", "brand_id", "tenant_id", "revenue_split_brand_bps", "revenue_split_tenant_bps", "status", "settlement_start_day", "settlement_end_day", "created_at", "activated_at" FROM `partnerships`;--> statement-breakpoint
 DROP TABLE `partnerships`;--> statement-breakpoint
 ALTER TABLE `__new_partnerships` RENAME TO `partnerships`;--> statement-breakpoint
-PRAGMA foreign_keys=ON;--> statement-breakpoint
+-- PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `uniq_brand_tenant` ON `partnerships` (`brand_id`,`tenant_id`);--> statement-breakpoint
 CREATE INDEX `idx_partnership_status` ON `partnerships` (`status`);--> statement-breakpoint
 CREATE INDEX `idx_partnership_tenant` ON `partnerships` (`tenant_id`);--> statement-breakpoint
