@@ -326,8 +326,8 @@ router.post("/combined-save", async (c) => {
       let closingId = closing?.id;
 
       if (closing) {
-        if (closing.status !== "OPEN") {
-          throw new Error("Closing harian sudah disubmit dan tidak dapat diubah.");
+        if (closing.status === "LOCKED") {
+          throw new Error("Closing harian sudah diselesaikan (LOCKED) dan tidak dapat diubah.");
         }
       } else {
         closingId = crypto.randomUUID();
@@ -395,11 +395,11 @@ router.post("/combined-save", async (c) => {
         createdAt: now,
       });
 
-      // Submit the closing
+      // Submit the closing (transitions status to SUBMITTED if it was OPEN or keeps it if already SUBMITTED)
       const result = await tx
         .update(dailyClosings)
         .set({ status: "SUBMITTED", submittedAt: now, submittedByUserId: userId })
-        .where(and(eq(dailyClosings.id, closingId), eq(dailyClosings.status, "OPEN")))
+        .where(and(eq(dailyClosings.id, closingId), inArray(dailyClosings.status, ["OPEN", "SUBMITTED"])))
         .returning();
 
       if (result.length === 0) {
@@ -428,7 +428,7 @@ router.post("/combined-save", async (c) => {
         action: "CLOSING_SUBMITTED",
         entityType: "daily_closing",
         entityId: closingId,
-        beforeJson: JSON.stringify({ status: "OPEN" }),
+        beforeJson: JSON.stringify({ status: closing?.status ?? "OPEN" }),
         afterJson: JSON.stringify({ status: "SUBMITTED", submittedAt: now }),
         ip: c.req.header("cf-connecting-ip") ?? null,
         userAgent: c.req.header("user-agent") ?? null,
