@@ -101,7 +101,6 @@ const title = `Catat Titip — ${APP_NAME}`;
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
-      async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
       function attachQtyStrip() {
         document.querySelectorAll("#sku-section .stepper").forEach(stepper => {
           const inp = stepper.querySelector("input[data-sku]");

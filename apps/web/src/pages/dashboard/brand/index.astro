@@ -11,79 +11,530 @@ const title = `Brand Dashboard — ${APP_NAME}`;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        background: #0b1220; color: #f1f5f9;
-        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at top, #141e30 0%, #0b1220 100%);
+        background-attachment: fixed;
+        color: #f1f5f9;
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
         line-height: 1.5;
         -webkit-font-smoothing: antialiased;
       }
-      a { color: #38bdf8; text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      .shell { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+      a { color: #38bdf8; text-decoration: none; transition: color 0.15s ease; }
+      a:hover { color: #7dd3fc; text-decoration: none; }
+      
+      .shell { max-width: 480px; margin: 0 auto; padding: 0 0 100px; }
+      
       header.top {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 16px 20px; border-bottom: 1px solid #1e293b;
-        position: sticky; top: 0; background: rgba(11, 18, 32, .92);
-        backdrop-filter: blur(6px); z-index: 5;
+        padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        position: sticky; top: 0; background: rgba(11, 18, 32, 0.8);
+        backdrop-filter: blur(20px); z-index: 10;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
       }
-      .brand-name { font-weight: 700; font-size: 15px; }
-      .role-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #fbbf24; color: #0b1220; font-weight: 700; letter-spacing: 0.04em; }
-      .logout { font-size: 13px; color: #94a3b8; background: none; border: none; cursor: pointer; }
+      .brand-name { font-weight: 800; font-size: 16px; color: #f8fafc; letter-spacing: -0.02em; }
+      .role-tag { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); font-weight: 800; letter-spacing: 0.06em; }
+      .logout { font-size: 13px; color: #94a3b8; background: none; border: none; cursor: pointer; transition: color 0.15s ease; }
+      .logout:hover { color: #f1f5f9; }
+      
       main { padding: 20px; }
-      .greet { font-size: 14px; color: #94a3b8; margin: 0 0 4px; }
-      h1 { font-size: 24px; margin: 0 0 16px; letter-spacing: -0.01em; }
-      .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+      .greet { font-size: 13px; color: #fbbf24; margin: 0 0 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+      h1 { font-size: 28px; margin: 0 0 24px; letter-spacing: -0.03em; font-weight: 800; color: #ffffff; }
+      
+      /* Stats Cards */
+      .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
       .stat {
-        background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 14px;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
       }
-      .stat .lbl { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-      .stat .val { font-size: 22px; font-weight: 700; }
-      .stat .sub { font-size: 12px; color: #94a3b8; }
-      h2 { font-size: 16px; margin: 24px 0 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
-      .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .action {
-        background: #0f172a; border: 1px solid #1e293b; border-radius: 12px;
-        padding: 16px; display: flex; flex-direction: column; gap: 4px;
-        color: #f1f5f9; text-decoration: none; min-height: 80px;
+      .stat::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 0;
+        pointer-events: none;
       }
-      .action:hover { border-color: #fbbf24; text-decoration: none; }
-      .action .ic { font-size: 20px; }
-      .action .tt { font-weight: 600; font-size: 14px; }
-      .action .sub { font-size: 12px; color: #94a3b8; }
+      .stat:hover::before { opacity: 1; }
+      .stat:hover {
+        border-color: rgba(251, 191, 36, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px 0 rgba(251, 191, 36, 0.04);
+      }
+      .stat .lbl { font-size: 11px; color: #94a3b8; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; z-index: 1; }
+      .stat .val { 
+        font-size: 24px; 
+        font-weight: 800; 
+        background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.2;
+        z-index: 1;
+      }
+      .stat:nth-child(2) .val {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .stat .sub { font-size: 11px; color: #64748b; margin-top: 4px; font-weight: 500; z-index: 1; }
+      
+      h2 { font-size: 13px; margin: 28px 0 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
+      
+      /* Stok Tersisa Controls & Search */
+      .sisa-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 16px 0 20px;
+      }
+      .search-container {
+        position: relative;
+        width: 100%;
+      }
+      .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
+        color: #64748b;
+        pointer-events: none;
+      }
+      .search-input {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px 12px 12px 40px;
+        font-size: 14px;
+        color: #f1f5f9;
+        font-family: inherit;
+        transition: all 0.2s ease;
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: #fbbf24;
+        background: rgba(15, 23, 42, 0.7);
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+      }
+      .filter-tabs {
+        display: flex;
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        border-radius: 12px;
+        gap: 4px;
+      }
+      .filter-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+      .filter-tab:hover {
+        color: #f1f5f9;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .filter-tab.active {
+        background: #fbbf24;
+        color: #0b1220;
+        box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+      }
+      
+      /* Stok Tersisa Modern Layout */
+      .sisa-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+      .sisa-card {
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+      .sisa-card:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+      }
+      .sisa-card .sisa-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        transition: border-color 0.2s ease;
+      }
+      .sisa-card.collapsed .sisa-header {
+        border-bottom-color: transparent;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+      .sisa-card.collapsed .sisa-rows-list {
+        display: none;
+      }
+      .sisa-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .partner-icon {
+        font-size: 16px;
+        background: rgba(251, 191, 36, 0.08);
+        padding: 6px;
+        border-radius: 10px;
+        border: 1px solid rgba(251, 191, 36, 0.15);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .partner-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: #f8fafc;
+      }
+      .sisa-toggle-icon {
+        font-size: 10px;
+        color: #64748b;
+        transition: transform 0.25s ease;
+        display: inline-block;
+      }
+      .sisa-card:not(.collapsed) .sisa-toggle-icon {
+        transform: rotate(90deg);
+      }
+      
+      .sisa-rows-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .sisa-row-item {
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .sisa-row-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .sisa-row-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .sisa-row-item .sku-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .sku-row-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sku-code {
+        font-weight: 800;
+        color: #fbbf24;
+        font-size: 10px;
+        background: rgba(251, 191, 36, 0.08);
+        border: 1px solid rgba(251, 191, 36, 0.15);
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .sku-price {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+      }
+      .sku-name {
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+      .stock-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 95px;
+        justify-content: center;
+      }
+      .stock-badge.zero {
+        background: rgba(239, 68, 68, 0.08);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.15);
+      }
+      .stock-badge.low {
+        background: rgba(245, 158, 11, 0.08);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.15);
+      }
+      .stock-badge.ok {
+        background: rgba(16, 185, 129, 0.08);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.15);
+      }
+      
+      /* Progress bar styling */
+      .stock-progress-container {
+        height: 5px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 99px;
+        margin-top: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+      }
+      .stock-progress-bar {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .stock-progress-bar.zero { width: 0% !important; }
+      .stock-progress-bar.low { background: #f59e0b; }
+      .stock-progress-bar.ok { background: #10b981; }
+
+      /* Action Categorization */
+      .action-section-title {
+        font-size: 11px;
+        margin: 32px 0 12px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .actions-featured {
+        margin-bottom: 14px;
+      }
+      .action-card-featured {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.03) 100%);
+        border: 1.5px solid rgba(251, 191, 36, 0.25);
+        border-radius: 16px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: #f1f5f9;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 20px rgba(251, 191, 36, 0.03);
+        position: relative;
+        overflow: hidden;
+      }
+      .action-card-featured::after {
+        content: '';
+        position: absolute;
+        top: -50%; left: -50%; width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(251, 191, 36, 0.08) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      .action-card-featured:hover::after { opacity: 1; }
+      .action-card-featured:hover {
+        border-color: #fbbf24;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(251, 191, 36, 0.1);
+        text-decoration: none;
+      }
+      .action-card-featured .ic-featured {
+        font-size: 26px;
+        background: rgba(251, 191, 36, 0.1);
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid rgba(251, 191, 36, 0.2);
+        flex-shrink: 0;
+      }
+      .action-card-featured .info-featured {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .action-card-featured .tt-featured {
+        font-weight: 800;
+        font-size: 15px;
+        color: #ffffff;
+      }
+      .action-card-featured .sub-featured {
+        font-size: 11px;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+      
+      /* Standard Action Grid */
+      .actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .action-card-mini {
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: #f1f5f9;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .action-card-mini:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        text-decoration: none;
+      }
+      .action-card-mini .ic {
+        font-size: 18px;
+        background: rgba(255, 255, 255, 0.03);
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.2s ease;
+      }
+      .action-card-mini:hover .ic {
+        background: rgba(251, 191, 36, 0.08);
+        border-color: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+      }
+      .action-card-mini .tt { font-weight: 700; font-size: 13px; color: #f8fafc; }
+      .action-card-mini .sub { font-size: 11px; color: #94a3b8; line-height: 1.3; }
+
+      /* Collapsible Sections */
+      .collapsible-section {
+        margin-bottom: 12px;
+      }
+      .collapsible-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+        margin: 28px 0 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding-bottom: 8px;
+      }
+      .collapsible-header h2 {
+        margin: 0;
+        font-size: 12px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+      }
+      .collapsible-header .toggle-btn {
+        font-size: 10px;
+        color: #64748b;
+        transition: transform 0.25s ease;
+        display: inline-block;
+      }
+      .collapsible-section.collapsed .toggle-btn {
+        transform: rotate(0deg);
+      }
+      .collapsible-section:not(.collapsed) .toggle-btn {
+        transform: rotate(90deg);
+      }
+      .collapsible-section.collapsed .collapsible-content {
+        display: none;
+      }
+
+      /* Partners List */
       .partnerships { display: flex; flex-direction: column; gap: 10px; }
       .partner {
-        background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 14px;
-        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: border-color 0.2s ease;
       }
-      .partner .name { font-weight: 600; }
-      .partner .meta { font-size: 12px; color: #94a3b8; }
+      .partner:hover { border-color: rgba(255, 255, 255, 0.12); }
+      .partner .name { font-weight: 700; font-size: 14px; color: #f1f5f9; }
+      .partner .meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+      
       .badge {
-        font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 700;
-        letter-spacing: 0.04em;
+        font-size: 10px; padding: 4px 10px; border-radius: 999px; font-weight: 800;
+        letter-spacing: 0.06em;
       }
-      .badge.active { background: rgba(52, 211, 153, .15); color: #34d399; }
-      .badge.pending { background: rgba(251, 191, 36, .15); color: #fbbf24; }
-      .badge.suspended { background: rgba(251, 113, 133, .15); color: #fb7185; }
+      .badge.active { background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.15); }
+      .badge.pending { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.15); }
+      .badge.suspended { background: rgba(251, 113, 133, 0.1); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.15); }
+      
       .empty {
-        background: #0f172a; border: 1px dashed #1e293b; border-radius: 12px;
-        padding: 24px; text-align: center; color: #94a3b8;
+        background: rgba(15, 23, 42, 0.3); border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 14px;
+        padding: 24px; text-align: center; color: #94a3b8; font-size: 13px;
       }
-      .sisa-list { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
-      .sisa-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; }
-      .sisa-card .partner { font-weight:600; margin-bottom:8px; }
-      .sisa-rows { display:flex; flex-wrap:wrap; gap:6px; }
-      .sisa-pill { background:#1e293b; padding:4px 8px; border-radius:6px; font-size:12px; }
-      .sisa-pill.zero { color:#94a3b8; }
-      .sisa-pill.low { color:#fb7185; font-weight:700; }
-      .sisa-pill.ok { color:#34d399; }
+
+      /* SKUs display */
       .skus { display: flex; flex-wrap: wrap; gap: 6px; }
-      .sku-pill { background: #1e293b; padding: 4px 8px; border-radius: 6px; font-size: 12px; color: #fbbf24; }
+      .sku-pill { 
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 6px 12px; 
+        border-radius: 8px; 
+        font-size: 12px; 
+        color: #f1f5f9; 
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+      .sku-pill:hover {
+        border-color: #fbbf24;
+        background: rgba(251, 191, 36, 0.03);
+      }
+      
       .err { background: rgba(251, 113, 133, .12); color: #fb7185; border: 1px solid rgba(251, 113, 133, .3); padding: 12px; border-radius: 10px; font-size: 14px; }
-      .loading { color: #94a3b8; text-align: center; padding: 24px; }
+      .loading { color: #94a3b8; text-align: center; padding: 24px; font-size: 14px; }
     </style>
   </head>
   <body>
@@ -116,62 +567,101 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         </div>
 
         <h2>Stok tersisa di partner</h2>
+        <div class="sisa-controls">
+          <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="sisa-search" placeholder="Cari partner atau SKU..." class="search-input" />
+          </div>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">Semua</button>
+            <button class="filter-tab" data-filter="low">Kritis (&lt; 5)</button>
+            <button class="filter-tab" data-filter="empty">Habis</button>
+          </div>
+        </div>
+        
         <div id="sisa-list" class="sisa-list">
           <div class="loading">Memuat…</div>
         </div>
 
-        <h2>Aksi cepat</h2>
-        <div class="actions">
-          <a class="action" href="/dashboard/brand/ops/new" style="border-color:#fbbf24;background:rgba(251,191,36,.08)">
-            <span class="ic">⚡</span>
-            <span class="tt">Catat Hari Ini</span>
-            <span class="sub">Titip + Tarik + Terjual dalam 1 layar</span>
+        <div class="action-section-title">
+          <span>⚡</span> Operasional Harian
+        </div>
+        <div class="actions-featured">
+          <a class="action-card-featured" href="/dashboard/brand/ops/new">
+            <span class="ic-featured">⚡</span>
+            <div class="info-featured">
+              <span class="tt-featured">Catat Hari Ini</span>
+              <span class="sub-featured">Titip + Tarik + Terjual (closing) dalam 1 layar cepat</span>
+            </div>
           </a>
-          <a class="action" href="/dashboard/brand/movements/new-titip">
+        </div>
+        
+        <div class="actions-grid">
+          <a class="action-card-mini" href="/dashboard/brand/movements/new-titip">
             <span class="ic">📦</span>
             <span class="tt">Catat Titip</span>
-            <span class="sub">Stok masuk ke partner</span>
+            <span class="sub">Kirim stok masuk ke partner</span>
           </a>
-          <a class="action" href="/dashboard/brand/movements/new-tarik">
+          <a class="action-card-mini" href="/dashboard/brand/movements/new-tarik">
             <span class="ic">↩️</span>
             <span class="tt">Catat Tarik</span>
-            <span class="sub">Stok kembali ke brand</span>
+            <span class="sub">Tarik stok kembali ke brand</span>
           </a>
-          <a class="action" href="/dashboard/brand/skus">
-            <span class="ic">🏷️</span>
-            <span class="tt">Kelola SKU</span>
-            <span class="sub">Produk &amp; harga</span>
-          </a>
-          <a class="action" href="/dashboard/brand/partnerships">
-            <span class="ic">🤝</span>
-            <span class="tt">Invite Partner</span>
-            <span class="sub">Tambah partnership</span>
-          </a>
-          <a class="action" href="/dashboard/brand/closings">
+          <a class="action-card-mini" href="/dashboard/brand/closings">
             <span class="ic">📋</span>
-            <span class="tt">Tenant Closings</span>
-            <span class="sub">Review closing harian</span>
+            <span class="tt">Review Closings</span>
+            <span class="sub">Review laporan closing partner</span>
           </a>
-          <a class="action" href="/dashboard/brand/settlements">
+          <a class="action-card-mini" href="/dashboard/brand/settlements">
             <span class="ic">💰</span>
             <span class="tt">Settlements</span>
-            <span class="sub">Approve &amp; mark paid</span>
+            <span class="sub">Approve tagihan &amp; pembayaran</span>
           </a>
-          <a class="action" href="/dashboard/brand/analytics">
+        </div>
+
+        <div class="action-section-title">
+          <span>⚙️</span> Manajemen &amp; Laporan
+        </div>
+        <div class="actions-grid">
+          <a class="action-card-mini" href="/dashboard/brand/skus">
+            <span class="ic">🏷️</span>
+            <span class="tt">Kelola SKU</span>
+            <span class="sub">Atur produk &amp; harga</span>
+          </a>
+          <a class="action-card-mini" href="/dashboard/brand/partnerships">
+            <span class="ic">🤝</span>
+            <span class="tt">Invite Partner</span>
+            <span class="sub">Tambah partnership baru</span>
+          </a>
+          <a class="action-card-mini" style="grid-column: span 2;" href="/dashboard/brand/analytics">
             <span class="ic">📊</span>
-            <span class="tt">Analytics</span>
-            <span class="sub">Top SKU &amp; tren mingguan</span>
+            <span class="tt">Analytics Dashboard</span>
+            <span class="sub">Lihat performa top SKU &amp; tren penjualan mingguan</span>
           </a>
         </div>
 
-        <h2>Partner</h2>
-        <div id="partnerships" class="partnerships">
-          <div class="loading">Memuat…</div>
+        <div class="collapsible-section collapsed" id="partners-section">
+          <div class="collapsible-header" onclick="toggleSection('partners-section')">
+            <h2>Daftar Partner</h2>
+            <span class="toggle-btn">▶</span>
+          </div>
+          <div class="collapsible-content">
+            <div id="partnerships" class="partnerships">
+              <div class="loading">Memuat…</div>
+            </div>
+          </div>
         </div>
 
-        <h2>SKU</h2>
-        <div id="skus" class="skus">
-          <div class="loading">Memuat…</div>
+        <div class="collapsible-section collapsed" id="skus-section">
+          <div class="collapsible-header" onclick="toggleSection('skus-section')">
+            <h2>Daftar SKU</h2>
+            <span class="toggle-btn">▶</span>
+          </div>
+          <div class="collapsible-content">
+            <div id="skus" class="skus">
+              <div class="loading">Memuat…</div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -183,12 +673,10 @@ const title = `Brand Dashboard — ${APP_NAME}`;
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
 
+      let globalData = null;
+
       async function jget(path) {
         const r = await fetch(API + path, { headers: authH });
-        return r.json().catch(() => ({}));
-      }
-      async function jpost(path, body) {
-        const r = await fetch(API + path, { method: "POST", headers: authH, body: JSON.stringify(body) });
         return r.json().catch(() => ({}));
       }
 
@@ -197,6 +685,163 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         localStorage.removeItem("kongsian_session");
         window.location.href = "/login";
       });
+
+      window.togglePartnerCard = function(partnerId) {
+        const card = document.querySelector(`.sisa-card[data-partner-id="${partnerId}"]`);
+        if (card) {
+          card.classList.toggle("collapsed");
+        }
+      };
+
+      window.toggleSection = function(sectionId) {
+        const sec = document.getElementById(sectionId);
+        if (sec) {
+          sec.classList.toggle("collapsed");
+        }
+      };
+
+      function renderSisaList(searchQuery = "", filterType = "all") {
+        const sisaEl = document.getElementById("sisa-list");
+        if (!globalData) return;
+
+        const { skus, partnerships, sisaSistem } = globalData;
+        const active = (partnerships || []).filter(p => p.status === "ACTIVE");
+
+        if (active.length === 0) {
+          sisaEl.innerHTML = `<div class="empty">Belum ada partner aktif.</div>`;
+          return;
+        }
+
+        const cards = [];
+        const query = searchQuery.toLowerCase().trim();
+
+        for (const p of active) {
+          const partnerName = (p.tenant?.name || "").toLowerCase();
+          const psSisa = (sisaSistem || []).filter(row => row.partnershipId === p.id);
+
+          // Map and filter rows
+          const resolvedRows = psSisa.map(row => {
+            const sku = skus.find(s => s.id === row.skuId);
+            if (!sku) return null;
+            const qty = row.sisa ?? 0;
+            const cls = qty <= 0 ? "zero" : qty < 5 ? "low" : "ok";
+
+            // Status filter logic
+            if (filterType === "low" && qty >= 5) return null;
+            if (filterType === "empty" && qty > 0) return null;
+
+            // Search text match
+            if (query) {
+              const skuCode = (sku.code || "").toLowerCase();
+              const skuName = (sku.name || "").toLowerCase();
+              if (!partnerName.includes(query) && !skuCode.includes(query) && !skuName.includes(query)) {
+                return null;
+              }
+            }
+
+            return { row, sku, qty, cls };
+          }).filter(Boolean);
+
+          // Skip card entirely if:
+          // 1. Search query is provided and neither partner name nor any of its rows match
+          if (query && resolvedRows.length === 0 && !partnerName.includes(query)) {
+            continue;
+          }
+
+          // 2. Status filter (low/empty) is active and we filtered out all rows
+          if (filterType !== "all" && resolvedRows.length === 0) {
+            continue;
+          }
+
+          if (psSisa.length === 0) {
+            if (filterType === "all" && (!query || partnerName.includes(query))) {
+              cards.push(`
+                <div class="sisa-card" data-partner-id="${p.id}">
+                  <div class="sisa-header" onclick="togglePartnerCard('${p.id}')">
+                    <div class="sisa-header-left">
+                      <span class="partner-icon">🏪</span>
+                      <span class="partner-name">${p.tenant?.name || "(tenant?)"}</span>
+                    </div>
+                    <span class="sisa-toggle-icon">▶</span>
+                  </div>
+                  <div class="loading" style="padding:12px 0; font-size:12px;">Belum ada stok terdaftar.</div>
+                </div>
+              `);
+            }
+            continue;
+          }
+
+          if (resolvedRows.length === 0 && query && partnerName.includes(query)) {
+            cards.push(`
+              <div class="sisa-card" data-partner-id="${p.id}">
+                <div class="sisa-header" onclick="togglePartnerCard('${p.id}')">
+                  <div class="sisa-header-left">
+                    <span class="partner-icon">🏪</span>
+                    <span class="partner-name">${p.tenant?.name || "(tenant?)"}</span>
+                  </div>
+                  <span class="sisa-toggle-icon">▶</span>
+                </div>
+                <div class="loading" style="padding:12px 0; font-size:12px;">Tidak ada SKU yang cocok.</div>
+              </div>
+            `);
+            continue;
+          }
+
+          const rowsHtml = resolvedRows.map(({ sku, qty, cls }) => {
+            const label = qty <= 0 ? "Habis" : qty < 5 ? `${qty} unit` : `${qty} unit`;
+            const maxVal = 15; // Benchmark quantity for progress bar fill
+            const percentage = Math.min(100, Math.max(0, (qty / maxVal) * 100));
+            const priceStr = sku.priceIdr ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(sku.priceIdr) : "";
+
+            return `
+              <div class="sisa-row-item">
+                <div class="sisa-row-main">
+                  <div class="sku-info">
+                    <div class="sku-row-header">
+                      <span class="sku-code">${sku.code}</span>
+                      ${priceStr ? `<span class="sku-price">${priceStr}</span>` : ""}
+                    </div>
+                    <span class="sku-name">${sku.name}</span>
+                  </div>
+                  <div class="sku-stock-status">
+                    <span class="stock-badge ${cls}">
+                      ${qty <= 0 ? "🔴" : qty < 5 ? "🟡" : "🟢"} ${label}
+                    </span>
+                  </div>
+                </div>
+                <div class="stock-progress-container">
+                  <div class="stock-progress-bar ${cls}" style="width: ${percentage}%"></div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          // Keep collapse state if card was already rendered
+          const existingCard = document.querySelector(`.sisa-card[data-partner-id="${p.id}"]`);
+          const isCollapsed = existingCard ? existingCard.classList.contains("collapsed") : false;
+
+          cards.push(`
+            <div class="sisa-card ${isCollapsed ? 'collapsed' : ''}" data-partner-id="${p.id}">
+              <div class="sisa-header" onclick="togglePartnerCard('${p.id}')">
+                <div class="sisa-header-left">
+                  <span class="partner-icon">🏪</span>
+                  <span class="partner-name">${p.tenant?.name || "(tenant?)"}</span>
+                </div>
+                <span class="sisa-toggle-icon">▶</span>
+              </div>
+              <div class="sisa-rows-list">
+                ${rowsHtml || `<div class="loading" style="padding:12px 0; font-size:12px;">Tidak ada item yang cocok dengan filter.</div>`}
+              </div>
+            </div>
+          `);
+        }
+
+        if (cards.length === 0) {
+          sisaEl.innerHTML = `<div class="empty">Tidak ada partner atau SKU yang cocok.</div>`;
+        } else {
+          sisaEl.innerHTML = cards.join("");
+        }
+      }
 
       (async () => {
         const r = await jget("/v1/ops/brand-dashboard");
@@ -208,14 +853,36 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           window.location.href = "/login"; return;
         }
 
-        const { user, brand, skus, partnerships, sisaSistem, weeklyRevenue } = r.data;
+        globalData = r.data;
+        const { user, brand, skus, partnerships, weeklyRevenue } = globalData;
+
         document.getElementById("greet").textContent = `Halo, ${user.name || user.phoneE164}`;
         document.getElementById("brand-name").textContent = brand.name;
 
         const active = (partnerships || []).filter(p => p.status === "ACTIVE");
         document.getElementById("active-count").textContent = active.length;
 
-        // SKUs
+        // Render remaining stock list
+        renderSisaList();
+
+        // Bind interactive search & filter events
+        const searchInput = document.getElementById("sisa-search");
+        let activeFilter = "all";
+
+        searchInput.addEventListener("input", (e) => {
+          renderSisaList(e.target.value, activeFilter);
+        });
+
+        document.querySelectorAll(".filter-tab").forEach(tab => {
+          tab.addEventListener("click", () => {
+            document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            activeFilter = tab.getAttribute("data-filter");
+            renderSisaList(searchInput.value, activeFilter);
+          });
+        });
+
+        // SKU List
         const skusEl = document.getElementById("skus");
         if (skus.length === 0) {
           skusEl.innerHTML = '<div class="empty">Belum ada SKU. <a href="/dashboard/brand/skus">Tambah SKU</a>.</div>';
@@ -223,7 +890,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           skusEl.innerHTML = skus.map(s => `<span class="sku-pill">${s.code} · ${s.name}</span>`).join("");
         }
 
-        // Partnerships
+        // Partnerships List
         const pEl = document.getElementById("partnerships");
         if (partnerships.length === 0) {
           pEl.innerHTML = '<div class="empty">Belum ada partner. <a href="/dashboard/brand/partnerships">Invite partner pertama</a>.</div>';
@@ -239,35 +906,6 @@ const title = `Brand Dashboard — ${APP_NAME}`;
               </div>
             </div>
           `).join("");
-        }
-
-        // Stok tersisa per partner
-        const sisaEl = document.getElementById("sisa-list");
-        if (active.length === 0) {
-          sisaEl.innerHTML = `<div class="empty">Belum ada partner aktif.</div>`;
-        } else {
-          const cards = [];
-          for (const p of active) {
-            const psSisa = (sisaSistem || []).filter(row => row.partnershipId === p.id);
-            if (psSisa.length === 0) {
-              cards.push(`<div class="sisa-card"><div class="partner">${p.tenant?.name || "(tenant?)"}</div><div class="loading" style="padding:8px 0">Belum ada stok.</div></div>`);
-              continue;
-            }
-            const pills = psSisa.map(row => {
-              const sku = skus.find(s => s.id === row.skuId);
-              if (!sku) return "";
-              const qty = row.sisa ?? 0;
-              const cls = qty <= 0 ? "zero" : qty < 5 ? "low" : "ok";
-              return `<span class="sisa-pill ${cls}">${sku.code}: ${qty}</span>`;
-            }).filter(Boolean).join("");
-
-            if (!pills) {
-              cards.push(`<div class="sisa-card"><div class="partner">${p.tenant?.name || "(tenant?)"}</div><div class="loading" style="padding:8px 0">Belum ada stok.</div></div>`);
-            } else {
-              cards.push(`<div class="sisa-card"><div class="partner">${p.tenant?.name || "(tenant?)"}</div><div class="sisa-rows">${pills}</div></div>`);
-            }
-          }
-          sisaEl.innerHTML = cards.join("");
         }
 
         // Weekly revenue
