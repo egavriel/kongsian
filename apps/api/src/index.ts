@@ -53,6 +53,7 @@ import { settlements } from "./routes/settlements";
 import { notifications as notificationsRouter } from "./routes/notifications";
 import { tenantClosings, brandClosings } from "./routes/closings";
 import { analytics } from "./routes/analytics";
+import { ops } from "./routes/ops";
 import { onCronTrigger } from "./cron";
 
 export type Bindings = {
@@ -140,6 +141,7 @@ app.route("/v1/notifications", notificationsRouter);
 app.route("/v1", settlements);
 app.route("/v1/tenants", tenantClosings);
 app.route("/v1/brands", brandClosings);
+app.route("/v1/ops", ops);
 app.route("/v1", analytics);
 
 // Workers Cron Trigger — runs every minute (configured in wrangler.toml).

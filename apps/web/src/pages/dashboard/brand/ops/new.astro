@@ -145,7 +145,6 @@ export const ssr = false;
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
-      async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
 
       const errEl = document.getElementById("err");
       const okEl = document.getElementById("ok");
@@ -257,27 +256,6 @@ export const ssr = false;
         attachQtyStrip("#stok-awal-section"); attachQtyStrip("#titip-section"); attachQtyStrip("#tarik-section"); attachQtyStrip("#terjual-section");
       }
 
-      async function refreshStokAwal(seq) {
-        if (!state.partnershipId) { state.stokAwal = {}; return; }
-        const date = document.getElementById("date").value;
-        // Pass an explicit from/to window so the server only loads the rows we
-        // actually care about (one day + a small slack for safety). The previous
-        // code pulled LIMIT 500 unfiltered rows and filtered in JS — slow once
-        // a partnership has months of history.
-        const r = await jget(`/v1/movements?partnershipId=${state.partnershipId}&from=${date}&to=${date}`);
-        if (seq !== loadSeq) return; // stale
-        state.stokAwal = {};
-        if (r.ok) {
-          for (const mv of r.data || []) {
-            if (mv.kind === "ADJUSTMENT" && mv.reason === STOK_AWAL_REASON && mv.movementDate === date) {
-              // signQty(ADJUSTMENT, +qty) returns +qty as stored. qty is signed; only positive seed counts.
-              if ((mv.qty || 0) > 0) state.stokAwal[mv.skuId] = mv.qty;
-            }
-          }
-        }
-        updateStokAwalResetButton();
-      }
-
       function updateStokAwalResetButton() {
         const btn = document.getElementById("stok-awal-reset");
         if (!btn) return;
@@ -321,15 +299,6 @@ export const ssr = false;
         }
       }
 
-      async function refreshSisa(seq) {
-        if (!state.partnershipId) { state.sisaSistem = {}; return; }
-        const upTo = document.getElementById("date").value;
-        const r = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
-        if (seq !== loadSeq) return; // stale
-        state.sisaSistem = {};
-        if (r.ok) for (const row of r.data?.bySku || []) state.sisaSistem[row.skuId] = row.sisa ?? 0;
-      }
-
       function updateSummary() {
         const box = document.getElementById("ops-summary");
         const partnerName = document.getElementById("partnership")?.selectedOptions?.[0]?.text?.trim() || "(partner)";
@@ -351,44 +320,48 @@ export const ssr = false;
         if (!state.partnershipId) return;
         const seq = ++loadSeq;        // invalidate any in-flight previous load
         renderSkeletons();             // show shimmer immediately so the user sees the page is working
-        // Fire all three reads in parallel. Each checks `seq` before mutating
-        // state so the most-recent selection always wins.
-        const tasks = [
-          refreshSisa(seq),
-          refreshStokAwal(seq),
-        ];
-        // SKUs are brand-scoped, not partnership-scoped. Load them once on
-        // init() and skip re-fetching here. (The original code refetched
-        // /v1/skus on every partnership change — pure waste.)
-        await Promise.allSettled(tasks);
-        if (seq !== loadSeq) return; // user changed selection while we were loading
+        const date = document.getElementById("date").value;
+        const r = await jget(`/v1/ops/partnership-data?partnershipId=${state.partnershipId}&date=${date}`);
+        if (seq !== loadSeq) return; // stale
+
+        state.sisaSistem = {};
+        state.stokAwal = {};
+        if (r.ok) {
+          const { sisaSistem, stokAwal } = r.data || {};
+          for (const row of sisaSistem || []) {
+            state.sisaSistem[row.skuId] = row.sisa ?? 0;
+          }
+          for (const row of stokAwal || []) {
+            state.stokAwal[row.skuId] = row.qty ?? 0;
+          }
+        }
+        updateStokAwalResetButton();
         renderSections();
         updateSummary();
       }
 
       async function init() {
-        const me = await jget("/v1/brands/me");
-        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
-        state.brandId = me.data.brandId;
+        const initData = await jget("/v1/ops/init");
+        if (!initData.ok) {
+          if (initData.error?.code === "VERIFICATION_PENDING") {
+            window.location.href = "/login?registered=1";
+            return;
+          }
+          window.location.href = "/dashboard/brand";
+          return;
+        }
 
-        // Load brand detail (gives us SKUs once) and the lightweight active-
-        // partnerships list (gives us the partner dropdown) in parallel. The
-        // old flow used /v1/brands/:id which also returned all SKUs and all
-        // partnerships — fine for 3 partners, slow once the brand grows.
-        const [b, pp] = await Promise.all([
-          jget(`/v1/brands/${state.brandId}`),
-          jget(`/v1/brands/${state.brandId}/partnerships?status=ACTIVE`),
-        ]);
-        if (!b.ok) { showErr("Gagal muat brand: " + (b.error?.code || "?")); return; }
-        state.skus = b.data?.skus || [];
-        const active = (pp.ok ? (pp.data?.partnerships || []) : (b.data.partnerships || [])).filter(p => p.status === "ACTIVE");
-        state.partnerships = active;
+        const { brandId, skus, partnerships } = initData.data;
+        state.brandId = brandId;
+        state.skus = skus || [];
+        state.partnerships = partnerships || [];
+
         const sel = document.getElementById("partnership");
-        if (active.length === 0) {
+        if (state.partnerships.length === 0) {
           sel.innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
         } else {
           sel.innerHTML = `<option value="">— Pilih partner —</option>` +
-            active.map(p => `<option value="${p.id}" data-tenant="${p.tenant?.id || ""}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
+            state.partnerships.map(p => `<option value="${p.id}" data-tenant="${p.tenant?.id || ""}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
         }
         sel.disabled = false;
 
@@ -461,63 +434,25 @@ export const ssr = false;
         const btn = document.getElementById("submit-btn");
         btn.disabled = true; btn.textContent = "Menyimpan…";
         try {
-          // 0) Stok Awal — ADJUSTMENT batch, signed positive. Idempotent per (partnership, date).
-          if (stokAwalItems.length > 0) {
-            const r = await fetch(API + "/v1/movements/batch", {
-              method: "POST",
-              headers: { ...authH },
-              body: JSON.stringify({
-                partnershipId: state.partnershipId,
-                movementDate: date,
-                items: stokAwalItems,
-                batchIdempotencyKey: `stokAwal-${state.partnershipId}-${date}`,
-              }),
-            });
-            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error("Stok Awal gagal: " + (j?.error?.code || r.status)); }
+          const r = await fetch(API + "/v1/ops/combined-save", {
+            method: "POST",
+            headers: { ...authH },
+            body: JSON.stringify({
+              partnershipId: state.partnershipId,
+              tenantId: state.tenantId,
+              movementDate: date,
+              stokAwalItems,
+              titipItems,
+              tarikItems,
+              terjualLines,
+            }),
+          });
+
+          if (!r.ok) {
+            const j = await r.json().catch(() => ({}));
+            throw new Error(j?.error?.message || "Penyimpanan gagal.");
           }
-          // 1) Titip batch — v2: idempotency in body
-          if (titipItems.length > 0) {
-            const r = await fetch(API + "/v1/movements/batch", {
-              method: "POST",
-              headers: { ...authH },
-              body: JSON.stringify({
-                partnershipId: state.partnershipId,
-                movementDate: date,
-                items: titipItems,
-                batchIdempotencyKey: `titip-${state.partnershipId}-${date}`,
-              }),
-            });
-            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error("Titip gagal: " + (j?.error?.code || r.status)); }
-          }
-          // 2) Tarik batch — v2: idempotency in body
-          if (tarikItems.length > 0) {
-            const r = await fetch(API + "/v1/movements/batch", {
-              method: "POST",
-              headers: { ...authH },
-              body: JSON.stringify({
-                partnershipId: state.partnershipId,
-                movementDate: date,
-                items: tarikItems,
-                batchIdempotencyKey: `tarik-${state.partnershipId}-${date}`,
-              }),
-            });
-            if (!r.ok) { const j = await r.json().catch(()=>({})); throw new Error("Tarik gagal: " + (j?.error?.code || r.status)); }
-          }
-          // 3) Terjual via closings: create draft → upsert lines → submit
-          if (terjualLines.length > 0) {
-            // 3a) Create/return draft closing (idempotent on (partnership,date))
-            const createUrl = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings`;
-            const cr = await jpost(createUrl, { closingDate: date });
-            if (!cr.ok) throw new Error("Closing buat gagal: " + (cr.error?.code || "?"));
-            // 3b) Upsert terjual lines — v2: field is `terjual` not `qty`
-            const tjUrl = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/terjual`;
-            const tr = await jpost(tjUrl, { lines: terjualLines });
-            if (!tr.ok) throw new Error("Terjual upsert gagal: " + (tr.error?.code || "?"));
-            // 3c) Submit — Task 0 loosened PHOTO_REQUIRED for the trial
-            const subUrl = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/submit`;
-            const sr = await jpost(subUrl, {});
-            if (!sr.ok) throw new Error("Submit closing gagal: " + (sr.error?.code || "?"));
-          }
+
           showOk(`Berhasil disimpan. Mengarahkan…`);
           setTimeout(() => { window.location.href = "/dashboard/brand/movements"; }, 1000);
         } catch (e) {
