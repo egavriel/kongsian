@@ -23,8 +23,8 @@ export const partnerships = sqliteTable(
     status: text("status", { enum: ["PENDING", "ACTIVE", "SUSPENDED", "ENDED"] })
       .notNull()
       .default("PENDING"),
-    settlementStartDay: text("settlement_start_day").notNull().default("SUNDAY"),
-    settlementEndDay: text("settlement_end_day").notNull().default("SATURDAY"),
+    settlementStartDay: text("settlement_start_day").notNull().default("MONDAY"),
+    settlementEndDay: text("settlement_end_day").notNull().default("SUNDAY"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

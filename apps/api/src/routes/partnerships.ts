@@ -305,8 +305,8 @@ router.post("/", async (c) => {
     revenueSplitBrandBps: splitBrand,
     revenueSplitTenantBps: splitTenant,
     status: "PENDING",
-    settlementStartDay: parsed.data.settlementStartDay ?? "MONDAY",
-    settlementEndDay: parsed.data.settlementEndDay ?? "SUNDAY",
+    settlementStartDay: parsed.data.settlementStartDay ?? "SUNDAY",
+    settlementEndDay: parsed.data.settlementEndDay ?? "SATURDAY",
     createdAt: now,
     activatedAt: null,
   });
@@ -424,8 +424,8 @@ router.post("/invite", async (c) => {
       revenueSplitBrandBps: splitBrand,
       revenueSplitTenantBps: splitTenant,
       status: "PENDING",
-      settlementStartDay: settlementStartDay ?? "MONDAY",
-      settlementEndDay: settlementEndDay ?? "SUNDAY",
+      settlementStartDay: settlementStartDay ?? "SUNDAY",
+      settlementEndDay: settlementEndDay ?? "SATURDAY",
       createdAt: now,
       activatedAt: null,
     });
