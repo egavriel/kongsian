@@ -111,19 +111,27 @@ const title = `Catat Tarik — ${APP_NAME}`;
       }
 
       async function loadPartnerships() {
-        const me = await jget("/v1/brands/me");
-        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
-        state.brandId = me.data.brandId;
-        const b = await jget(`/v1/brands/${state.brandId}`);
-        if (!b.ok) { showErr("Gagal muat partnerships: " + (b.error?.code || "?")); return; }
-        const active = (b.data.partnerships || []).filter(p => p.status === "ACTIVE");
-        if (active.length === 0) {
+        const r = await jget("/v1/ops/init");
+        if (!r.ok) {
+          if (r.error?.code === "VERIFICATION_PENDING") {
+            window.location.href = "/login?registered=1";
+            return;
+          }
+          window.location.href = "/dashboard/brand";
+          return;
+        }
+
+        const { brandId, skus, partnerships } = r.data;
+        state.brandId = brandId;
+        state.skus = skus || [];
+        state.partnerships = partnerships || [];
+
+        if (state.partnerships.length === 0) {
           document.getElementById("partnership").innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
           return;
         }
         document.getElementById("partnership").innerHTML = `<option value="">— Pilih partner —</option>` +
-          active.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
-        state.partnerships = active;
+          state.partnerships.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
       }
 
       async function renderSkus() {
@@ -131,10 +139,13 @@ const title = `Catat Tarik — ${APP_NAME}`;
         if (!state.partnershipId) { sec.innerHTML = `<div class="empty">Pilih partnership dulu.</div>`; document.getElementById("submit-btn").disabled = true; return; }
         if (state.skus.length === 0) { sec.innerHTML = `<div class="empty">Belum ada SKU di brand ini.</div>`; document.getElementById("submit-btn").disabled = true; return; }
         const upTo = document.getElementById("date").value;
-        const sisaR = await jget(`/v1/movements/sisa-sistem?partnershipId=${state.partnershipId}&upTo=${upTo}`);
+        const sisaR = await jget(`/v1/ops/partnership-data?partnershipId=${state.partnershipId}&date=${upTo}`);
         state.sisaSistem = {};
         if (sisaR.ok) {
-          for (const row of sisaR.data || []) state.sisaSistem[row.skuId] = row.qty;
+          const { sisaSistem } = sisaR.data || {};
+          for (const row of sisaSistem || []) {
+            state.sisaSistem[row.skuId] = row.sisa ?? 0;
+          }
         }
         sec.innerHTML = state.skus.map(s => {
           const sisa = state.sisaSistem[s.id] ?? 0;
@@ -156,12 +167,9 @@ const title = `Catat Tarik — ${APP_NAME}`;
         attachQtyStrip();
       }
 
-      document.getElementById("partnership").addEventListener("change", async (e) => {
+      document.getElementById("partnership").addEventListener("change", (e) => {
         const pid = e.target.value;
         state.partnershipId = pid || null;
-        if (!pid) { state.skus = []; renderSkus(); return; }
-        const r = await jget(`/v1/skus?brandId=${state.brandId}`);
-        state.skus = r.ok ? (r.data || []) : [];
         renderSkus();
       });
       document.getElementById("date").addEventListener("change", () => { if (state.partnershipId) renderSkus(); });

@@ -137,19 +137,27 @@ const title = `Catat Titip — ${APP_NAME}`;
       function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
 
       async function loadPartnerships() {
-        const me = await jget("/v1/brands/me");
-        if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
-        state.brandId = me.data.brandId;
-        const b = await jget(`/v1/brands/${state.brandId}`);
-        if (!b.ok) { showErr("Gagal muat partnerships: " + (b.error?.code || "?")); return; }
-        const active = (b.data.partnerships || []).filter(p => p.status === "ACTIVE");
-        if (active.length === 0) {
+        const r = await jget("/v1/ops/init");
+        if (!r.ok) {
+          if (r.error?.code === "VERIFICATION_PENDING") {
+            window.location.href = "/login?registered=1";
+            return;
+          }
+          window.location.href = "/dashboard/brand";
+          return;
+        }
+
+        const { brandId, skus, partnerships } = r.data;
+        state.brandId = brandId;
+        state.skus = skus || [];
+        state.partnerships = partnerships || [];
+
+        if (state.partnerships.length === 0) {
           document.getElementById("partnership").innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
           return;
         }
         document.getElementById("partnership").innerHTML = `<option value="">— Pilih partner —</option>` +
-          active.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
-        state.partnerships = active;
+          state.partnerships.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
       }
 
       function renderSkus() {
@@ -181,13 +189,9 @@ const title = `Catat Titip — ${APP_NAME}`;
         attachQtyStrip();
       }
 
-      document.getElementById("partnership").addEventListener("change", async (e) => {
+      document.getElementById("partnership").addEventListener("change", (e) => {
         const pid = e.target.value;
         state.partnershipId = pid || null;
-        if (!pid) { state.skus = []; renderSkus(); return; }
-        // Load SKUs for this brand (catalog shared with brand)
-        const r = await jget(`/v1/skus?brandId=${state.brandId}`);
-        state.skus = r.ok ? (r.data || []) : [];
         renderSkus();
       });
 

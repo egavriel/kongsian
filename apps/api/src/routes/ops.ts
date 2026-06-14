@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq, desc, sql } from "drizzle-orm";
+import { and, eq, desc, sql, inArray, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import {
   getDb,
@@ -440,6 +440,118 @@ router.post("/combined-save", async (c) => {
   } catch (e: any) {
     return c.json({ ok: false, error: { code: "TRANSACTION_FAILED", message: e.message || "Unknown error" } }, 500);
   }
+});
+
+/**
+ * GET /v1/ops/brand-dashboard
+ * Unified load for Brand Dashboard data.
+ * Resolves brand ID, queries all partnerships, catalog SKUs, remaining stock per SKU
+ * for active partnerships, and sums weekly sales revenue in single queries.
+ */
+router.get("/brand-dashboard", async (c) => {
+  const { userId } = c.get("auth");
+  const db = getDb(c.env.kongsian_db);
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return c.json({ ok: false, error: { code: "USER_NOT_FOUND" } }, 404);
+
+  const isAdmin = user.globalRole === "PLATFORM_ADMIN";
+  if (!isAdmin && (user.verificationStatus === "PENDING_VERIFICATION" || user.verificationStatus === "REJECTED")) {
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "VERIFICATION_PENDING",
+          message: "Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.",
+        },
+      },
+      403
+    );
+  }
+
+  const role = await getRole(db, userId);
+  if (!role.brandId) {
+    return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND", message: "User has no brand." } }, 404);
+  }
+  const brandId = role.brandId;
+
+  const [brand] = await db.select().from(brands).where(eq(brands.id, brandId)).limit(1);
+  if (!brand) return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND" } }, 404);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekStart = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const [partnershipRows, skuRows, stockRows, revenueRows] = await Promise.all([
+    db
+      .select({
+        partnership: partnerships,
+        tenant: tenants,
+      })
+      .from(partnerships)
+      .innerJoin(tenants, eq(tenants.id, partnerships.tenantId))
+      .where(eq(partnerships.brandId, brandId))
+      .orderBy(desc(partnerships.createdAt)),
+    db
+      .select()
+      .from(skus)
+      .where(eq(skus.brandId, brandId))
+      .orderBy(desc(skus.createdAt)),
+    db
+      .select({
+        partnershipId: stockMovements.partnershipId,
+        skuId: stockMovements.skuId,
+        sisa: sql<number>`SUM(${stockMovements.qty})`,
+      })
+      .from(stockMovements)
+      .innerJoin(partnerships, eq(partnerships.id, stockMovements.partnershipId))
+      .where(and(eq(partnerships.brandId, brandId), eq(partnerships.status, "ACTIVE"), lte(stockMovements.movementDate, today)))
+      .groupBy(stockMovements.partnershipId, stockMovements.skuId),
+    db
+      .select({
+        totalRev: sql<number>`SUM(ABS(${stockMovements.qty}) * ${skus.priceIdr})`,
+      })
+      .from(stockMovements)
+      .innerJoin(skus, eq(skus.id, stockMovements.skuId))
+      .innerJoin(partnerships, eq(partnerships.id, stockMovements.partnershipId))
+      .where(
+        and(
+          eq(partnerships.brandId, brandId),
+          eq(partnerships.status, "ACTIVE"),
+          inArray(stockMovements.kind, ["TERJUAL_OPENING", "TERJUAL_CORRECTION"]),
+          gte(stockMovements.movementDate, weekStart)
+        )
+      ),
+  ]);
+
+  const sisaSistem: { partnershipId: string; skuId: string; sisa: number }[] = stockRows.map((r) => ({
+    partnershipId: r.partnershipId,
+    skuId: r.skuId,
+    sisa: Number(r.sisa ?? 0),
+  }));
+
+  const weeklyRevenue = Number(revenueRows[0]?.totalRev ?? 0);
+
+  return c.json({
+    ok: true,
+    data: {
+      user: {
+        id: user.id,
+        phoneE164: user.phoneE164,
+        name: user.name,
+      },
+      brand: {
+        id: brand.id,
+        name: brand.name,
+      },
+      skus: skuRows,
+      partnerships: partnershipRows.map((r) => ({ ...r.partnership, tenant: r.tenant })),
+      sisaSistem,
+      weeklyRevenue,
+    },
+  });
 });
 
 export { router as ops };
