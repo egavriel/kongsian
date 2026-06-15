@@ -1,0 +1,517 @@
+---
+import { APP_NAME } from "@kongsian/shared/constants";
+import { API_BASE_URL } from "../../../lib/api";
+const title = `Rincian Omset — ${APP_NAME}`;
+---
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top, #0b1220 0%, #030712 100%);
+        background-attachment: fixed;
+        color: #f1f5f9;
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: #38bdf8; text-decoration: none; transition: color 0.15s ease; }
+      a:hover { color: #7dd3fc; }
+      
+      .shell { max-width: 520px; margin: 0 auto; padding: 0 0 100px; }
+      
+      header.top {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; border-bottom: 2px solid #1e293b;
+        position: sticky; top: 0; background: rgba(3, 7, 18, 0.85);
+        backdrop-filter: blur(20px); z-index: 50;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      }
+      .brand-name { font-weight: 900; font-size: 16px; color: #f8fafc; letter-spacing: -0.02em; }
+      .role-tag { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1.5px solid rgba(251, 191, 36, 0.2); font-weight: 800; letter-spacing: 0.06em; }
+      .back { color: #94a3b8; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+      .back:hover { color: #fbbf24; }
+      
+      main { padding: 20px; }
+      
+      /* Quest Header Panel */
+      .quest-header-panel {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+        box-shadow: 4px 4px 0px 0px #020617;
+      }
+      .quest-header-layout {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .quest-tracker-icon {
+        font-size: 28px;
+        background: rgba(251, 191, 36, 0.1);
+        border: 2px solid rgba(251, 191, 36, 0.2);
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .quest-tracker-info {
+        flex: 1;
+      }
+      .quest-tracker-title {
+        font-size: 10px;
+        font-weight: 800;
+        color: #fbbf24;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .quest-tracker-subtitle {
+        font-size: 16px;
+        font-weight: 800;
+        color: #ffffff;
+      }
+      
+      /* Neobrutalist RPG Card */
+      .rpg-card {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        box-shadow: 4px 4px 0px 0px #020617;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+      .rpg-card:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0px 0px #020617;
+        border-color: #334155;
+      }
+      
+      .filter-card {
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      
+      label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+      
+      select {
+        background: #090d16;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        padding: 12px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: 700;
+        width: 100%;
+        min-height: 48px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      select:focus {
+        outline: none;
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+      }
+      
+      /* Summary Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .stat-box {
+        padding: 16px;
+      }
+      .stat-lbl {
+        font-size: 10px;
+        color: #94a3b8;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+      .stat-val {
+        font-size: 18px;
+        font-weight: 900;
+        color: #ffffff;
+      }
+      .stat-sub {
+        font-size: 10px;
+        color: #64748b;
+        margin-top: 4px;
+        font-weight: 700;
+      }
+      
+      /* Section Title */
+      .section-title {
+        font-size: 11px;
+        font-weight: 900;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 28px 0 12px;
+      }
+      
+      /* Daily Ledger List */
+      .ledger-list { display: flex; flex-direction: column; gap: 12px; }
+      .ledger-row {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 3px 3px 0px 0px #020617;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .ledger-row:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #020617;
+        border-color: #334155;
+      }
+      
+      .day-info { flex: 1; }
+      .day-name { font-weight: 800; font-size: 15px; color: #f8fafc; margin-bottom: 4px; }
+      .day-items { font-size: 11px; color: #94a3b8; font-weight: 700; line-height: 1.4; }
+      .day-revenue {
+        font-size: 16px;
+        font-weight: 900;
+        color: #10b981;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+      
+      .empty {
+        background: rgba(15, 23, 42, 0.45);
+        border: 2.5px dashed #1e293b;
+        border-radius: 16px;
+        padding: 32px 20px;
+        text-align: center;
+        color: #94a3b8;
+        font-weight: 700;
+      }
+      
+      .err { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 2px solid rgba(244, 63, 94, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+      .loading { color: #94a3b8; text-align: center; padding: 40px 24px; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="back" href="/dashboard/brand">← Brand Dashboard</a>
+        <h1 class="brand-name">Rincian Omset</h1>
+        <span class="role-tag">LEDGER</span>
+      </header>
+      <main>
+        <div class="quest-header-panel">
+          <div class="quest-header-layout">
+            <div class="quest-tracker-icon">🪙</div>
+            <div class="quest-tracker-info">
+              <div class="quest-tracker-title">Treasury Ledger</div>
+              <div class="quest-tracker-subtitle">Cycle Audits & Share Splits</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rpg-card filter-card">
+          <div id="err" class="err" style="display:none"></div>
+          
+          <label>
+            <span class="lbl">Pilih Partner (Cafe)</span>
+            <select id="partner-filter">
+              <option value="">Memuat partner…</option>
+            </select>
+          </label>
+          
+          <label style="margin-bottom:0;">
+            <span class="lbl">Pilih Siklus Mingguan</span>
+            <select id="cycle-filter" disabled>
+              <option value="">Pilih partner terlebih dahulu</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="status" aria-live="polite"></div>
+
+        <div id="content" style="display:none;">
+          <div class="stats-grid">
+            <div class="rpg-card stat-box">
+              <div class="stat-lbl">🪙 Omset Kotor</div>
+              <div class="stat-val" id="gross-revenue">Rp 0</div>
+              <div class="stat-sub">gross revenue</div>
+            </div>
+            <div class="rpg-card stat-box">
+              <div class="stat-lbl">📦 Total Terjual</div>
+              <div class="stat-val" id="units-sold">0 cup</div>
+              <div class="stat-sub">items dispatched</div>
+            </div>
+            <div class="rpg-card stat-box">
+              <div class="stat-lbl">👑 Share Brand</div>
+              <div class="stat-val" id="brand-share" style="color: #fbbf24;">Rp 0</div>
+              <div class="stat-sub" id="brand-bps-lbl">70% share</div>
+            </div>
+            <div class="rpg-card stat-box">
+              <div class="stat-lbl">🏰 Share Cafe</div>
+              <div class="stat-val" id="tenant-share" style="color: #38bdf8;">Rp 0</div>
+              <div class="stat-sub" id="tenant-bps-lbl">30% share</div>
+            </div>
+          </div>
+
+          <h2 class="section-title">📜 Daily Sales Ledger</h2>
+          <div class="ledger-list" id="ledger-list">
+            <div class="empty">Pilih partner dan siklus untuk memuat data.</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ API_BASE_URL }}>
+      const API = API_BASE_URL.replace(/\/$/, "");
+      const tok = localStorage.getItem("kongsian_session");
+      if (!tok) { window.location.href = "/login"; }
+      const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+
+      const errEl = document.getElementById("err");
+      const partnerFilter = document.getElementById("partner-filter");
+      const cycleFilter = document.getElementById("cycle-filter");
+      const statusEl = document.getElementById("status");
+      const contentEl = document.getElementById("content");
+      const ledgerList = document.getElementById("ledger-list");
+
+      const showErr = m => { errEl.textContent = m; errEl.style.display="block"; };
+      const fmtRp = n => new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n || 0);
+
+      const DAY_MAP = {
+        SUNDAY: 0,
+        MONDAY: 1,
+        TUESDAY: 2,
+        WEDNESDAY: 3,
+        THURSDAY: 4,
+        FRIDAY: 5,
+        SATURDAY: 6
+      };
+
+      const INDO_DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const INDO_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+
+      let brandData = null;
+      let skuMap = {};
+
+      function formatDateIndo(dateObj) {
+        const d = dateObj.getDate();
+        const m = INDO_MONTH_NAMES[dateObj.getMonth()];
+        return `${d} ${m}`;
+      }
+
+      function formatDateFullIndo(dateObj) {
+        const dayName = INDO_DAY_NAMES[dateObj.getDay()];
+        const d = dateObj.getDate();
+        const m = INDO_MONTH_NAMES[dateObj.getMonth()];
+        return `${dayName}, ${d} ${m}`;
+      }
+
+      function calculateCycles(startDayName) {
+        const today = new Date();
+        const todayDay = today.getDay();
+        const startDayInt = DAY_MAP[startDayName] ?? 1; // Default to Monday
+
+        // Calculate offset back to the current week's start day
+        let offset = (todayDay - startDayInt + 7) % 7;
+        const currentStart = new Date(today.getTime() - offset * 24 * 60 * 60 * 1000);
+
+        const cycles = [];
+        for (let i = 0; i < 4; i++) {
+          const cStart = new Date(currentStart.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+          const cEnd = new Date(cStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+          const startStr = cStart.toISOString().slice(0, 10);
+          const endStr = cEnd.toISOString().slice(0, 10);
+
+          let label = "";
+          if (i === 0) {
+            label = `Siklus Aktif (${formatDateIndo(cStart)} - ${formatDateIndo(cEnd)})`;
+          } else {
+            label = `Siklus Lalu - ${i} Minggu Lalu (${formatDateIndo(cStart)} - ${formatDateIndo(cEnd)})`;
+          }
+
+          cycles.push({
+            value: `${startStr}:${endStr}`,
+            label
+          });
+        }
+        return cycles;
+      }
+
+      async function loadDashboard() {
+        statusEl.innerHTML = '<div class="loading">Memuat rincian ledger…</div>';
+        const res = await jget("/v1/ops/brand-dashboard");
+        if (!res.ok || !res.data) {
+          showErr("Gagal memuat data brand. Coba lagi.");
+          statusEl.innerHTML = "";
+          return;
+        }
+        brandData = res.data;
+        statusEl.innerHTML = "";
+
+        // Build SKU map
+        (brandData.skus || []).forEach(s => {
+          skuMap[s.id] = s;
+        });
+
+        const activePartnerships = (brandData.partnerships || []).filter(p => p.status === "ACTIVE");
+        if (activePartnerships.length === 0) {
+          partnerFilter.innerHTML = '<option value="">Belum ada partner aktif</option>';
+          return;
+        }
+
+        partnerFilter.innerHTML = activePartnerships.map(p => {
+          const startLabel = INDO_DAY_NAMES[DAY_MAP[p.settlementStartDay]] || "Senin";
+          const endLabel = INDO_DAY_NAMES[DAY_MAP[p.settlementEndDay]] || "Minggu";
+          return `<option value="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">${p.tenant?.name} (${startLabel} - ${endLabel})</option>`;
+        }).join("");
+
+        // Trigger first load
+        handlePartnerChange();
+      }
+
+      function handlePartnerChange() {
+        const option = partnerFilter.options[partnerFilter.selectedIndex];
+        if (!option || !option.value) {
+          cycleFilter.innerHTML = '<option value="">Pilih partner terlebih dahulu</option>';
+          cycleFilter.disabled = true;
+          contentEl.style.display = "none";
+          return;
+        }
+
+        const startDay = option.getAttribute("data-start");
+        const cycles = calculateCycles(startDay);
+
+        cycleFilter.innerHTML = cycles.map(c => `<option value="${c.value}">${c.label}</option>`).join("");
+        cycleFilter.disabled = false;
+        
+        handleCycleChange();
+      }
+
+      async function handleCycleChange() {
+        const pId = partnerFilter.value;
+        const cycleVal = cycleFilter.value;
+        if (!pId || !cycleVal) {
+          contentEl.style.display = "none";
+          return;
+        }
+
+        const [startStr, endStr] = cycleVal.split(":");
+        contentEl.style.display = "block";
+        ledgerList.innerHTML = '<div class="loading">Memuat catatan penjualan…</div>';
+
+        // Retrieve splits
+        const option = partnerFilter.options[partnerFilter.selectedIndex];
+        const splitBrandBps = Number(option.getAttribute("data-split-brand") || 7000);
+        const splitTenantBps = Number(option.getAttribute("data-split-tenant") || 3000);
+
+        document.getElementById("brand-bps-lbl").textContent = `${(splitBrandBps / 100).toFixed(0)}% brand share`;
+        document.getElementById("tenant-bps-lbl").textContent = `${(splitTenantBps / 100).toFixed(0)}% cafe share`;
+
+        const res = await jget(`/v1/movements?partnershipId=${pId}&from=${startStr}&to=${endStr}`);
+        if (!res.ok || !res.data) {
+          ledgerList.innerHTML = '<div class="empty">Gagal memuat data penjualan untuk siklus ini.</div>';
+          return;
+        }
+
+        // Process movements (kind = TERJUAL_*)
+        const sales = res.data.filter(m => m.kind === "TERJUAL_OPENING" || m.kind === "TERJUAL_CORRECTION");
+        
+        // Group by date
+        const dateSalesMap = {};
+        let totalQty = 0;
+        let totalGross = 0;
+
+        sales.forEach(s => {
+          const qty = Math.abs(s.qty);
+          const date = s.movementDate;
+          const sku = skuMap[s.skuId];
+          const price = sku ? sku.priceIdr : 0;
+          const subtotal = qty * price;
+
+          totalQty += qty;
+          totalGross += subtotal;
+
+          if (!dateSalesMap[date]) {
+            dateSalesMap[date] = {
+              qty: 0,
+              gross: 0,
+              items: []
+            };
+          }
+          dateSalesMap[date].qty += qty;
+          dateSalesMap[date].gross += subtotal;
+          dateSalesMap[date].items.push({
+            name: sku ? sku.name : "Unknown",
+            qty
+          });
+        });
+
+        // Set summaries
+        document.getElementById("gross-revenue").textContent = fmtRp(totalGross);
+        document.getElementById("units-sold").textContent = `${totalQty} cup`;
+        document.getElementById("brand-share").textContent = fmtRp(totalGross * (splitBrandBps / 10000));
+        document.getElementById("tenant-share").textContent = fmtRp(totalGross * (splitTenantBps / 10000));
+
+        // Generate the 7 days of the cycle sequentially
+        const startDate = new Date(startStr + "T00:00:00");
+        const daysHtml = [];
+
+        for (let i = 0; i < 7; i++) {
+          const dayDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+          const dayStr = dayDate.toISOString().slice(0, 10);
+          const daySales = dateSalesMap[dayStr];
+
+          let itemsText = "Belum ada penjualan.";
+          let grossText = "Rp 0";
+
+          if (daySales && daySales.qty > 0) {
+            itemsText = daySales.items.map(it => `<strong>${it.qty}×</strong> ${it.name}`).join(", ");
+            grossText = `🪙 ${fmtRp(daySales.gross)}`;
+          }
+
+          daysHtml.push(`
+            <div class="ledger-row">
+              <div class="day-info">
+                <div class="day-name">${formatDateFullIndo(dayDate)}</div>
+                <div class="day-items">${itemsText}</div>
+              </div>
+              <div class="day-revenue" style="${daySales && daySales.qty > 0 ? "color: #10b981;" : "color: #64748b;"}">
+                ${grossText}
+              </div>
+            </div>
+          `);
+        }
+
+        ledgerList.innerHTML = daysHtml.join("");
+      }
+
+      partnerFilter.addEventListener("change", handlePartnerChange);
+      cycleFilter.addEventListener("change", handleCycleChange);
+
+      loadDashboard();
+    </script>
+  </body>
+</html>
