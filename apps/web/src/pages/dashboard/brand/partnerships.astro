@@ -11,7 +11,7 @@ const title = `Partnerships — ${APP_NAME}`;
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <style>
+    <style is:global>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
       body {
@@ -134,6 +134,34 @@ const title = `Partnerships — ${APP_NAME}`;
         border-color: #fbbf24;
         box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
       }
+      .phone-container {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .country-select {
+        flex-shrink: 0;
+        width: 110px;
+        background: #090d16;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        padding: 12px 10px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .country-select:focus {
+        outline: none;
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+      }
+      .phone-input-wrap {
+        flex: 1;
+        position: relative;
+      }
       
       .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       
@@ -208,6 +236,69 @@ const title = `Partnerships — ${APP_NAME}`;
         margin: 28px 0 12px;
       }
       
+      /* Responsive columns on mobile */
+      @media (max-width: 480px) {
+        .row2 {
+          grid-template-columns: 1fr !important;
+          gap: 12px;
+        }
+      }
+
+      /* Visual Split Slider */
+      .split-slider-container {
+        margin: 16px 0;
+        background: #090d16;
+        border: 2px solid #1e293b;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .split-range-input {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: #1e293b;
+        outline: none;
+        margin: 10px 0;
+      }
+      .split-range-input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fbbf24;
+        cursor: pointer;
+        border: 2px solid #d97706;
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+      }
+      .split-bar-visual {
+        display: flex;
+        height: 12px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1.5px solid #020617;
+        margin-bottom: 8px;
+      }
+      .split-brand-fill {
+        background: #a855f7;
+        transition: width 0.1s ease;
+      }
+      .split-tenant-fill {
+        background: #10b981;
+        transition: width 0.1s ease;
+      }
+      .split-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .brand-share-label { color: #c084fc; }
+      .tenant-share-label { color: #34d399; }
+
       /* Partner List */
       .list { display: flex; flex-direction: column; gap: 12px; }
       .row {
@@ -216,9 +307,8 @@ const title = `Partnerships — ${APP_NAME}`;
         border-radius: 16px;
         padding: 16px;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
+        flex-direction: column;
+        gap: 14px;
         box-shadow: 3px 3px 0px 0px #020617;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       }
@@ -226,6 +316,20 @@ const title = `Partnerships — ${APP_NAME}`;
         transform: translate(-1px, -1px);
         box-shadow: 4px 4px 0px 0px #020617;
         border-color: #334155;
+      }
+      .partnership-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+      }
+      .partnership-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        border-top: 1.5px solid #1e293b;
+        padding-top: 12px;
       }
       
       .name-layout {
@@ -271,7 +375,12 @@ const title = `Partnerships — ${APP_NAME}`;
       .badge.pending { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border-color: rgba(251, 191, 36, 0.2); }
       .badge.suspended { background: rgba(251, 113, 133, 0.1); color: #fb7185; border-color: rgba(251, 113, 133, 0.2); }
       
-      .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+      .actions { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+      .actions .btn {
+        flex: 1;
+        justify-content: center;
+        min-height: 38px;
+      }
       
       .empty {
         background: rgba(15, 23, 42, 0.45);
@@ -330,8 +439,17 @@ const title = `Partnerships — ${APP_NAME}`;
             </label>
             <div class="row2">
               <label>
-                <span class="lbl">PIC Phone (+62)</span>
-                <input id="phone" name="phone" type="tel" placeholder="+628****1234" pattern="^\+[1-9]\d{7,14}$" required />
+                <span class="lbl">PIC Phone</span>
+                <div class="phone-container">
+                  <select id="country-code" class="country-select">
+                    <option value="+62">🇮🇩 +62</option>
+                    <option value="+65">🇸🇬 +65</option>
+                    <option value="+60">🇲🇾 +60</option>
+                  </select>
+                  <div class="phone-input-wrap">
+                    <input id="phone" name="phone" type="tel" placeholder="812 1234 5678" required />
+                  </div>
+                </div>
               </label>
               <label>
                 <span class="lbl">Territory / Address</span>
@@ -418,6 +536,19 @@ const title = `Partnerships — ${APP_NAME}`;
               <input type="number" id="edit-split-tenant" min="0" max="100" required />
             </label>
           </div>
+          
+          <!-- Visual Split Slider -->
+          <div class="split-slider-container">
+            <input type="range" id="edit-split-slider" min="0" max="100" value="70" class="split-range-input" />
+            <div class="split-bar-visual">
+              <div class="split-brand-fill" id="edit-brand-fill" style="width: 70%"></div>
+              <div class="split-tenant-fill" id="edit-tenant-fill" style="width: 30%"></div>
+            </div>
+            <div class="split-labels">
+              <span class="brand-share-label">🪙 Brand: <span id="edit-split-brand-val">70</span>%</span>
+              <span class="tenant-share-label">☕ Cafe: <span id="edit-split-tenant-val">30</span>%</span>
+            </div>
+          </div>
           <div style="display:flex; gap:12px; margin-top:16px;">
             <button type="button" class="btn btn-ghost" id="edit-cancel" style="flex:1">Cancel</button>
             <button type="submit" class="btn btn-primary" style="flex:1">Save Terms</button>
@@ -474,25 +605,32 @@ const title = `Partnerships — ${APP_NAME}`;
           
           return `
             <div class="row">
-              <div style="flex: 1;">
+              <div class="partnership-header">
                 <div class="name-layout">
                   <div class="alliance-crest ${statusLower}">${crestEmoji}</div>
                   <div>
                     <div class="name">${p.tenant?.name || "(?)"}</div>
-                    <div class="meta">PIC: ${p.tenant?.picPhoneE164 || "-"} <span class="dot-separator">·</span> Split ${(p.revenueSplitBrandBps/100).toFixed(0)}/${(p.revenueSplitTenantBps/100).toFixed(0)}</div>
+                    <div class="meta" style="color: #94a3b8;">PIC: ${p.tenant?.picPhoneE164 || "-"}</div>
                   </div>
                 </div>
-                <div class="meta" style="margin-top:10px; color:#fbbf24; display:flex; align-items:center; gap:6px;">
-                  <span>⏳ Cycle: ${startDayText} - ${endDayText}</span>
+                <span class="badge ${statusLower}">${p.status}</span>
+              </div>
+              <div class="partnership-details">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px;">
+                  <span style="color: #94a3b8; font-weight: 700;">SPLIT BAGI HASIL</span>
+                  <span style="color: #fbbf24; font-weight: 800;">
+                    🪙 Brand ${(p.revenueSplitBrandBps/100).toFixed(0)}% / Cafe ${(p.revenueSplitTenantBps/100).toFixed(0)}%
+                  </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                  <span style="color: #94a3b8; font-weight: 700;">SIKLUS SETTLEMENT</span>
+                  <span style="color: #ffffff; font-weight: 800;">⏳ ${startDayText} - ${endDayText}</span>
                 </div>
                 <div class="actions">
                   <button class="btn btn-ghost btn-sm" data-act="edit" data-id="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">Terms</button>
                   ${p.status === "PENDING" ? `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${p.id}" style="color:#34d399; border-color:rgba(52,211,153,0.3)">Activate</button>` : ""}
                   ${p.status === "ACTIVE" ? `<button class="btn btn-ghost btn-sm" data-act="suspend" data-id="${p.id}" style="color:#fb7185; border-color:rgba(251,113,133,0.3)">Suspend</button>` : ""}
                 </div>
-              </div>
-              <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span class="badge ${statusLower}">${p.status}</span>
               </div>
             </div>
           `;
@@ -510,11 +648,20 @@ const title = `Partnerships — ${APP_NAME}`;
               if (!r.ok) showErr("Gagal suspend: " + (r.error?.code || "?"));
               else { showOk("Partnership disuspend."); load(); }
             } else if (btn.dataset.act === "edit") {
+              const brandVal = Math.round(Number(btn.dataset.splitBrand) / 100);
+              const tenantVal = Math.round(Number(btn.dataset.splitTenant) / 100);
+
               document.getElementById("edit-id").value = id;
               document.getElementById("edit-start-day").value = btn.dataset.start;
               document.getElementById("edit-end-day").value = btn.dataset.end;
-              document.getElementById("edit-split-brand").value = Math.round(Number(btn.dataset.splitBrand) / 100);
-              document.getElementById("edit-split-tenant").value = Math.round(Number(btn.dataset.splitTenant) / 100);
+              document.getElementById("edit-split-brand").value = brandVal;
+              document.getElementById("edit-split-tenant").value = tenantVal;
+              
+              // Initialize visual slider sync
+              const slider = document.getElementById("edit-split-slider");
+              slider.value = brandVal;
+              updateVisualSplit(brandVal);
+
               document.getElementById("edit-modal").style.display = "flex";
               document.getElementById("edit-err").style.display = "none";
             }
@@ -522,15 +669,42 @@ const title = `Partnerships — ${APP_NAME}`;
         });
       }
 
+      // ---- Phone normalization & Country Code setup ----
+      const countrySelect = document.getElementById("country-code");
+      const phoneInput = document.getElementById("phone");
+      
+      const PLACEHOLDERS = {
+        "+62": "812 1234 5678",
+        "+65": "8123 4567",
+        "+60": "12 345 6789"
+      };
+
+      countrySelect.addEventListener("change", () => {
+        const code = countrySelect.value;
+        phoneInput.placeholder = PLACEHOLDERS[code] || "";
+      });
+
+      phoneInput.addEventListener("blur", () => {
+        let core = phoneInput.value.replace(/[^\d]/g, "");
+        if (core.startsWith("0")) core = core.slice(1);
+        phoneInput.value = core;
+      });
+
       document.getElementById("invite-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         errEl.style.display = "none"; okEl.style.display = "none";
         const cafe = document.getElementById("cafe").value.trim();
-        const phone = document.getElementById("phone").value.trim();
+        
+        let core = phoneInput.value.replace(/[^\d]/g, "");
+        if (core.startsWith("0")) core = core.slice(1);
+        phoneInput.value = core;
+        
+        const phone = countrySelect.value + core;
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor HP tidak valid."); return; }
+        
         const address = document.getElementById("address").value.trim();
         const startDay = document.getElementById("start-day").value;
         const endDay = document.getElementById("end-day").value;
-        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Format HP harus +62xxx."); return; }
         const me = await jget("/v1/brands/me");
         const r = await jpost("/v1/partnerships/invite", {
           brandId: me.data.brandId,
@@ -552,6 +726,7 @@ const title = `Partnerships — ${APP_NAME}`;
         }
         showOk(`Invite terkirim ke ${phone}. Tenant: <b>${r.data.tenant.name}</b> (${r.data.isNewTenant ? "baru" : "existing"}). ${extra}`, extra);
         document.getElementById("invite-form").reset();
+        phoneInput.placeholder = PLACEHOLDERS["+62"]; // Reset to default placeholder
         load();
       });
 
@@ -587,6 +762,53 @@ const title = `Partnerships — ${APP_NAME}`;
           showOk("Siklus settlement berhasil diupdate.");
           load();
         }
+      });
+
+      // ---- Visual Split Slider Syncing ----
+      const editSlider = document.getElementById("edit-split-slider");
+      const editBrandInput = document.getElementById("edit-split-brand");
+      const editTenantInput = document.getElementById("edit-split-tenant");
+      const editBrandFill = document.getElementById("edit-brand-fill");
+      const editTenantFill = document.getElementById("edit-tenant-fill");
+      const editBrandVal = document.getElementById("edit-split-brand-val");
+      const editTenantVal = document.getElementById("edit-split-tenant-val");
+
+      function updateVisualSplit(brandPercent) {
+        const tenantPercent = 100 - brandPercent;
+        editBrandFill.style.width = brandPercent + "%";
+        editTenantFill.style.width = tenantPercent + "%";
+        editBrandVal.textContent = brandPercent;
+        editTenantVal.textContent = tenantPercent;
+      }
+
+      editSlider.addEventListener("input", () => {
+        const brandVal = parseInt(editSlider.value, 10);
+        const tenantVal = 100 - brandVal;
+        editBrandInput.value = brandVal;
+        editTenantInput.value = tenantVal;
+        updateVisualSplit(brandVal);
+      });
+
+      editBrandInput.addEventListener("input", () => {
+        let val = parseInt(editBrandInput.value, 10) || 0;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        editBrandInput.value = val;
+        const tenantVal = 100 - val;
+        editTenantInput.value = tenantVal;
+        editSlider.value = val;
+        updateVisualSplit(val);
+      });
+
+      editTenantInput.addEventListener("input", () => {
+        let val = parseInt(editTenantInput.value, 10) || 0;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        editTenantInput.value = val;
+        const brandVal = 100 - val;
+        editBrandInput.value = brandVal;
+        editSlider.value = brandVal;
+        updateVisualSplit(brandVal);
       });
 
       load();

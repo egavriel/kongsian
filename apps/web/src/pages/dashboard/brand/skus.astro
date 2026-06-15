@@ -11,7 +11,7 @@ const title = `SKU — ${APP_NAME}`;
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <style>
+    <style is:global>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
       body {
@@ -207,6 +207,46 @@ const title = `SKU — ${APP_NAME}`;
       }
       
       /* Inventory List */
+      /* Responsive columns on mobile */
+      @media (max-width: 480px) {
+        .row2 {
+          grid-template-columns: 1fr !important;
+          gap: 12px;
+        }
+      }
+
+      /* Live Forging Preview Box */
+      .live-preview-container {
+        margin: 16px 0;
+        padding: 12px;
+        background: rgba(9, 13, 22, 0.6);
+        border: 2px dashed #fbbf24;
+        border-radius: 12px;
+        position: relative;
+      }
+      .preview-tag {
+        position: absolute;
+        top: -9px;
+        left: 12px;
+        background: #fbbf24;
+        color: #0b1220;
+        font-size: 8px;
+        font-weight: 900;
+        padding: 1px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.08em;
+      }
+      @keyframes forgeGlow {
+        0% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.15); }
+        50% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
+        100% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.15); }
+      }
+      .preview-card-glow {
+        animation: forgeGlow 2s infinite ease-in-out;
+        border-color: rgba(251, 191, 36, 0.4) !important;
+      }
+
+      /* Inventory List */
       .sku-list { display: flex; flex-direction: column; gap: 12px; }
       .sku-row {
         background: #0f172a;
@@ -214,8 +254,7 @@ const title = `SKU — ${APP_NAME}`;
         border-radius: 16px;
         padding: 16px;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
         gap: 12px;
         box-shadow: 3px 3px 0px 0px #020617;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -226,6 +265,13 @@ const title = `SKU — ${APP_NAME}`;
         border-color: #334155;
       }
       .sku-row.inactive { opacity: 0.4; }
+      
+      .sku-main-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
       
       .sku-code {
         font-weight: 900;
@@ -244,7 +290,19 @@ const title = `SKU — ${APP_NAME}`;
       .sku-info { flex: 1; }
       .sku-name { font-weight: 800; font-size: 15px; color: #f8fafc; margin-bottom: 2px; }
       .sku-meta { font-size: 11px; color: #94a3b8; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-      .sku-actions { display: flex; gap: 8px; }
+      .sku-actions {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        border-top: 1.5px solid #1e293b;
+        padding-top: 12px;
+        margin-top: 4px;
+      }
+      .sku-actions .btn {
+        flex: 1;
+        justify-content: center;
+        min-height: 38px;
+      }
       
       .rarity-badge {
         font-size: 9px;
@@ -313,6 +371,27 @@ const title = `SKU — ${APP_NAME}`;
               <span class="lbl">Shelf Life (Days)</span>
               <input id="shelf" name="shelf" type="number" min="1" max="365" value="7" required />
             </label>
+
+            <!-- Live Preview Widget -->
+            <div class="live-preview-container" id="live-preview-box">
+              <span class="preview-tag">LIVE FORGE PREVIEW</span>
+              <div class="sku-row preview-card-glow" style="margin: 0;">
+                <div class="sku-main-info">
+                  <div class="sku-code" id="preview-code">A</div>
+                  <div class="sku-info">
+                    <div class="sku-name" id="preview-name">Double Choco</div>
+                    <div class="sku-meta">
+                      <span class="rarity-badge" id="preview-rarity" style="color:#94a3b8; background:rgba(148,163,184,0.1); border-color:rgba(148,163,184,0.3)">COMMON</span>
+                      <span class="dot-separator">·</span>
+                      <span id="preview-price">🪙 Rp 0</span>
+                      <span class="dot-separator">·</span>
+                      <span id="preview-shelf">⏳ 7 hari</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <button class="btn btn-primary" type="submit">Forge SKU</button>
           </form>
         </div>
@@ -365,16 +444,18 @@ const title = `SKU — ${APP_NAME}`;
           const rarity = getRarity(s.priceIdr);
           return `
             <div class="sku-row ${s.active ? "" : "inactive"}">
-              <div class="sku-code">${s.code}</div>
-              <div class="sku-info">
-                <div class="sku-name">${s.name}</div>
-                <div class="sku-meta">
-                  <span class="rarity-badge" style="color:${rarity.color}; background:${rarity.bg}; border-color:${rarity.border}">${rarity.name}</span>
-                  <span class="dot-separator">·</span>
-                  <span>🪙 ${fmtRp(s.priceIdr)}</span>
-                  <span class="dot-separator">·</span>
-                  <span>⏳ ${s.masaSimpanHari} hari</span>
-                  ${s.active ? "" : `<span class="dot-separator">·</span><span style="color:#f43f5e">nonaktif</span>`}
+              <div class="sku-main-info">
+                <div class="sku-code">${s.code}</div>
+                <div class="sku-info">
+                  <div class="sku-name">${s.name}</div>
+                  <div class="sku-meta">
+                    <span class="rarity-badge" style="color:${rarity.color}; background:${rarity.bg}; border-color:${rarity.border}">${rarity.name}</span>
+                    <span class="dot-separator">·</span>
+                    <span>🪙 ${fmtRp(s.priceIdr)}</span>
+                    <span class="dot-separator">·</span>
+                    <span>⏳ ${s.masaSimpanHari} hari</span>
+                    ${s.active ? "" : `<span class="dot-separator">·</span><span style="color:#f43f5e">nonaktif</span>`}
+                  </div>
                 </div>
               </div>
               <div class="sku-actions">
@@ -423,7 +504,51 @@ const title = `SKU — ${APP_NAME}`;
         load();
       });
 
+      // ---- Live Forge Preview Synchronization ----
+      const codeIn = document.getElementById("code");
+      const nameIn = document.getElementById("name");
+      const priceIn = document.getElementById("price");
+      const shelfIn = document.getElementById("shelf");
+
+      const prevCode = document.getElementById("preview-code");
+      const prevName = document.getElementById("preview-name");
+      const prevPrice = document.getElementById("preview-price");
+      const prevShelf = document.getElementById("preview-shelf");
+      const prevRarity = document.getElementById("preview-rarity");
+
+      function updatePreview() {
+        const code = codeIn.value.trim().toUpperCase() || "A";
+        const name = nameIn.value.trim() || "Double Choco";
+        const price = parseInt(priceIn.value, 10) || 0;
+        const shelf = parseInt(shelfIn.value, 10) || 7;
+
+        prevCode.textContent = code.slice(0, 8);
+        prevName.textContent = name;
+        prevPrice.textContent = `🪙 ${fmtRp(price)}`;
+        prevShelf.textContent = `⏳ ${shelf} hari`;
+
+        const rarity = getRarity(price);
+        prevRarity.textContent = rarity.name;
+        prevRarity.style.color = rarity.color;
+        prevRarity.style.background = rarity.bg;
+        prevRarity.style.borderColor = rarity.border;
+      }
+
+      codeIn.addEventListener("input", updatePreview);
+      nameIn.addEventListener("input", updatePreview);
+      priceIn.addEventListener("input", updatePreview);
+      shelfIn.addEventListener("input", updatePreview);
+
+      // Trigger initial preview setup
+      updatePreview();
+
       load();
+      
+      // Reset preview on form reset
+      const originalReset = document.getElementById("add-form").reset;
+      document.getElementById("add-form").addEventListener("reset", () => {
+        setTimeout(updatePreview, 50);
+      });
     </script>
   </body>
 </html>
