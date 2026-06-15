@@ -450,8 +450,16 @@ const title = `Rincian Omset — ${APP_NAME}`;
         return `${dayName}, ${d} ${m}`;
       }
 
+      function formatDateLocalYMD(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const d = String(dateObj.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
       function calculateCycles(startDayName) {
         const today = new Date();
+        today.setHours(0, 0, 0, 0); // clear time to local midnight
         const todayDay = today.getDay();
         const startDayInt = DAY_MAP[startDayName] ?? 1; // Default to Monday
 
@@ -464,8 +472,8 @@ const title = `Rincian Omset — ${APP_NAME}`;
           const cStart = new Date(currentStart.getTime() - i * 7 * 24 * 60 * 60 * 1000);
           const cEnd = new Date(cStart.getTime() + 6 * 24 * 60 * 60 * 1000);
 
-          const startStr = cStart.toISOString().slice(0, 10);
-          const endStr = cEnd.toISOString().slice(0, 10);
+          const startStr = formatDateLocalYMD(cStart);
+          const endStr = formatDateLocalYMD(cEnd);
 
           let label = "";
           if (i === 0) {
@@ -602,8 +610,9 @@ const title = `Rincian Omset — ${APP_NAME}`;
         const daysHtml = [];
 
         for (let i = 0; i < 7; i++) {
-          const dayDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-          const dayStr = dayDate.toISOString().slice(0, 10);
+          const dayDate = new Date(startDate);
+          dayDate.setDate(startDate.getDate() + i);
+          const dayStr = formatDateLocalYMD(dayDate);
           const daySales = dateSalesMap[dayStr];
 
           if (daySales && daySales.qty > 0) {
