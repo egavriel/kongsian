@@ -164,38 +164,160 @@ const title = `Rincian Omset — ${APP_NAME}`;
         margin: 28px 0 12px;
       }
       
-      /* Daily Ledger List */
-      .ledger-list { display: flex; flex-direction: column; gap: 12px; }
-      .ledger-row {
-        background: #0f172a;
-        border: 2.5px solid #1e293b;
-        border-radius: 16px;
-        padding: 16px;
+      /* Daily Ledger List styled as RPG Card Timeline */
+      .ledger-timeline {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+        padding-left: 36px;
+      }
+      .ledger-timeline::before {
+        content: '';
+        position: absolute;
+        left: 16px;
+        top: 12px;
+        bottom: 12px;
+        width: 2px;
+        background: repeating-linear-gradient(
+          to bottom,
+          #1e293b,
+          #1e293b 4px,
+          transparent 4px,
+          transparent 8px
+        );
+        z-index: 1;
+      }
+      .ledger-card {
+        background: #0f172a;
+        border: 2px solid #1e293b;
+        border-radius: 14px;
+        padding: 16px;
+        position: relative;
         box-shadow: 3px 3px 0px 0px #020617;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
       }
-      .ledger-row:hover {
+      .ledger-card:hover {
         transform: translate(-1px, -1px);
         box-shadow: 4px 4px 0px 0px #020617;
         border-color: #334155;
       }
-      
-      .day-info { flex: 1; }
-      .day-name { font-weight: 800; font-size: 15px; color: #f8fafc; margin-bottom: 4px; }
-      .day-items { font-size: 11px; color: #94a3b8; font-weight: 700; line-height: 1.4; }
-      .day-revenue {
-        font-size: 16px;
-        font-weight: 900;
-        color: #10b981;
+      .ledger-card.has-sales {
+        border-color: rgba(251, 191, 36, 0.6);
+        background: linear-gradient(135deg, #0f172a 0%, #131b2e 100%);
+      }
+      .ledger-card.has-sales:hover {
+        border-color: #fbbf24;
+      }
+      .ledger-card.no-sales {
+        background: rgba(15, 23, 42, 0.35);
+        border: 1.5px dashed #1e293b;
+        box-shadow: none;
+        padding: 12px 16px;
+        opacity: 0.65;
+      }
+      .timeline-dot {
+        position: absolute;
+        left: -28px;
+        top: 18px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
         display: flex;
         align-items: center;
-        gap: 4px;
-        text-align: right;
-        flex-shrink: 0;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        color: #475569;
+        z-index: 3;
+        transition: all 0.2s ease;
+      }
+      .ledger-card.has-sales .timeline-dot {
+        border-color: #fbbf24;
+        background: #fbbf24;
+        color: #0b1220;
+        box-shadow: 0 0 8px rgba(251, 191, 36, 0.45);
+      }
+      .ledger-card.no-sales .timeline-dot {
+        border-style: dashed;
+        color: #475569;
+        top: 14px;
+      }
+      
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .day-name {
+        font-weight: 800;
+        font-size: 14px;
+        color: #f8fafc;
+      }
+      .day-revenue {
+        font-size: 15px;
+        font-weight: 900;
+        color: #10b981;
+        white-space: nowrap;
+      }
+      
+      .sku-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .sku-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #090d16;
+        border: 1.5px solid #1e293b;
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .sku-qty {
+        color: #fbbf24;
+        margin-right: 6px;
+        font-weight: 800;
+        font-size: 11px;
+        background: rgba(251, 191, 36, 0.15);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .sku-name {
+        color: #cbd5e1;
+      }
+      
+      /* Inactive (No Sales) Compact Row styling */
+      .compact-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 8px;
+      }
+      .day-name-compact {
+        font-weight: 700;
+        font-size: 13px;
+        color: #64748b;
+      }
+      .compact-status {
+        font-size: 10px;
+        font-weight: 800;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .day-revenue-compact {
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
       }
       
       .empty {
@@ -484,28 +606,47 @@ const title = `Rincian Omset — ${APP_NAME}`;
           const dayStr = dayDate.toISOString().slice(0, 10);
           const daySales = dateSalesMap[dayStr];
 
-          let itemsText = "Belum ada penjualan.";
-          let grossText = "Rp 0";
-
           if (daySales && daySales.qty > 0) {
-            itemsText = daySales.items.map(it => `<strong>${it.qty}×</strong> ${it.name}`).join(", ");
-            grossText = `🪙 ${fmtRp(daySales.gross)}`;
-          }
+            const badgesHtml = daySales.items.map(it => `
+              <span class="sku-badge">
+                <span class="sku-qty">${it.qty}×</span>
+                <span class="sku-name">${it.name}</span>
+              </span>
+            `).join("");
+            
+            const grossText = fmtRp(daySales.gross);
 
-          daysHtml.push(`
-            <div class="ledger-row">
-              <div class="day-info">
-                <div class="day-name">${formatDateFullIndo(dayDate)}</div>
-                <div class="day-items">${itemsText}</div>
+            daysHtml.push(`
+              <div class="ledger-card has-sales">
+                <div class="timeline-dot">✓</div>
+                <div class="card-header">
+                  <span class="day-name">${formatDateFullIndo(dayDate)}</span>
+                  <span class="day-revenue">🪙 ${grossText}</span>
+                </div>
+                <div class="sku-badges">
+                  ${badgesHtml}
+                </div>
               </div>
-              <div class="day-revenue" style="${daySales && daySales.qty > 0 ? "color: #10b981;" : "color: #64748b;"}">
-                ${grossText}
+            `);
+          } else {
+            daysHtml.push(`
+              <div class="ledger-card no-sales">
+                <div class="timeline-dot">○</div>
+                <div class="compact-row">
+                  <span class="day-name-compact">${formatDateFullIndo(dayDate)}</span>
+                  <span class="compact-status">Kosong</span>
+                  <span class="day-revenue-compact">Rp 0</span>
+                </div>
               </div>
-            </div>
-          `);
+            `);
+          }
         }
 
-        ledgerList.innerHTML = daysHtml.join("");
+        ledgerList.innerHTML = `
+          <div class="ledger-timeline">
+            ${daysHtml.join("")}
+          </div>
+        `;
       }
 
       partnerFilter.addEventListener("change", handlePartnerChange);
