@@ -52,6 +52,34 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
         width: 100%;
       }
       input:focus { outline: none; border-color: #fbbf24; box-shadow: 0 0 0 3px rgba(251, 191, 36, .15); }
+      .phone-container {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .country-select {
+        flex-shrink: 0;
+        width: 110px;
+        background: #0b1220;
+        border: 1px solid #1e293b;
+        color: #f1f5f9;
+        padding: 14px 10px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .country-select:focus {
+        outline: none;
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, .15);
+      }
+      .phone-input-wrap {
+        flex: 1;
+        position: relative;
+      }
       .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         padding: 14px 20px; border-radius: 10px; font-weight: 600;
@@ -121,19 +149,27 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
 
         <form id="otp-form">
           <label>
-            <span class="lbl">Nomor HP (format +62)</span>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              inputmode="tel"
-              autocomplete="tel"
-              placeholder="+62 812 1234 5678"
-              required
-              pattern="^\+[1-9]\d{7,14}$"
-              data-prefill={phoneParam}
-            />
-            <span class="small muted" id="phone-hint">Pakai awalan + (contoh: +62812xxxxx).</span>
+            <span class="lbl">Nomor HP / WhatsApp</span>
+            <div class="phone-container">
+              <select id="country-code" class="country-select">
+                <option value="+62">🇮🇩 +62</option>
+                <option value="+65">🇸🇬 +65</option>
+                <option value="+60">🇲🇾 +60</option>
+              </select>
+              <div class="phone-input-wrap">
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="812 1234 5678"
+                  required
+                  data-prefill={phoneParam}
+                />
+              </div>
+            </div>
+            <span class="small muted" id="phone-hint">Pilih kode negara & masukkan nomor tanpa angka 0 di depan.</span>
           </label>
           <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
           <p class="small" style="margin-top:16px">
@@ -190,34 +226,53 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
       let lastPhone = "";
       let isSending = false;
 
-      // ---- Phone normalization ----
-      // Accept digits-only ("628xxx", "812xxx", "08xxx"), strip non-digits,
-      // and if it looks like an Indonesian local (starts with 0 or 8 after
-      // stripping) prepend +62 so the user doesn't have to type the country
-      // code. The user can always backspace and type their own.
+      // ---- Phone normalization & Country Code setup ----
+      const countrySelect = $("#country-code");
       const phoneInput = $("#phone");
-      const prefill = (phoneInput.dataset.prefill || "").trim();
-      if (prefill) {
-        phoneInput.value = normalizePhone(prefill);
-      }
-      phoneInput.addEventListener("blur", () => {
-        const norm = normalizePhone(phoneInput.value);
-        if (norm && norm !== phoneInput.value) phoneInput.value = norm;
+      
+      const PLACEHOLDERS = {
+        "+62": "812 1234 5678",
+        "+65": "8123 4567",
+        "+60": "12 345 6789"
+      };
+
+      countrySelect.addEventListener("change", () => {
+        const code = countrySelect.value;
+        phoneInput.placeholder = PLACEHOLDERS[code] || "";
       });
 
-      function normalizePhone(raw) {
-        const digits = String(raw).replace(/[^\d]/g, "");
-        if (!digits) return "";
-        // Strip leading 0 once (Indonesian local trunk), then prefix +62
-        // only if the user clearly meant ID. If they typed an explicit
-        // country code (starts with 1-9 and is long enough), keep it.
-        let core = digits;
-        if (core.startsWith("0")) core = core.slice(1);
-        if (/^8\d{6,12}$/.test(core)) return "+62" + core;          // 812xxx (ID mobile)
-        if (/^62\d{8,13}$/.test(core)) return "+" + core;           // already 62xxx
-        if (/^[1-9]\d{7,14}$/.test(core)) return "+" + core;        // generic E.164-ish
-        return ""; // let the regex validation surface the error
+      function parsePrefill(raw) {
+        let digits = String(raw).replace(/[^\d]/g, "");
+        if (!digits) return { code: "+62", rest: "" };
+
+        if (digits.startsWith("62")) {
+          return { code: "+62", rest: digits.slice(2) };
+        } else if (digits.startsWith("65")) {
+          return { code: "+65", rest: digits.slice(2) };
+        } else if (digits.startsWith("60")) {
+          return { code: "+60", rest: digits.slice(2) };
+        }
+
+        if (digits.startsWith("0")) {
+          return { code: "+62", rest: digits.slice(1) };
+        }
+
+        return { code: "+62", rest: digits };
       }
+
+      const prefill = (phoneInput.dataset.prefill || "").trim();
+      if (prefill) {
+        const parsed = parsePrefill(prefill);
+        countrySelect.value = parsed.code;
+        phoneInput.value = parsed.rest;
+        phoneInput.placeholder = PLACEHOLDERS[parsed.code] || "";
+      }
+
+      phoneInput.addEventListener("blur", () => {
+        let core = phoneInput.value.replace(/[^\d]/g, "");
+        if (core.startsWith("0")) core = core.slice(1);
+        phoneInput.value = core;
+      });
 
       async function sendOtp(phone, btn) {
         if (isSending) return false;
@@ -270,9 +325,16 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
       $("#otp-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         hideMsg();
-        const phone = normalizePhone($("#phone").value.trim());
-        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
-        $("#phone").value = phone;
+        
+        let core = phoneInput.value.replace(/[^\d]/g, "");
+        if (core.startsWith("0")) core = core.slice(1);
+        phoneInput.value = core;
+        
+        const phone = countrySelect.value + core;
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+          showErr("Nomor HP tidak valid. Silakan masukkan nomor yang benar.");
+          return;
+        }
         await sendOtp(phone, $("#send-btn"));
       });
 
@@ -353,7 +415,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
       // into step 2 with the same phone.
       $("#resend").addEventListener("click", async () => {
         hideMsg();
-        const phone = lastPhone || normalizePhone($("#phone").value.trim());
+        const phone = lastPhone || (countrySelect.value + phoneInput.value.replace(/[^\d]/g, "").replace(/^0/, ""));
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
           showErr("Nomor tidak valid. Balik ke step 1 dan masukin lagi.");
           return;

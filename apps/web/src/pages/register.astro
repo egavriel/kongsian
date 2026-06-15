@@ -53,6 +53,34 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
         width: 100%;
       }
       input:focus { outline: none; border-color: #fbbf24; box-shadow: 0 0 0 3px rgba(251, 191, 36, .15); }
+      .phone-container {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .country-select {
+        flex-shrink: 0;
+        width: 110px;
+        background: #0b1220;
+        border: 1px solid #1e293b;
+        color: #f1f5f9;
+        padding: 14px 10px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .country-select:focus {
+        outline: none;
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, .15);
+      }
+      .phone-input-wrap {
+        flex: 1;
+        position: relative;
+      }
       .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         padding: 14px 20px; border-radius: 10px; font-weight: 600;
@@ -138,19 +166,27 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
 
         <form id="otp-form" novalidate>
           <label>
-            <span class="lbl">Nomor HP (format +62)</span>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              inputmode="tel"
-              autocomplete="tel"
-              placeholder="+62 812 1234 5678"
-              required
-              pattern="^\+[1-9]\d{7,14}$"
-              data-prefill={phoneParam}
-            />
-            <span class="small muted">Pakai awalan + (contoh: +62812xxxxx).</span>
+            <span class="lbl">Nomor HP / WhatsApp</span>
+            <div class="phone-container">
+              <select id="country-code" class="country-select">
+                <option value="+62">🇮🇩 +62</option>
+                <option value="+65">🇸🇬 +65</option>
+                <option value="+60">🇲🇾 +60</option>
+              </select>
+              <div class="phone-input-wrap">
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="812 1234 5678"
+                  required
+                  data-prefill={phoneParam}
+                />
+              </div>
+            </div>
+            <span class="small muted" id="phone-hint">Pilih kode negara & masukkan nomor tanpa angka 0 di depan.</span>
           </label>
           <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
           <p class="small" style="margin-top:16px">
@@ -230,27 +266,53 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
       let chosenRole = prefillRole || ""; // may be pre-selected from ?role=
       let isSending = false;
 
-      // ---- Phone normalization ----
+      // ---- Phone normalization & Country Code setup ----
+      const countrySelect = $("#country-code");
       const phoneInput = $("#phone");
-      const phonePrefill = (phoneInput.dataset.prefill || "").trim();
-      if (phonePrefill) {
-        phoneInput.value = normalizePhone(phonePrefill);
-      }
-      phoneInput.addEventListener("blur", () => {
-        const norm = normalizePhone(phoneInput.value);
-        if (norm && norm !== phoneInput.value) phoneInput.value = norm;
+      
+      const PLACEHOLDERS = {
+        "+62": "812 1234 5678",
+        "+65": "8123 4567",
+        "+60": "12 345 6789"
+      };
+
+      countrySelect.addEventListener("change", () => {
+        const code = countrySelect.value;
+        phoneInput.placeholder = PLACEHOLDERS[code] || "";
       });
 
-      function normalizePhone(raw) {
-        const digits = String(raw).replace(/[^\d]/g, "");
-        if (!digits) return "";
-        let core = digits;
-        if (core.startsWith("0")) core = core.slice(1);
-        if (/^8\d{6,12}$/.test(core)) return "+62" + core;
-        if (/^62\d{8,13}$/.test(core)) return "+" + core;
-        if (/^[1-9]\d{7,14}$/.test(core)) return "+" + core;
-        return "";
+      function parsePrefill(raw) {
+        let digits = String(raw).replace(/[^\d]/g, "");
+        if (!digits) return { code: "+62", rest: "" };
+
+        if (digits.startsWith("62")) {
+          return { code: "+62", rest: digits.slice(2) };
+        } else if (digits.startsWith("65")) {
+          return { code: "+65", rest: digits.slice(2) };
+        } else if (digits.startsWith("60")) {
+          return { code: "+60", rest: digits.slice(2) };
+        }
+
+        if (digits.startsWith("0")) {
+          return { code: "+62", rest: digits.slice(1) };
+        }
+
+        return { code: "+62", rest: digits };
       }
+
+      const phonePrefill = (phoneInput.dataset.prefill || "").trim();
+      if (phonePrefill) {
+        const parsed = parsePrefill(phonePrefill);
+        countrySelect.value = parsed.code;
+        phoneInput.value = parsed.rest;
+        phoneInput.placeholder = PLACEHOLDERS[parsed.code] || "";
+      }
+
+      phoneInput.addEventListener("blur", () => {
+        let core = phoneInput.value.replace(/[^\d]/g, "");
+        if (core.startsWith("0")) core = core.slice(1);
+        phoneInput.value = core;
+      });
 
       // Pre-select the role card visually if ?role= was provided.
       if (chosenRole) {
@@ -331,9 +393,16 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
       $("#otp-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         hideMsg();
-        const phone = normalizePhone($("#phone").value.trim());
-        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor harus format +62xxx (E.164)."); return; }
-        $("#phone").value = phone;
+        
+        let core = phoneInput.value.replace(/[^\d]/g, "");
+        if (core.startsWith("0")) core = core.slice(1);
+        phoneInput.value = core;
+        
+        const phone = countrySelect.value + core;
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+          showErr("Nomor HP tidak valid. Silakan masukkan nomor yang benar.");
+          return;
+        }
         await sendOtp(phone, $("#send-btn"));
       });
 
@@ -405,7 +474,7 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
       // into step 2 with the same phone. (Was a UI-only reset before — bug.)
       $("#resend").addEventListener("click", async () => {
         hideMsg();
-        const phone = lastPhone || normalizePhone($("#phone").value.trim());
+        const phone = lastPhone || (countrySelect.value + phoneInput.value.replace(/[^\d]/g, "").replace(/^0/, ""));
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
           showErr("Nomor tidak valid. Balik ke step 1 dan masukin lagi.");
           return;
