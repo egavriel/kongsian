@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { getDb, sessions, users } from "@kongsian/db";
 import { hashOtpCode } from "./crypto";
 import type { Bindings } from "../index";
+import { SESSION_TTL_SECONDS } from "@kongsian/shared/constants";
 
 export interface AuthContext {
   userId: string;
@@ -43,12 +44,26 @@ export const authMiddleware: MiddlewareHandler<{
       401
     );
   }
-  if (session.expiresAt < Math.floor(Date.now() / 1000)) {
+  
+  const now = Math.floor(Date.now() / 1000);
+  if (session.expiresAt < now) {
     return c.json(
       { ok: false, error: { code: "SESSION_EXPIRED", message: "Session has expired." } },
       401
     );
   }
+
+  // Rolling Sessions: extend session if remaining time is less than half the TTL
+  const ttl = parseInt(c.env.SESSION_TTL_SECONDS || String(SESSION_TTL_SECONDS), 10);
+  const remaining = session.expiresAt - now;
+  if (remaining < ttl / 2) {
+    const newExpiresAt = now + ttl;
+    await db
+      .update(sessions)
+      .set({ expiresAt: newExpiresAt })
+      .where(eq(sessions.id, session.id));
+  }
+
   c.set("auth", { userId: session.userId, sessionId: session.id });
   return await next();
 };
