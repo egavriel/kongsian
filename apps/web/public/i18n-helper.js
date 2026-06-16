@@ -89,7 +89,7 @@
       "artifact name": "SKU Name",
       "shelf life (days)": "Shelf Life (Days)",
       "forge sku": "Save SKU",
-      "inventory arsenal": "Active SKU Inventory",
+      "inventory arsenal": "Active SKU List",
       "upgrade": "Change Price",
       "scrap": "Delete",
       "hapus sku": "Delete SKU?",
@@ -106,7 +106,7 @@
       "live forge preview": "LIVE PREVIEW",
       
       // Partnerships / Undang Partner
-      "draft alliance pact": "Invite New Cafe Partner",
+      "draft alliance pact": "Invite New Cafe",
       "guild registry": "Partner Registry",
       "draft & manage alliances": "Draft & Manage Partnerships",
       "guild / cafe name": "Cafe Name",
@@ -121,8 +121,8 @@
       "cafe share (%)": "Cafe Revenue Share (%)",
       "save terms": "Save Terms",
       "cancel": "Cancel",
-      "active alliance guild": "Active Partnership",
-      "draft contract pending": "Pending Invitation",
+      "active alliance guild": "Active Partner",
+      "draft contract pending": "Pending Approval",
       "alliance suspended": "Suspended",
       "cycle: minggu - sabtu": "Cycle: Sunday - Saturday",
       "pic: ": "PIC: ",
@@ -146,9 +146,9 @@
       
       // Daily Closing Operations (ops/new.astro)
       "quest: inisiasi labirin (stok awal)": "1. Initial Stock Today",
-      "quest: pasok logistik (titip)": "2. Add Consigned Stock",
-      "quest: tarik kembali (tarik)": "3. Recall Remaining Stock",
-      "quest: catatan kemenangan (terjual)": "4. Record Items Sold",
+      "quest: pasok logistik (titip)": "2. Add Consigned Stock (Consign)",
+      "quest: tarik kembali (tarik)": "3. Recall Remaining Stock (Recall)",
+      "quest: catatan kemenangan (terjual)": "4. Record Items Sold (Sold)",
       "stok awal": "Initial Stock",
       "titip": "Consign",
       "tarik": "Recall",
@@ -172,7 +172,7 @@
       "kosong": "Empty",
       
       // Analytics (analytics.astro)
-      "kingdom treasury statistics": "Brand Financial Statistics",
+      "kingdom treasury statistics": "Dashboard Analytics",
       "total revenue": "Total Revenue",
       "items dispatched": "Units Sold",
       "scrolls recorded": "Closings Recorded",
@@ -184,7 +184,7 @@
       "sku name": "SKU Name",
       "units sold": "Units Sold",
       "revenue": "Revenue",
-      "alchemy recipes": "SKUs",
+      "alchemy recipes": "SKU Inventory",
       
       // Disputes
       "skirmish details": "Dispute Details",
@@ -243,7 +243,24 @@
       "gagal mark paid. ": "Failed to mark as paid. ",
       "settlement paid ✓": "Settlement paid ✓",
       "settlement di-approve ✓": "Settlement approved ✓",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      
+      // De-gamified Brand Dashboard Wording
+      "gold (omzet)": "Gold (Revenue)",
+      "charisma": "Charisma (Partners)",
+      "defense (stok)": "Defense (Stock Level)",
+      "energy (aksi)": "Energy (Reports)",
+      "lv. —": "Level —",
+      "memuat xp…": "Loading Activity Points...",
+      "memuat xp...": "Loading Activity Points...",
+      "peta kongsian (virtual town)": "Virtual Cafe Map",
+      "menggambar peta…": "Drawing map...",
+      "menggambar peta...": "Drawing map...",
+      "stok tersisa di partner": "Remaining stock at partners",
+      "quest board (operasional)": "Quest Board (Operations)",
+      "partner aktif": "active partner",
+      "stok aman": "safe stock level",
+      "laporan masuk": "reports submitted"
     },
     id: {
       // Global Header & Shared
@@ -364,7 +381,7 @@
       "cafe share (%)": "Bagi Hasil Cafe (%)",
       "save terms": "Simpan Ketentuan",
       "cancel": "Batal",
-      "active alliance guild": "Kemitraan Aktif",
+      "active alliance guild": "Mitra Aktif",
       "draft contract pending": "Menunggu Persetujuan",
       "alliance suspended": "Ditangguhkan",
       "cycle: minggu - sabtu": "Siklus: Minggu - Sabtu",
@@ -391,7 +408,7 @@
       "quest: inisiasi labirin (stok awal)": "1. Stok Awal Hari Ini",
       "quest: pasok logistik (titip)": "2. Tambah Barang Titipan (Titip)",
       "quest: tarik kembali (tarik)": "3. Tarik Barang Sisa (Tarik)",
-      "quest: catatan kemenangan (terjual)": "4. Catat Jumlah Terjual",
+      "quest: catatan kemenangan (terjual)": "4. Catat Barang Terjual (Terjual)",
       "stok awal": "Stok Awal",
       "titip": "Titip",
       "tarik": "Tarik",
@@ -415,13 +432,13 @@
       "kosong": "Kosong",
       
       // Analytics (analytics.astro)
-      "kingdom treasury statistics": "Statistik Keuangan Brand",
+      "kingdom treasury statistics": "Analisis Dashboard",
       "total revenue": "Total Omset",
       "items dispatched": "Total Terjual",
       "scrolls recorded": "Closing Tercatat",
       "skirmishes occurred": "Dispute Terjadi",
       "historical gold chart": "Grafik Penjualan Historis",
-      "most replicable alchemy recipes": "SKU Terlaris",
+      "most replicable alchemy recipes": "Daftar SKU Terlaris",
       "export scroll": "Ekspor CSV",
       "rank": "Peringkat",
       "sku name": "Nama SKU",
@@ -486,7 +503,24 @@
       "gagal mark paid. ": "Gagal mark paid. ",
       "settlement paid ✓": "Settlement paid ✓",
       "settlement di-approve ✓": "Settlement di-approve ✓",
-      "unknown": "Tidak Diketahui"
+      "unknown": "Tidak Diketahui",
+      
+      // De-gamified Brand Dashboard Wording
+      "gold (omzet)": "Emas (Omzet)",
+      "charisma": "Karisma (Partner)",
+      "defense (stok)": "Pertahanan (Stok)",
+      "energy (aksi)": "Energi (Laporan)",
+      "lv. —": "Level —",
+      "memuat xp…": "Memuat Poin Keaktifan...",
+      "memuat xp...": "Memuat Poin Keaktifan...",
+      "peta kongsian (virtual town)": "Peta Cafe Virtual",
+      "menggambar peta…": "Menggambar peta…",
+      "menggambar peta...": "Menggambar peta…",
+      "stok tersisa di partner": "Stok tersisa di partner",
+      "quest board (operasional)": "Quest Board (Operasional)",
+      "partner aktif": "partner aktif",
+      "stok aman": "stok aman",
+      "laporan masuk": "laporan masuk"
     }
   };
   
