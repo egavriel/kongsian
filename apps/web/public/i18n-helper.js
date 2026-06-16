@@ -460,7 +460,93 @@
       "mau demo langsung?": "Want a live demo?",
       "lihat dashboard brand": "View brand dashboard",
       "daftar di kongsian": "Register at Kongsian",
-      "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "We will notify you via WhatsApp within 24 hours. You can log in for now, but the dashboard will be accessible after admin approval."
+      "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "We will notify you via WhatsApp within 24 hours. You can log in for now, but the dashboard will be accessible after admin approval.",
+
+      // Role Selector and Avatar names
+      "sorcerer": "Sorcerer",
+      "knight": "Knight",
+      "druid": "Druid",
+      "cleric": "Cleric",
+      "rogue": "Rogue",
+      "coffee sorcerer": "Coffee Sorcerer",
+      "pastry knight": "Pastry Knight",
+      "juice druid": "Juice Druid",
+      "boba cleric": "Boba Cleric",
+      "waffle rogue": "Waffle Rogue",
+
+      // Brand Dashboard additional
+      "dashboard brand": "Brand Dashboard",
+      "item terjual": "items sold",
+
+      // Settlements details
+      "periode": "Period",
+      "pembagian": "Revenue Share",
+      "bukti pembayaran": "Payment Proof",
+      "catatan": "Note",
+      "dokumen": "Documents",
+      "aksi": "Actions",
+      "approve settlement": "Approve Settlement",
+      "tandai sudah dibayar": "Mark as Paid",
+      "catatan (opsional)": "Note (optional)",
+      "misal: bca a.n. ...": "e.g. Bank Transfer ...",
+      "mark paid": "Mark Paid",
+
+      // Ops new additional
+      "tanggal quest (hari)": "Quest Date (Day)",
+      "aliansi partner (cafe)": "Partner Cafe",
+      "— memuat partner… —": "— Loading partners... —",
+      "stok awal aliansi": "Initial Partnership Stock",
+      "titip (logistik)": "Consign (Logistics)",
+      "tarik (retur)": "Recall (Returns)",
+      "terjual (sales)": "Sold (Sales)",
+      "sisa rak sistem": "System Stock Remaining",
+      "persediaan logistik pertama yang sudah ada di partner sebelum mulai menggunakan sistem. cukup diisi sekali di awal aliansi.": "Initial stock present at partner before using the system. Only needs to be filled once at the start of the partnership.",
+      "jumlah persediaan sku baru yang anda kirimkan ke partner aliansi hari ini.": "The quantity of new SKU inventory sent to the partner cafe today.",
+      "tarik sisa stok yang tidak terjual kembali ke inventori anda.": "Recall unsold remaining stock back to your inventory.",
+      "berapa cup/pack produk yang terjual hari ini. digunakan untuk perhitungan koin mingguan.": "How many units/packs of product sold today. Used for weekly settlement calculations.",
+      "pilih partner aliansi dulu.": "Please select a partner cafe first.",
+
+      // Movements
+      "movements": "Movements",
+      "pilih partnership di atas untuk lihat history.": "Select a partnership above to view history.",
+
+      // Revenue page additional
+      "rincian omset": "Revenue Details",
+      "pilih partner (cafe)": "Select Cafe Partner",
+      "gross revenue": "gross revenue",
+      "brand share": "Brand Share",
+      "cafe share": "Cafe Share",
+      "total terjual": "Total Sold",
+
+      // Analytics page additional
+      "tren penjualan": "Sales Trends",
+      "tren harian": "Daily Trends",
+      "7 hari": "7 Days",
+      "30 hari": "30 Days",
+      "sampai hari ini": "until today",
+      "akhir rentang": "end of range",
+      "rata-rata": "average",
+      "total items dispatched": "total items dispatched",
+      "units": "Units",
+      "qty terjual": "Qty Sold",
+      "revenue share": "Revenue Share",
+      "closing count": "Closings",
+      "top 5 produk": "Top 5 Products",
+      "per tenant": "Per Tenant",
+      "semua tenant": "All Tenants",
+      "menyiapkan…": "Preparing...",
+
+      // Brand new additional
+      "brand baru": "New Brand",
+      "bikin brand pertamamu. kamu bisa ganti nama dan deskripsi nanti.": "Create your first brand. You can change the name and description later.",
+      "nama brand": "Brand Name",
+      "contoh: hanniel oat": "e.g. Hanniel Oat",
+      "buat brand": "Create Brand",
+      "nama brand minimal 2 karakter.": "Brand name must be at least 2 characters.",
+      "nama brand harus punya minimal satu huruf/angka (jadi slug valid).": "Brand name must have at least one letter/number.",
+      "slug itu sudah dipakai brand lain. coba nama lain.": "That slug is already taken. Try another name.",
+      "gagal konek ke server. coba lagi.": "Failed to connect to the server. Try again.",
+      "membuat…": "Creating..."
     },
     id: {
       // Global Header & Shared
@@ -916,7 +1002,93 @@
       "mau demo langsung?": "Mau demo langsung?",
       "lihat dashboard brand": "Lihat dashboard brand",
       "daftar di kongsian": "Daftar di Kongsian",
-      "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "Kami akan kabari via WA maks. 24 jam. Untuk sekarang Anda bisa login, tapi dashboard akan terbuka setelah admin menyetujui."
+      "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "Kami akan kabari via WA maks. 24 jam. Untuk sekarang Anda bisa login, tapi dashboard akan terbuka setelah admin menyetujui.",
+
+      // Role Selector and Avatar names
+      "sorcerer": "Sorcerer",
+      "knight": "Knight",
+      "druid": "Druid",
+      "cleric": "Cleric",
+      "rogue": "Rogue",
+      "coffee sorcerer": "Coffee Sorcerer",
+      "pastry knight": "Pastry Knight",
+      "juice druid": "Juice Druid",
+      "boba cleric": "Boba Cleric",
+      "waffle rogue": "Waffle Rogue",
+
+      // Brand Dashboard additional
+      "dashboard brand": "Dashboard Brand",
+      "item terjual": "item terjual",
+
+      // Settlements details
+      "periode": "Periode",
+      "pembagian": "Bagi Hasil",
+      "bukti pembayaran": "Bukti Pembayaran",
+      "catatan": "Catatan",
+      "dokumen": "Dokumen",
+      "aksi": "Aksi",
+      "approve settlement": "Setujui Settlement",
+      "tandai sudah dibayar": "Tandai Sudah Dibayar",
+      "catatan (opsional)": "Catatan (opsional)",
+      "misal: bca a.n. ...": "Misal: BCA a.n. ...",
+      "mark paid": "Tandai Lunas",
+
+      // Ops new additional
+      "tanggal quest (hari)": "Tanggal Quest (Hari)",
+      "aliansi partner (cafe)": "Aliansi Partner (Cafe)",
+      "— memuat partner… —": "— Memuat partner… —",
+      "stok awal aliansi": "Stok Awal Aliansi",
+      "titip (logistik)": "Titip (Logistik)",
+      "tarik (retur)": "Tarik (Retur)",
+      "terjual (sales)": "Terjual (Sales)",
+      "sisa rak sistem": "Sisa Rak Sistem",
+      "persediaan logistik pertama yang sudah ada di partner sebelum mulai menggunakan sistem. cukup diisi sekali di awal aliansi.": "Persediaan logistik pertama yang sudah ada di partner sebelum mulai menggunakan sistem. Cukup diisi sekali di awal aliansi.",
+      "jumlah persediaan sku baru yang anda kirimkan ke partner aliansi hari ini.": "Jumlah persediaan SKU baru yang Anda kirimkan ke partner aliansi hari ini.",
+      "tarik sisa stok yang tidak terjual kembali ke inventori anda.": "Tarik sisa stok yang tidak terjual kembali ke inventori Anda.",
+      "berapa cup/pack produk yang terjual hari ini. digunakan untuk perhitungan koin mingguan.": "Berapa cup/pack produk yang terjual hari ini. Digunakan untuk perhitungan koin mingguan.",
+      "pilih partner aliansi dulu.": "Pilih partner aliansi dulu.",
+
+      // Movements
+      "movements": "Mutasi Stok",
+      "pilih partnership di atas untuk lihat history.": "Pilih partnership di atas untuk lihat riwayat.",
+
+      // Revenue page additional
+      "rincian omset": "Rincian Omset",
+      "pilih partner (cafe)": "Pilih Partner (Cafe)",
+      "gross revenue": "omset kotor",
+      "brand share": "Bagi Hasil Brand",
+      "cafe share": "Bagi Hasil Cafe",
+      "total terjual": "Total Terjual",
+
+      // Analytics page additional
+      "tren penjualan": "Tren Penjualan",
+      "tren harian": "Tren Harian",
+      "7 hari": "7 Hari",
+      "30 hari": "30 Hari",
+      "sampai hari ini": "sampai hari ini",
+      "akhir rentang": "akhir rentang",
+      "rata-rata": "rata-rata",
+      "total items dispatched": "total barang dikirim",
+      "units": "Jumlah",
+      "qty terjual": "Kuantitas Terjual",
+      "revenue share": "Bagi Hasil",
+      "closing count": "Laporan Closing",
+      "top 5 produk": "Top 5 Produk",
+      "per tenant": "Per Tenant",
+      "semua tenant": "Semua tenant",
+      "menyiapkan…": "Menyiapkan…",
+
+      // Brand new additional
+      "brand baru": "Brand Baru",
+      "bikin brand pertamamu. kamu bisa ganti nama dan deskripsi nanti.": "Bikin brand pertamamu. Kamu bisa ganti nama dan deskripsi nanti.",
+      "nama brand": "Nama Brand",
+      "contoh: hanniel oat": "Contoh: Hanniel Oat",
+      "buat brand": "Buat brand",
+      "nama brand minimal 2 karakter.": "Nama brand minimal 2 karakter.",
+      "nama brand harus punya minimal satu huruf/angka (jadi slug valid).": "Nama brand harus punya minimal satu huruf/angka (jadi slug valid).",
+      "slug itu sudah dipakai brand lain. coba nama lain.": "Slug itu sudah dipakai brand lain. Coba nama lain.",
+      "gagal konek ke server. coba lagi.": "Gagal konek ke server. Coba lagi.",
+      "membuat…": "Membuat…"
     }
   };
   

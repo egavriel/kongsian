@@ -350,7 +350,7 @@ const title = `SKU — ${APP_NAME}`;
         </div>
 
         <div class="rpg-card add-card">
-          <h2>🛠️ Forge New Artifact</h2>
+          <h2><span>🛠️</span> Forge New Artifact</h2>
           <div id="err" class="err" style="display:none"></div>
           <div id="ok" class="ok" style="display:none"></div>
           <form id="add-form">
@@ -397,7 +397,7 @@ const title = `SKU — ${APP_NAME}`;
           </form>
         </div>
 
-        <div class="section-title">📦 Inventory Arsenal</div>
+        <div class="section-title"><span>📦</span> Inventory Arsenal</div>
         <div class="sku-list" id="list">
           <div class="empty">Memuat…</div>
         </div>
@@ -454,8 +454,8 @@ const title = `SKU — ${APP_NAME}`;
                     <span class="dot-separator">·</span>
                     <span>🪙 ${fmtRp(s.priceIdr)}</span>
                     <span class="dot-separator">·</span>
-                    <span>⏳ ${s.masaSimpanHari} hari</span>
-                    ${s.active ? "" : `<span class="dot-separator">·</span><span style="color:#f43f5e">nonaktif</span>`}
+                    <span>⏳ ${s.masaSimpanHari} \${window.t('hari')}</span>
+                    \${s.active ? "" : \`<span class="dot-separator">·</span><span style="color:#f43f5e">nonaktif</span>\`}
                   </div>
                 </div>
               </div>
@@ -526,7 +526,7 @@ const title = `SKU — ${APP_NAME}`;
         prevCode.textContent = code.slice(0, 8);
         prevName.textContent = name;
         prevPrice.textContent = `🪙 ${fmtRp(price)}`;
-        prevShelf.textContent = `⏳ ${shelf} hari`;
+        prevShelf.textContent = `⏳ ${shelf} ${window.t('hari')}`;
 
         const rarity = getRarity(price);
         prevRarity.textContent = rarity.name;

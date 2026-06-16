@@ -430,7 +430,7 @@ const title = `Partnerships — ${APP_NAME}`;
         </div>
 
         <div class="rpg-card invite-card">
-          <h2>📜 Draft Alliance Pact</h2>
+          <h2><span>📜</span> Draft Alliance Pact</h2>
           <div id="err" class="err" style="display:none"></div>
           <div id="ok" class="ok" style="display:none"></div>
           <form id="invite-form">
@@ -487,7 +487,7 @@ const title = `Partnerships — ${APP_NAME}`;
           </form>
         </div>
 
-        <h2 class="section-title">🤝 Alliance Guilds</h2>
+        <h2 class="section-title"><span>🤝</span> Alliance Guilds</h2>
         <div class="list" id="list">
           <div class="empty">Memuat…</div>
         </div>
@@ -546,8 +546,8 @@ const title = `Partnerships — ${APP_NAME}`;
               <div class="split-tenant-fill" id="edit-tenant-fill" style="width: 30%"></div>
             </div>
             <div class="split-labels">
-              <span class="brand-share-label">🪙 Brand: <span id="edit-split-brand-val">70</span>%</span>
-              <span class="tenant-share-label">☕ Cafe: <span id="edit-split-tenant-val">30</span>%</span>
+              <span class="brand-share-label"><span>🪙</span> <span data-i18n="brand">Brand</span>: <span id="edit-split-brand-val">70</span>%</span>
+              <span class="tenant-share-label"><span>☕</span> <span data-i18n="cafe">Cafe</span>: <span id="edit-split-tenant-val">30</span>%</span>
             </div>
           </div>
           <div style="display:flex; gap:12px; margin-top:16px;">
@@ -625,7 +625,7 @@ const title = `Partnerships — ${APP_NAME}`;
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
                   <span style="color: #94a3b8; font-weight: 700;">SIKLUS SETTLEMENT</span>
-                  <span style="color: #ffffff; font-weight: 800;">⏳ ${startDayText} - ${endDayText}</span>
+                  <span style="color: #ffffff; font-weight: 800;">⏳ ${window.t(startDayText.toLowerCase())} - ${window.t(endDayText.toLowerCase())}</span>
                 </div>
                 <div class="actions">
                   <button class="btn btn-ghost btn-sm" data-act="edit" data-id="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">Terms</button>

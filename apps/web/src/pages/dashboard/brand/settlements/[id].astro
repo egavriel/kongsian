@@ -6,6 +6,7 @@ const title = `Settlement — ${APP_NAME}`;
 <!doctype html>
 <html lang="id">
   <head>
+    <script src="/i18n-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -104,7 +105,7 @@ const title = `Settlement — ${APP_NAME}`;
             <div class="lbl" style="margin-top:10px">Pembagian</div>
             <div class="val">Brand: <strong>${fmtRp(s.brandShareIdr)}</strong> · Tenant: <strong>${fmtRp(s.tenantShareIdr)}</strong></div>
             <div class="lbl" style="margin-top:10px">Total Terjual</div>
-            <div class="val">${s.totalTerjual} item</div>
+            <div class="val">${s.totalTerjual} ${window.t("item")}</div>
           </div>
 
           <div class="lbl" style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin:20px 0 8px">Per SKU (${(d.lines || []).length})</div>
@@ -118,7 +119,7 @@ const title = `Settlement — ${APP_NAME}`;
                   </div>
                   <div style="text-align:right">
                     <div>${fmtRp(l.omzetIdr)}</div>
-                    <div class="qty">${l.qtyTerjual} item</div>
+                    <div class="qty">${l.qtyTerjual} ${window.t("item")}</div>
                   </div>
                 </div>
               `).join("")}

@@ -270,7 +270,7 @@ const title = `Analytics — ${APP_NAME}`;
   <body>
     <div class="shell">
       <header class="top">
-        <a href="/dashboard/brand" class="brand-name">← {APP_NAME} Dashboard</a>
+        <a href="/dashboard/brand" class="back">← <span data-i18n="brand dashboard">Dashboard Brand</span></a>
         <div style="display:flex; gap:10px; align-items:center;">
           <span class="role-tag">ARCHIVES</span>
           <NotificationBell />
@@ -292,7 +292,7 @@ const title = `Analytics — ${APP_NAME}`;
           <select id="tenant-filter">
             <option value="">Semua tenant</option>
           </select>
-          <button class="csv-btn" id="csv-btn" type="button">📥 Export Scroll</button>
+          <button class="csv-btn" id="csv-btn" type="button"><span>📥</span> Export Scroll</button>
         </div>
 
         <div id="status" aria-live="polite"></div>
@@ -359,8 +359,10 @@ const title = `Analytics — ${APP_NAME}`;
       // -----------------------------------------------------------------------
       // Render
       // -----------------------------------------------------------------------
+      // Render
+      // -----------------------------------------------------------------------
       function renderChart(daily) {
-        if (!daily || daily.length === 0) return '<div class="empty">Belum ada data</div>';
+        if (!daily || daily.length === 0) return `<div class="empty">${window.t("Belum ada data")}</div>`;
         const maxRev = Math.max(...daily.map(d => d.revenueIdr), 0);
         const BARS = "▁▂▃▄▅▆▇█";
         const ROWS = 40; // max bar width in chars
@@ -387,10 +389,10 @@ const title = `Analytics — ${APP_NAME}`;
       }
 
       function renderTopProducts(top) {
-        if (!top || top.length === 0) return '<div class="empty">Belum ada produk terjual</div>';
+        if (!top || top.length === 0) return `<div class="empty">${window.t("Belum ada produk terjual")}</div>`;
         const rankEmojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
         return '<div class="sku-table rpg-card">' +
-          '<div class="sku-row head"><div>Rank</div><div>SKU Name</div><div class="qty">Units</div><div class="rev">Revenue</div></div>' +
+          `<div class="sku-row head"><div>${window.t("Rank")}</div><div>${window.t("SKU Name")}</div><div class="qty">${window.t("Units")}</div><div class="rev">${window.t("Revenue")}</div></div>` +
           top.map((p, i) => `<div class="sku-row">
             <div class="rank" style="font-size:16px;">${rankEmojis[i] || (i + 1)}</div>
             <div style="font-weight: 800; color: #f8fafc;">${escapeHtml(p.skuName)} <span style="color:#fbbf24; font-size:10px; font-weight:900; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.15); padding:1px 4px; border-radius:4px; margin-left:4px;">${escapeHtml(p.skuCode)}</span></div>
@@ -401,13 +403,13 @@ const title = `Analytics — ${APP_NAME}`;
       }
 
       function renderTenantBreakdown(list) {
-        if (!list || list.length === 0) return '<div class="empty">Belum ada tenant</div>';
+        if (!list || list.length === 0) return `<div class="empty">${window.t("Belum ada tenant")}</div>`;
         return '<div class="tenant-list">' + list.map(t => `<div class="tenant-card rpg-card">
           <div class="name" style="font-weight: 900; font-size: 15px; color: #fbbf24; display:flex; align-items:center; gap:8px;">🏰 ${escapeHtml(t.tenantName)}</div>
-          <div class="row"><span>📦 Qty Terjual</span><span class="v" style="color:#f1f5f9;">${fmtInt(t.qtySold)}</span></div>
-          <div class="row"><span>🪙 Revenue Share</span><span class="v" style="color:#10b981;">${fmtIdr(t.revenueIdr)}</span></div>
-          <div class="row"><span>📜 Closing Count</span><span class="v" style="color:#38bdf8;">${fmtInt(t.closingCount)}</span></div>
-          <div class="row"><span>🛡️ Settlements</span><span class="v" style="color:#a855f7;">${fmtInt(t.settleCount)}</span></div>
+          <div class="row"><span>📦 <span>${window.t("qty terjual")}</span></span><span class="v" style="color:#f1f5f9;">${fmtInt(t.qtySold)}</span></div>
+          <div class="row"><span>🪙 <span>${window.t("revenue share")}</span></span><span class="v" style="color:#10b981;">${fmtIdr(t.revenueIdr)}</span></div>
+          <div class="row"><span>📜 <span>${window.t("closing count")}</span></span><span class="v" style="color:#38bdf8;">${fmtInt(t.closingCount)}</span></div>
+          <div class="row"><span>🛡️ <span>${window.t("settlements")}</span></span><span class="v" style="color:#a855f7;">${fmtInt(t.settleCount)}</span></div>
         </div>`).join("") + '</div>';
       }
 
@@ -417,12 +419,12 @@ const title = `Analytics — ${APP_NAME}`;
         const rangeLbl = document.getElementById("range-label");
 
         const { range: r, summary, topProducts, tenantBreakdown, dailySeries } = data;
-        rangeLbl.textContent = `${r.start} → ${r.end} (${r.end === formatDateLocalYMD(new Date()) ? "sampai hari ini" : "akhir rentang"})`;
+        rangeLbl.textContent = `${r.start} → ${r.end} (${r.end === formatDateLocalYMD(new Date()) ? window.t("sampai hari ini") : window.t("akhir rentang")})`;
 
         if (summary.totalUnits === 0) {
           content.innerHTML = `<div class="empty rpg-card">
-            <p style="margin:0 0 8px; font-weight: 800; font-size: 16px;">Belum ada closing di rentang ini.</p>
-            <p style="margin:0;font-size:12px; color: #94a3b8;">Coba rentang yang lebih panjang, atau tunggu tenant submit closing pertama.</p>
+            <p style="margin:0 0 8px; font-weight: 800; font-size: 16px;">${window.t("Belum ada closing di rentang ini.")}</p>
+            <p style="margin:0;font-size:12px; color: #94a3b8;">${window.t("Coba rentang yang lebih panjang, atau tunggu tenant submit closing pertama.")}</p>
           </div>`;
           return;
         }
@@ -430,30 +432,30 @@ const title = `Analytics — ${APP_NAME}`;
         // Summary cards
         let html = `<div class="stats">
           <div class="stat rpg-card">
-            <div class="lbl">🪙 Total Revenue</div>
+            <div class="lbl"><span>🪙</span> Total Revenue</div>
             <div class="val" style="color:#10b981;">${fmtIdr(summary.totalRevenueIdr)}</div>
-            <div class="sub">avg ${fmtIdr(summary.avgDailyRevenueIdr)}/hari</div>
+            <div class="sub">${window.t("rata-rata")} ${fmtIdr(summary.avgDailyRevenueIdr)} / ${window.t("hari") === "days" ? "day" : "hari"}</div>
           </div>
           <div class="stat rpg-card">
-            <div class="lbl">📦 Units Sold</div>
+            <div class="lbl"><span>📦</span> Units Sold</div>
             <div class="val" style="color:#38bdf8;">${fmtInt(summary.totalUnits)}</div>
-            <div class="sub">total items dispatched</div>
+            <div class="sub">${window.t("total items dispatched")}</div>
           </div>
           <div class="stat rpg-card">
-            <div class="lbl">📜 Closings</div>
+            <div class="lbl"><span>📜</span> Closings</div>
             <div class="val" style="color:#fbbf24;">${fmtInt(summary.closingCount)}</div>
-            <div class="sub">scrolls recorded</div>
+            <div class="sub">${window.t("scrolls recorded")}</div>
           </div>
           <div class="stat rpg-card">
-            <div class="lbl">⚔️ Disputes</div>
+            <div class="lbl"><span>⚔️</span> Disputes</div>
             <div class="val" style="color:#f43f5e;">${fmtInt(summary.disputeCount)}</div>
-            <div class="sub">skirmishes occurred</div>
+            <div class="sub">${window.t("skirmishes occurred")}</div>
           </div>
         </div>`;
 
-        html += `<h2>📊 Tren Harian</h2>${renderChart(dailySeries)}`;
-        html += `<h2>🏆 Top 5 Produk</h2>${renderTopProducts(topProducts)}`;
-        html += `<h2>🏰 Per Tenant</h2>${renderTenantBreakdown(tenantBreakdown)}`;
+        html += `<h2><span>📊</span> ${window.t("Tren Harian")}</h2>${renderChart(dailySeries)}`;
+        html += `<h2><span>🏆</span> ${window.t("Top 5 Produk")}</h2>${renderTopProducts(topProducts)}`;
+        html += `<h2><span>🏰</span> ${window.t("Per Tenant")}</h2>${renderTenantBreakdown(tenantBreakdown)}`;
 
         content.innerHTML = html;
       }
@@ -472,7 +474,7 @@ const title = `Analytics — ${APP_NAME}`;
           const seen = new Set();
           const unique = list.filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
           const sel = document.getElementById("tenant-filter");
-          sel.innerHTML = '<option value="">Semua tenant</option>' +
+          sel.innerHTML = `<option value="">${window.t("Semua tenant")}</option>` +
             unique.map(t => `<option value="${escapeHtml(t.id)}" ${tenantId === t.id ? "selected" : ""}>${escapeHtml(t.name)}</option>`).join("");
         }).catch(() => { /* non-fatal; filter stays empty */ });
       }
@@ -487,7 +489,7 @@ const title = `Analytics — ${APP_NAME}`;
           window.location.href = "/login";
           return;
         }
-        status.innerHTML = '<div class="loading">Memuat analytics…</div>';
+        status.innerHTML = `<div class="loading">${window.t("Memuat analytics…")}</div>`;
         content.innerHTML = "";
         try {
           const qs = new URLSearchParams({ range });
@@ -498,7 +500,7 @@ const title = `Analytics — ${APP_NAME}`;
           render(j.data);
         } catch (e) {
           if (e && e.code === "UNAUTHENTICATED") return;
-          status.innerHTML = '<div class="err">' + escapeHtml(e?.message || "Gagal memuat") + '</div>';
+          status.innerHTML = '<div class="err">' + escapeHtml(e?.message || window.t("Gagal memuat")) + '</div>';
         }
       }
 
@@ -516,7 +518,7 @@ const title = `Analytics — ${APP_NAME}`;
         if (btn.disabled) return;
         const orig = btn.textContent;
         btn.disabled = true;
-        btn.textContent = "Menyiapkan…";
+        btn.textContent = window.t("Menyiapkan…");
         try {
           const qs = new URLSearchParams({ range, format: "csv" });
           if (tenantId) qs.set("tenantId", tenantId);

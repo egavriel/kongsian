@@ -823,11 +823,11 @@ const title = `Brand Dashboard — ${APP_NAME}`;
               
               <!-- Avatar select dropdown -->
               <div class="avatar-select-grid" id="avatar-select-grid" style="display:none">
-                <button type="button" onclick="selectAvatar('🧙‍♂️', 'Coffee Sorcerer')">🧙‍♂️ Sorcerer</button>
-                <button type="button" onclick="selectAvatar('🧑‍🍳', 'Pastry Knight')">🧑‍🍳 Knight</button>
-                <button type="button" onclick="selectAvatar('👩‍🌾', 'Juice Druid')">👩‍🌾 Druid</button>
-                <button type="button" onclick="selectAvatar('🧋', 'Boba Cleric')">🧋 Cleric</button>
-                <button type="button" onclick="selectAvatar('🧇', 'Waffle Rogue')">🧇 Rogue</button>
+                <button type="button" onclick="selectAvatar('🧙‍♂️', 'Coffee Sorcerer')"><span>🧙‍♂️</span> Sorcerer</button>
+                <button type="button" onclick="selectAvatar('🧑‍🍳', 'Pastry Knight')"><span>🧑‍🍳</span> Knight</button>
+                <button type="button" onclick="selectAvatar('👩‍🌾', 'Juice Druid')"><span>👩‍🌾</span> Druid</button>
+                <button type="button" onclick="selectAvatar('🧋', 'Boba Cleric')"><span>🧋</span> Cleric</button>
+                <button type="button" onclick="selectAvatar('🧇', 'Waffle Rogue')"><span>🧇</span> Rogue</button>
               </div>
             </div>
             
@@ -933,28 +933,6 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         </div>
         
         <div class="quest-grid">
-          <!--
-          <a class="quest-card" href="/dashboard/brand/movements/new-titip">
-            <div class="quest-info">
-              <span class="quest-icon" style="color:#10b981; background:rgba(16,185,129,0.08);">📦</span>
-              <div class="quest-details">
-                <span class="quest-title">Kirim Titipan Stok</span>
-                <span class="quest-desc">Kirim stok masuk baru ke partner</span>
-              </div>
-            </div>
-            <span class="quest-xp-badge">+10 XP</span>
-          </a>
-          <a class="quest-card" href="/dashboard/brand/movements/new-tarik">
-            <div class="quest-info">
-              <span class="quest-icon" style="color:#fb7185; background:rgba(251,113,133,0.08);">↩️</span>
-              <div class="quest-details">
-                <span class="quest-title">Tarik Sisa Stok</span>
-                <span class="quest-desc">Tarik kembali sisa stok dari partner</span>
-              </div>
-            </div>
-            <span class="quest-xp-badge">+5 XP</span>
-          </a>
-          -->
           <a class="quest-card" href="/dashboard/brand/closings">
             <div class="quest-info">
               <span class="quest-icon" style="color:#38bdf8; background:rgba(56,189,248,0.08);">📋</span>
@@ -1120,7 +1098,12 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         localStorage.setItem("kongsian_hero_title", title);
         
         document.getElementById("avatar-sprite").textContent = emoji;
-        document.getElementById("char-title").textContent = title;
+        const charTitleEl = document.getElementById("char-title");
+        charTitleEl.textContent = window.t(title);
+        const textNode = charTitleEl.firstChild;
+        if (textNode) {
+          textNode._originalValue = title;
+        }
         
         const card = document.getElementById("rpg-profile-card");
         if (card) {

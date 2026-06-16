@@ -91,7 +91,7 @@ const title = `Settlements — ${APP_NAME}`;
             <div class="head">
               <div>
                 <div class="week">${fmtDate(s.weekStartDate)} – ${fmtDate(s.weekEndDate)}</div>
-                <div class="meta" style="font-size:12px;color:#94a3b8">${s.totalTerjual} item terjual</div>
+                <div class="meta" style="font-size:12px;color:#94a3b8">${s.totalTerjual} ${window.t("item terjual")}</div>
               </div>
               <span class="badge ${badgeCls(s.status)}">${s.status}</span>
             </div>

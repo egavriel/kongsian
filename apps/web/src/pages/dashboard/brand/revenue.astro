@@ -357,7 +357,7 @@ const title = `Rincian Omset — ${APP_NAME}`;
           <div id="err" class="err" style="display:none"></div>
           
           <label>
-            <span class="lbl">Pilih Partner (Cafe)</span>
+            <span class="lbl">Pilih Partner Cafe</span>
             <select id="partner-filter">
               <option value="">Memuat partner…</option>
             </select>
@@ -376,28 +376,28 @@ const title = `Rincian Omset — ${APP_NAME}`;
         <div id="content" style="display:none;">
           <div class="stats-grid">
             <div class="rpg-card stat-box">
-              <div class="stat-lbl">🪙 Omset Kotor</div>
+              <div class="stat-lbl"><span>🪙</span> Omset Kotor</div>
               <div class="stat-val" id="gross-revenue">Rp 0</div>
               <div class="stat-sub">gross revenue</div>
             </div>
             <div class="rpg-card stat-box">
-              <div class="stat-lbl">📦 Total Terjual</div>
+              <div class="stat-lbl"><span>📦</span> Total Terjual</div>
               <div class="stat-val" id="units-sold">0 cup</div>
               <div class="stat-sub">items dispatched</div>
             </div>
             <div class="rpg-card stat-box">
-              <div class="stat-lbl">👑 Share Brand</div>
+              <div class="stat-lbl"><span>👑</span> Share Brand</div>
               <div class="stat-val" id="brand-share" style="color: #fbbf24;">Rp 0</div>
               <div class="stat-sub" id="brand-bps-lbl">70% share</div>
             </div>
             <div class="rpg-card stat-box">
-              <div class="stat-lbl">🏰 Share Cafe</div>
+              <div class="stat-lbl"><span>🏰</span> Share Cafe</div>
               <div class="stat-val" id="tenant-share" style="color: #38bdf8;">Rp 0</div>
               <div class="stat-sub" id="tenant-bps-lbl">30% share</div>
             </div>
           </div>
 
-          <h2 class="section-title">📜 Daily Sales Ledger</h2>
+          <h2 class="section-title"><span>📜</span> Daily Sales Ledger</h2>
           <div class="ledger-list" id="ledger-list">
             <div class="empty">Pilih partner dan siklus untuk memuat data.</div>
           </div>
@@ -445,7 +445,7 @@ const title = `Rincian Omset — ${APP_NAME}`;
       }
 
       function formatDateFullIndo(dateObj) {
-        const dayName = INDO_DAY_NAMES[dateObj.getDay()];
+        const dayName = window.t(INDO_DAY_NAMES[dateObj.getDay()].toLowerCase());
         const d = dateObj.getDate();
         const m = INDO_MONTH_NAMES[dateObj.getMonth()];
         return `${dayName}, ${d} ${m}`;
@@ -478,9 +478,9 @@ const title = `Rincian Omset — ${APP_NAME}`;
 
           let label = "";
           if (i === 0) {
-            label = `Siklus Aktif (${formatDateIndo(cStart)} - ${formatDateIndo(cEnd)})`;
+            label = `${window.t("Siklus Aktif")} (${formatDateIndo(cStart)} - ${formatDateIndo(cEnd)})`;
           } else {
-            label = `Siklus Lalu - ${i} Minggu Lalu (${formatDateIndo(cStart)} - ${formatDateIndo(cEnd)})`;
+            label = `${window.t("Siklus Lalu")} - ${i} ${window.t("Minggu Lalu")} (${formatDateIndo(cStart)} - ${formatDateIndo(cEnd)})`;
           }
 
           cycles.push({
@@ -492,10 +492,10 @@ const title = `Rincian Omset — ${APP_NAME}`;
       }
 
       async function loadDashboard() {
-        statusEl.innerHTML = '<div class="loading">Memuat rincian ledger…</div>';
+        statusEl.innerHTML = `<div class="loading">${window.t("Memuat rincian ledger…")}</div>`;
         const res = await jget("/v1/ops/brand-dashboard");
         if (!res.ok || !res.data) {
-          showErr("Gagal memuat data brand. Coba lagi.");
+          showErr(window.t("Gagal memuat data brand. Coba lagi."));
           statusEl.innerHTML = "";
           return;
         }
@@ -509,13 +509,13 @@ const title = `Rincian Omset — ${APP_NAME}`;
 
         const activePartnerships = (brandData.partnerships || []).filter(p => p.status === "ACTIVE");
         if (activePartnerships.length === 0) {
-          partnerFilter.innerHTML = '<option value="">Belum ada partner aktif</option>';
+          partnerFilter.innerHTML = `<option value="">${window.t("Belum ada partner aktif")}</option>`;
           return;
         }
 
         partnerFilter.innerHTML = activePartnerships.map(p => {
-          const startLabel = INDO_DAY_NAMES[DAY_MAP[p.settlementStartDay]] || "Senin";
-          const endLabel = INDO_DAY_NAMES[DAY_MAP[p.settlementEndDay]] || "Minggu";
+          const startLabel = window.t(INDO_DAY_NAMES[DAY_MAP[p.settlementStartDay]].toLowerCase());
+          const endLabel = window.t(INDO_DAY_NAMES[DAY_MAP[p.settlementEndDay]].toLowerCase());
           return `<option value="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}">${p.tenant?.name} (${startLabel} - ${endLabel})</option>`;
         }).join("");
 
@@ -526,7 +526,7 @@ const title = `Rincian Omset — ${APP_NAME}`;
       function handlePartnerChange() {
         const option = partnerFilter.options[partnerFilter.selectedIndex];
         if (!option || !option.value) {
-          cycleFilter.innerHTML = '<option value="">Pilih partner terlebih dahulu</option>';
+          cycleFilter.innerHTML = `<option value="">${window.t("Pilih partner terlebih dahulu")}</option>`;
           cycleFilter.disabled = true;
           contentEl.style.display = "none";
           return;
@@ -551,19 +551,19 @@ const title = `Rincian Omset — ${APP_NAME}`;
 
         const [startStr, endStr] = cycleVal.split(":");
         contentEl.style.display = "block";
-        ledgerList.innerHTML = '<div class="loading">Memuat catatan penjualan…</div>';
+        ledgerList.innerHTML = `<div class="loading">${window.t("Memuat catatan penjualan…")}</div>`;
 
         // Retrieve splits
         const option = partnerFilter.options[partnerFilter.selectedIndex];
         const splitBrandBps = Number(option.getAttribute("data-split-brand") || 7000);
         const splitTenantBps = Number(option.getAttribute("data-split-tenant") || 3000);
 
-        document.getElementById("brand-bps-lbl").textContent = `${(splitBrandBps / 100).toFixed(0)}% brand share`;
-        document.getElementById("tenant-bps-lbl").textContent = `${(splitTenantBps / 100).toFixed(0)}% cafe share`;
+        document.getElementById("brand-bps-lbl").textContent = `${(splitBrandBps / 100).toFixed(0)}% ${window.t("brand share")}`;
+        document.getElementById("tenant-bps-lbl").textContent = `${(splitTenantBps / 100).toFixed(0)}% ${window.t("cafe share")}`;
 
         const res = await jget(`/v1/movements?partnershipId=${pId}&from=${startStr}&to=${endStr}`);
         if (!res.ok || !res.data) {
-          ledgerList.innerHTML = '<div class="empty">Gagal memuat data penjualan untuk siklus ini.</div>';
+          ledgerList.innerHTML = `<div class="empty">${window.t("Gagal memuat data penjualan untuk siklus ini.")}</div>`;
           return;
         }
 
@@ -602,7 +602,7 @@ const title = `Rincian Omset — ${APP_NAME}`;
 
         // Set summaries
         document.getElementById("gross-revenue").textContent = fmtRp(totalGross);
-        document.getElementById("units-sold").textContent = `${totalQty} cup`;
+        document.getElementById("units-sold").textContent = `${totalQty} ${window.t("cup")}`;
         document.getElementById("brand-share").textContent = fmtRp(totalGross * (splitBrandBps / 10000));
         document.getElementById("tenant-share").textContent = fmtRp(totalGross * (splitTenantBps / 10000));
 
@@ -644,7 +644,7 @@ const title = `Rincian Omset — ${APP_NAME}`;
                 <div class="timeline-dot">○</div>
                 <div class="compact-row">
                   <span class="day-name-compact">${formatDateFullIndo(dayDate)}</span>
-                  <span class="compact-status">Kosong</span>
+                  <span class="compact-status">${window.t("Kosong")}</span>
                   <span class="day-revenue-compact">Rp 0</span>
                 </div>
               </div>
