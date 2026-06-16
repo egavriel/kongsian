@@ -454,8 +454,8 @@ const title = `SKU — ${APP_NAME}`;
                     <span class="dot-separator">·</span>
                     <span>🪙 ${fmtRp(s.priceIdr)}</span>
                     <span class="dot-separator">·</span>
-                    <span>⏳ ${s.masaSimpanHari} \${window.t('hari')}</span>
-                    \${s.active ? "" : \`<span class="dot-separator">·</span><span style="color:#f43f5e">nonaktif</span>\`}
+                    <span>⏳ ${s.masaSimpanHari} <span>hari</span></span>
+                    ${s.active ? "" : `<span class="dot-separator">·</span><span style="color:#f43f5e">nonaktif</span>`}
                   </div>
                 </div>
               </div>
@@ -526,10 +526,10 @@ const title = `SKU — ${APP_NAME}`;
         prevCode.textContent = code.slice(0, 8);
         prevName.textContent = name;
         prevPrice.textContent = `🪙 ${fmtRp(price)}`;
-        prevShelf.textContent = `⏳ ${shelf} ${window.t('hari')}`;
+        prevShelf.innerHTML = `⏳ ${shelf} <span>hari</span>`;
 
         const rarity = getRarity(price);
-        prevRarity.textContent = rarity.name;
+        prevRarity.innerHTML = `<span>${rarity.name.toLowerCase()}</span>`;
         prevRarity.style.color = rarity.color;
         prevRarity.style.background = rarity.bg;
         prevRarity.style.borderColor = rarity.border;

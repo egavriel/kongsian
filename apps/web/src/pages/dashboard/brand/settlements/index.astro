@@ -74,7 +74,7 @@ const title = `Settlements — ${APP_NAME}`;
       function badgeCls(s) { return (s || "").toLowerCase(); }
 
       const me = await jget("/v1/brands/me");
-      let brandId = me.ok && me.data?.brand?.id;
+      let brandId = me.ok && me.data?.brandId;
       if (!brandId) { showErr("Brand tidak ditemukan."); listEl.innerHTML = ""; }
 
       async function load() {
