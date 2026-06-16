@@ -521,7 +521,10 @@
     if (!node) return;
     
     if (node.nodeType === Node.TEXT_NODE) {
-      const val = node.nodeValue;
+      if (node._originalValue === undefined) {
+        node._originalValue = node.nodeValue;
+      }
+      const val = node._originalValue;
       // Skip if parent node has data-no-i18n
       if (node.parentElement && node.parentElement.hasAttribute("data-no-i18n")) return;
       
@@ -530,6 +533,8 @@
         const leading = val.match(/^\s*/)[0];
         const trailing = val.match(/\s*$/)[0];
         node.nodeValue = leading + translated + trailing;
+      } else {
+        node.nodeValue = val;
       }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const tag = node.tagName;
@@ -538,10 +543,15 @@
       
       // Translate inputs placeholder
       if (node.hasAttribute("placeholder")) {
-        const ph = node.getAttribute("placeholder");
+        if (!node.hasAttribute("data-orig-placeholder")) {
+          node.setAttribute("data-orig-placeholder", node.getAttribute("placeholder"));
+        }
+        const ph = node.getAttribute("data-orig-placeholder");
         const translated = translateText(ph, lang);
         if (translated !== null) {
           node.setAttribute("placeholder", translated);
+        } else {
+          node.setAttribute("placeholder", ph);
         }
       }
       
@@ -553,7 +563,10 @@
   }
   
   function translateTitle(lang) {
-    const t = document.title;
+    if (!document._originalTitle) {
+      document._originalTitle = document.title;
+    }
+    const t = document._originalTitle;
     if (!t) return;
     const parts = t.split("—");
     if (parts.length > 0) {
@@ -561,6 +574,8 @@
       const translated = translateText(pageName, lang);
       if (translated !== null) {
         document.title = translated + (parts[1] ? " — " + parts[1].trim() : "");
+      } else {
+        document.title = t;
       }
     }
   }
