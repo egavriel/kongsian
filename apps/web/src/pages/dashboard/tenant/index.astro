@@ -164,14 +164,14 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
           return;
         }
         const { tenant, partnerships, skus } = me.data;
-        document.getElementById("greet").textContent = `Halo, ${tenant.name || "Tenant"}`;
+        document.getElementById("greet").textContent = `${window.t('Halo')}, ${tenant.name || "Tenant"}`;
         document.getElementById("tenant-name").textContent = tenant.name || "Tenant Dashboard";
 
         // Partners
         const pEl = document.getElementById("partners");
         const active = (partnerships || []).filter(p => p.status === "ACTIVE");
         if (active.length === 0) {
-          pEl.innerHTML = `<div class="empty">Belum ada brand partner aktif. Tunggu brand invite kamu.</div>`;
+          pEl.innerHTML = `<div class="empty">${window.t('Belum ada brand partner aktif. Tunggu brand invite kamu.')}</div>`;
         } else {
           pEl.innerHTML = active.map(p => `
             <div class="partner">
@@ -188,7 +188,7 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
         const sEl = document.getElementById("skus");
         const flat = (skus || []).filter(s => s.active !== false);
         if (flat.length === 0) {
-          sEl.innerHTML = `<div class="empty">Belum ada SKU yang bisa kamu jual.</div>`;
+          sEl.innerHTML = `<div class="empty">${window.t('Belum ada SKU yang bisa kamu jual.')}</div>`;
         } else {
           sEl.innerHTML = flat.map(s => `
             <div class="sku-row">
@@ -208,10 +208,10 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
           if (closing.ok && closing.data?.submitted) {
             const card = document.getElementById("task-card");
             card.classList.add("done");
-            document.getElementById("task-title").textContent = "Closing hari ini sudah masuk ✓";
-            document.getElementById("task-desc").textContent = "Terima kasih. Brand akan review dan kirim settlement.";
+            document.getElementById("task-title").textContent = window.t("Closing hari ini sudah masuk ✓");
+            document.getElementById("task-desc").textContent = window.t("Terima kasih. Brand akan review dan kirim settlement.");
             const cta = document.getElementById("task-cta");
-            cta.textContent = "Lihat Riwayat";
+            cta.textContent = window.t("Lihat Riwayat");
             cta.href = "/dashboard/tenant/closing";
           }
         }

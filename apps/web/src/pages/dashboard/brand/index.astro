@@ -1142,7 +1142,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         const active = (partnerships || []).filter(p => p.status === "ACTIVE");
 
         if (active.length === 0) {
-          sisaEl.innerHTML = `<div class="empty">Belum ada partner aktif.</div>`;
+          sisaEl.innerHTML = `<div class="empty">${window.t('Belum ada partner aktif.')}</div>`;
           return;
         }
 
@@ -1198,7 +1198,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
                     </div>
                     <span class="sisa-toggle-icon">▶</span>
                   </div>
-                  <div class="loading" style="padding:12px 0; font-size:12px;">Belum ada stok terdaftar.</div>
+                  <div class="loading" style="padding:12px 0; font-size:12px;">${window.t('Belum ada stok terdaftar.')}</div>
                 </div>
               `);
             }
@@ -1215,7 +1215,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
                   </div>
                   <span class="sisa-toggle-icon">▶</span>
                 </div>
-                <div class="loading" style="padding:12px 0; font-size:12px;">Tidak ada SKU yang cocok.</div>
+                <div class="loading" style="padding:12px 0; font-size:12px;">${window.t('Tidak ada SKU yang cocok.')}</div>
               </div>
             `);
             continue;
@@ -1235,14 +1235,14 @@ const title = `Brand Dashboard — ${APP_NAME}`;
                   </div>
                   <div style="text-align:right; flex-shrink: 0;">
                     <span class="stock-badge ${cls}">
-                      ${qty <= 0 ? "🔴 HABIS" : qty < 5 ? `🟡 ${qty} UNIT` : `🟢 ${qty} UNIT`}
+                      ${qty <= 0 ? `🔴 ${window.t('HABIS')}` : qty < 5 ? `🟡 ${qty} ${window.t('UNIT')}` : `🟢 ${qty} ${window.t('UNIT')}`}
                     </span>
                     <div class="sku-price" style="margin-top: 4px;">${priceStr}</div>
                   </div>
                 </div>
                 <div style="margin-top:4px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; font-size:9px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:2px;">
-                    <span>Stock HP</span>
+                    <span>${window.t('Stock HP')}</span>
                     <span>${qty} / 15</span>
                   </div>
                   <div class="stock-progress-container">
@@ -1267,14 +1267,14 @@ const title = `Brand Dashboard — ${APP_NAME}`;
                 <span class="sisa-toggle-icon">▶</span>
               </div>
               <div class="pouch-grid">
-                ${rowsHtml || `<div class="loading" style="padding:12px 0; font-size:12px;">Tidak ada item yang cocok dengan filter.</div>`}
+                ${rowsHtml || `<div class="loading" style="padding:12px 0; font-size:12px;">${window.t('Tidak ada item yang cocok dengan filter.')}</div>`}
               </div>
             </div>
           `);
         }
 
         if (cards.length === 0) {
-          sisaEl.innerHTML = `<div class="empty">Tidak ada partner atau SKU yang cocok.</div>`;
+          sisaEl.innerHTML = `<div class="empty">${window.t('Tidak ada partner atau SKU yang cocok.')}</div>`;
         } else {
           sisaEl.innerHTML = cards.join("");
         }
@@ -1309,7 +1309,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         }
 
         // Set name displays
-        document.getElementById("greet").textContent = `Halo, ${user.name || user.phoneE164}`;
+        document.getElementById("greet").textContent = `${window.t('Halo')}, ${user.name || user.phoneE164}`;
         document.getElementById("brand-name-display").textContent = brand.name;
 
         const active = (partnerships || []).filter(p => p.status === "ACTIVE");
@@ -1381,8 +1381,8 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           document.getElementById("town-viewport").innerHTML = `
             <div class="empty" style="padding: 30px; border-style: dashed;">
               <div style="font-size: 44px; margin-bottom: 8px;">🗺️</div>
-              <div style="font-weight: 800; color: #f1f5f9; margin-bottom: 4px;">Peta Kosong</div>
-              <div style="color: #64748b; font-size: 13px;">Belum ada partner aktif. Undang partner di bawah untuk mendirikan Cafe baru di peta kerajaanmu!</div>
+              <div style="font-weight: 800; color: #f1f5f9; margin-bottom: 4px;">${window.t('Peta Kosong')}</div>
+              <div style="color: #64748b; font-size: 13px;">${window.t('Belum ada partner aktif. Undang partner di bawah untuk mendirikan Cafe baru!')}</div>
             </div>
           `;
         } else {
@@ -1403,7 +1403,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
                 mapCells.push(`
                   <div class="map-cell">
                     <div class="building-sprite hq" style="cursor: default;">🏢</div>
-                    <div class="building-label">HQ KAMI</div>
+                    <div class="building-label">${window.t('HQ KAMI')}</div>
                   </div>
                 `);
                 continue;
@@ -1439,7 +1439,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
                 const bubbleEl = alertHtml ? `<div class="floating-bubble ${bubbleCls}">${alertHtml}</div>` : "";
 
                 mapCells.push(`
-                  <div class="map-cell cafe-cell active-cafe" onclick="focusCafeCard('${p.id}')" title="Klik untuk fokus ke stok cafe ini">
+                  <div class="map-cell cafe-cell active-cafe" onclick="focusCafeCard('${p.id}')" title="${window.t('Klik untuk fokus ke stok cafe ini')}">
                     ${bubbleEl}
                     <div class="building-sprite cafe">🏪</div>
                     <div class="building-label">${(p.tenant?.name || "Cafe").toUpperCase()}</div>
@@ -1482,7 +1482,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         // SKU List
         const skusEl = document.getElementById("skus");
         if (skus.length === 0) {
-          skusEl.innerHTML = '<div class="empty">Belum ada SKU. <a href="/dashboard/brand/skus">Tambah SKU</a>.</div>';
+          skusEl.innerHTML = `<div class="empty">${window.t('Belum ada SKU.')} <a href="/dashboard/brand/skus">${window.t('Tambah SKU')}</a>.</div>`;
         } else {
           skusEl.innerHTML = skus.map(s => `<span class="sku-pill">${s.code} · ${s.name}</span>`).join("");
         }
@@ -1490,7 +1490,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         // Partnerships List
         const pEl = document.getElementById("partnerships");
         if (partnerships.length === 0) {
-          pEl.innerHTML = '<div class="empty">Belum ada partner. <a href="/dashboard/brand/partnerships">Invite partner pertama</a>.</div>';
+          pEl.innerHTML = `<div class="empty">${window.t('Belum ada partner.')} <a href="/dashboard/brand/partnerships">${window.t('Invite partner pertama')}</a>.</div>`;
         } else {
           pEl.innerHTML = partnerships.map(p => `
             <div class="partner">
@@ -1520,7 +1520,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           if (p.status === "ACTIVE") {
             combatRows.push({
               time: p.createdAt * 1000,
-              html: `<div class="combat-row"><span class="log-time">[${dateStr}]</span> <span class="log-icon">🤝</span> Aliansi didirikan dengan <span class="log-entity">${p.tenant?.name}</span>! <span class="log-xp">(+100 XP)</span></div>`
+              html: `<div class="combat-row"><span class="log-time">[${dateStr}]</span> <span class="log-icon">🤝</span> ${window.t('Aliansi didirikan dengan')} <span class="log-entity">${p.tenant?.name}</span>! <span class="log-xp">(+100 XP)</span></div>`
             });
           }
         }
@@ -1535,12 +1535,12 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           if (cl.status === "LOCKED") {
             combatRows.push({
               time: dateVal + 1,
-              html: `<div class="combat-row"><span class="log-time">[${dateStr}]</span> <span class="log-icon">📋</span> Laporan closing <span class="log-entity">${tenantName}</span> disetujui! <span class="log-xp">(+20 XP)</span></div>`
+              html: `<div class="combat-row"><span class="log-time">[${dateStr}]</span> <span class="log-icon">📋</span> ${window.t('Laporan closing')} <span class="log-entity">${tenantName}</span> ${window.t('disetujui!')} <span class="log-xp">(+20 XP)</span></div>`
             });
           } else if (cl.status === "SUBMITTED") {
             combatRows.push({
               time: dateVal,
-              html: `<div class="combat-row text-alert"><span class="log-time">[${dateStr}]</span> <span class="log-icon">🕒</span> Laporan closing baru dari <span class="log-entity">${tenantName}</span> siap direview!</div>`
+              html: `<div class="combat-row text-alert"><span class="log-time">[${dateStr}]</span> <span class="log-icon">🕒</span> ${window.t('Laporan closing baru dari')} <span class="log-entity">${tenantName}</span> ${window.t('siap direview!')}</div>`
             });
           }
         }
@@ -1556,17 +1556,17 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           if (se.status === "PAID") {
             combatRows.push({
               time: dateVal + 2,
-              html: `<div class="combat-row text-success"><span class="log-time">[${dateStr}]</span> <span class="log-icon">💰</span> Quest Selesai: Settlement <span class="log-entity">${tenantName}</span> lunas ${revStr}! <span class="log-xp">(+50 XP)</span></div>`
+              html: `<div class="combat-row text-success"><span class="log-time">[${dateStr}]</span> <span class="log-icon">💰</span> ${window.t('Quest Selesai: Settlement')} <span class="log-entity">${tenantName}</span> ${window.t('lunas')} ${revStr}! <span class="log-xp">(+50 XP)</span></div>`
             });
           } else if (se.status === "BRAND_APPROVED") {
             combatRows.push({
               time: dateVal + 1,
-              html: `<div class="combat-row text-success"><span class="log-time">[${dateStr}]</span> <span class="log-icon">🪙</span> Settlement <span class="log-entity">${tenantName}</span> disetujui Brand!</div>`
+              html: `<div class="combat-row text-success"><span class="log-time">[${dateStr}]</span> <span class="log-icon">🪙</span> ${window.t('Settlement')} <span class="log-entity">${tenantName}</span> ${window.t('disetujui Brand!')}</div>`
             });
           } else if (se.status === "DRAFT" || se.status === "PENDING_BRAND") {
             combatRows.push({
               time: dateVal,
-              html: `<div class="combat-row text-alert"><span class="log-time">[${dateStr}]</span> <span class="log-icon">⚠️</span> Settlement <span class="log-entity">${tenantName}</span> siap direview!</div>`
+              html: `<div class="combat-row text-alert"><span class="log-time">[${dateStr}]</span> <span class="log-icon">⚠️</span> ${window.t('Settlement')} <span class="log-entity">${tenantName}</span> ${window.t('siap direview!')}</div>`
             });
           }
         }
@@ -1574,7 +1574,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
         combatRows.sort((a, b) => b.time - a.time);
 
         if (combatRows.length === 0) {
-          combatLogEl.innerHTML = `<div class="empty-log">Belum ada riwayat aktivitas pertempuran.</div>`;
+          combatLogEl.innerHTML = `<div class="empty-log">${window.t('Belum ada riwayat aktivitas pertempuran.')}</div>`;
         } else {
           combatLogEl.innerHTML = combatRows.map(row => row.html).join("");
         }

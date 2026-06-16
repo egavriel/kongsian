@@ -16,6 +16,7 @@
       "verifikasi admin": "Admin Verification",
       "kembali ke beranda": "Back to Home",
       "opsional": "optional",
+      "halo": "Hi",
       
       // Role Tags
       "arsenal": "SKU REGISTRY",
@@ -79,6 +80,75 @@
       "aktivitas harian": "Daily Operations Activity",
       "lihat semua": "View All",
       "belum ada closing hari ini.": "No closings recorded today.",
+
+      // Filter Tabs
+      "semua": "All",
+      "kritis (< 5)": "Critical (< 5)",
+      "habis": "Out of Stock",
+
+      // Section Headers on Brand Dashboard
+      "quest board (operasional)": "Operations Board",
+      "kelola instansi (management)": "Management",
+      "daftar partner": "Partner List",
+      "daftar sku": "SKU List",
+
+      // Quest Board items
+      "daily quest: catat hari ini": "Daily Task: Record Today",
+      "titip, tarik, & terjual (closing) dalam 1 layar": "Consign, Recall & Sold (closing) in 1 screen",
+      "review laporan closing": "Review Closing Reports",
+      "review setoran closing harian partner": "Review daily partner closing submissions",
+      "settlements mingguan": "Weekly Settlements",
+      "setujui tagihan & pembayaran partner": "Approve partner billings & payments",
+
+      // Management section items
+      "kelola sku produk": "Manage Product SKUs",
+      "atur nama produk dan harga jual": "Manage product names and selling prices",
+      "undang partner baru": "Invite New Partner",
+      "jalin aliansi dengan partner cafe baru": "Establish partnership with a new cafe",
+      "analytics & tren": "Analytics & Trends",
+      "performa top sku & omzet mingguan": "Top SKU performance & weekly revenue",
+
+      // Quest History / Combat Log
+      "quest history (combat log)": "Activity Log",
+      "memuat riwayat pertempuran…": "Loading activity history...",
+      "memuat riwayat pertempuran...": "Loading activity history...",
+      "belum ada riwayat aktivitas pertempuran.": "No activity history yet.",
+      "aliansi didirikan dengan": "Partnership established with",
+      "laporan closing": "Closing report",
+      "disetujui!": "approved!",
+      "laporan closing baru dari": "New closing report from",
+      "siap direview!": "ready for review!",
+      "quest selesai: settlement": "Task Complete: Settlement",
+      "lunas": "paid in full",
+      "disetujui brand!": "approved by Brand!",
+      "settlement": "Settlement",
+      "siap direview!": "ready for review!",
+
+      // Stock status labels (JS-generated)
+      "belum ada partner aktif.": "No active partners yet.",
+      "belum ada stok terdaftar.": "No registered stock yet.",
+      "tidak ada sku yang cocok.": "No matching SKUs found.",
+      "tidak ada item yang cocok dengan filter.": "No items match the current filter.",
+      "tidak ada partner atau sku yang cocok.": "No matching partners or SKUs found.",
+      "stock hp": "Stock Level",
+      "habis": "OUT OF STOCK",
+      "unit": "UNIT",
+
+      // Town Map
+      "peta kosong": "Empty Map",
+      "hq kami": "OUR HQ",
+      "membuka pouch inventory…": "Loading stock inventory...",
+      "membuka pouch inventory...": "Loading stock inventory...",
+      "klik untuk fokus ke stok cafe ini": "Click to focus on this cafe's stock",
+
+      // SKU/Partner empty states
+      "belum ada sku.": "No SKUs yet.",
+      "tambah sku": "Add SKU",
+      "belum ada partner.": "No partners yet.",
+      "invite partner pertama": "Invite your first partner",
+
+      // Search
+      "cari partner atau sku...": "Search partners or SKUs...",
       
       // SKU Management
       "forge new artifact": "Add New SKU",
@@ -256,15 +326,75 @@
       "peta kongsian (virtual town)": "Virtual Cafe Map",
       "menggambar peta…": "Drawing map...",
       "menggambar peta...": "Drawing map...",
-      "stok tersisa di partner": "Remaining stock at partners",
-      "quest board (operasional)": "Quest Board (Operations)",
-      "partner aktif": "active partner",
+      "stok tersisa di partner": "Remaining Stock at Partners",
+      "partner aktif": "active partners",
       "stok aman": "safe stock level",
-      "laporan masuk": "reports submitted"
+      "laporan masuk": "reports submitted",
+
+      // Movements page
+      "kirim titipan stok": "Send Consignment Stock",
+      "kirim stok masuk baru ke partner": "Send new incoming stock to partner",
+      "tarik sisa stok": "Recall Remaining Stock",
+      "tarik kembali sisa stok dari partner": "Recall remaining stock from partner",
+      "lengkapi laporan harian": "Complete Daily Report",
+      "aliansi partner (cafe)": "Partner Cafe",
+      "stok awal aliansi": "Initial Partnership Stock",
+      "selesaikan misi (simpan semua)": "Complete Task (Save All)",
+      "simpan titip": "Save Consignment",
+      "simpan tarik": "Save Recall",
+      "belum ada partner aktif": "No active partners",
+      "belum ada sku di brand ini.": "No SKUs in this brand yet.",
+      "belum ada sku di brand ini. tambah sku dulu.": "No SKUs in this brand yet. Add SKU first.",
+
+      // Settlement page
+      "belum ada settlement. generator jalan setiap minggu 23:59 wib.": "No settlements yet. Generated every Sunday 23:59 WIB.",
+
+      // Movements index
+      "belum ada movement untuk filter ini.": "No movements found for this filter.",
+      "belum ada partnership. invite partner dulu.": "No partnerships yet. Invite a partner first.",
+
+      // Tenant pages
+      "belum ada brand partner aktif. tunggu brand invite kamu.": "No active brand partner. Wait for the brand to invite you.",
+      "belum ada sku yang bisa kamu jual.": "No SKUs available for you to sell.",
+      "belum ada dispute. dispute muncul otomatis ketika ada selisih closing.": "No disputes. Disputes appear automatically when there's a closing discrepancy.",
+      "belum ada pesan.": "No messages yet.",
+      "kirim pesan": "Send Message",
+      "belum ada brand partner": "No brand partner yet",
+      "belum ada sku untuk partnership ini.": "No SKUs for this partnership.",
+
+      // Closings page
+      "hari": "days",
+
+      // Revenue page
+      "memuat partner…": "Loading partners...",
+      "memuat partner...": "Loading partners...",
+      "memuat rincian ledger…": "Loading ledger details...",
+      "memuat rincian ledger...": "Loading ledger details...",
+      "belum ada partner aktif": "No active partners",
+      "memuat catatan penjualan…": "Loading sales records...",
+      "memuat catatan penjualan...": "Loading sales records...",
+
+      // Tenant Dashboard dynamic strings
+      "tugas hari ini": "Today's Task",
+      "input terjual + sisa fisik untuk semua sku titipan hari ini.": "Input sold + remaining physical stock for all consigned SKUs today.",
+      "deadline: 23:59 wib": "Deadline: 23:59 WIB",
+      "buka form": "Open Form",
+      "closing hari ini sudah masuk ✓": "Today's closing is submitted ✓",
+      "terima kasih. brand akan review dan kirim settlement.": "Thank you. Brand will review and send settlement.",
+      "lihat riwayat": "View History",
+      "brand partner": "Brand Partner",
+      "link cepat": "Quick Links",
+      "lihat disputes →": "View Disputes →",
+      "sku tersedia": "Available SKUs",
+      "aktif": "ACTIVE",
+      "akun tenant tidak ditemukan.": "Tenant account not found.",
+      "login ulang": "Login again",
+      "tenant dashboard": "Tenant Dashboard"
     },
     id: {
       // Global Header & Shared
       "brand dashboard": "Dashboard Brand",
+      "tenant dashboard": "Dashboard Tenant",
       "kembali": "Kembali",
       "keluar": "Keluar",
       "memuat": "Memuat",
@@ -276,6 +406,7 @@
       "verifikasi admin": "Verifikasi Admin",
       "kembali ke beranda": "Kembali ke Beranda",
       "opsional": "opsional",
+      "halo": "Halo",
       
       // Role Tags
       "arsenal": "KELOLA SKU",
@@ -339,6 +470,73 @@
       "aktivitas harian": "Aktivitas Harian",
       "lihat semua": "Lihat Semua",
       "belum ada closing hari ini.": "Belum ada closing hari ini.",
+
+      // Filter Tabs
+      "semua": "Semua",
+      "kritis (< 5)": "Kritis (< 5)",
+      "habis": "Habis",
+
+      // Section Headers on Brand Dashboard
+      "quest board (operasional)": "Papan Operasional",
+      "kelola instansi (management)": "Kelola Instansi",
+      "daftar partner": "Daftar Partner",
+      "daftar sku": "Daftar SKU",
+
+      // Quest Board items
+      "daily quest: catat hari ini": "Tugas Harian: Catat Hari Ini",
+      "titip, tarik, & terjual (closing) dalam 1 layar": "Titip, Tarik, & Terjual (closing) dalam 1 layar",
+      "review laporan closing": "Review Laporan Closing",
+      "review setoran closing harian partner": "Review setoran closing harian partner",
+      "settlements mingguan": "Settlement Mingguan",
+      "setujui tagihan & pembayaran partner": "Setujui tagihan & pembayaran partner",
+
+      // Management section items
+      "kelola sku produk": "Kelola SKU Produk",
+      "atur nama produk dan harga jual": "Atur nama produk dan harga jual",
+      "undang partner baru": "Undang Partner Baru",
+      "jalin aliansi dengan partner cafe baru": "Jalin kerjasama dengan partner cafe baru",
+      "analytics & tren": "Analisis & Tren",
+      "performa top sku & omzet mingguan": "Performa top SKU & omzet mingguan",
+
+      // Quest History / Combat Log
+      "quest history (combat log)": "Riwayat Aktivitas",
+      "memuat riwayat pertempuran…": "Memuat riwayat aktivitas…",
+      "memuat riwayat pertempuran...": "Memuat riwayat aktivitas...",
+      "belum ada riwayat aktivitas pertempuran.": "Belum ada riwayat aktivitas.",
+      "aliansi didirikan dengan": "Kerjasama didirikan dengan",
+      "laporan closing": "Laporan closing",
+      "disetujui!": "disetujui!",
+      "laporan closing baru dari": "Laporan closing baru dari",
+      "siap direview!": "siap direview!",
+      "quest selesai: settlement": "Tugas Selesai: Settlement",
+      "lunas": "lunas",
+      "disetujui brand!": "disetujui Brand!",
+      "settlement": "Settlement",
+
+      // Stock status labels (JS-generated)
+      "belum ada partner aktif.": "Belum ada partner aktif.",
+      "belum ada stok terdaftar.": "Belum ada stok terdaftar.",
+      "tidak ada sku yang cocok.": "Tidak ada SKU yang cocok.",
+      "tidak ada item yang cocok dengan filter.": "Tidak ada item yang cocok dengan filter.",
+      "tidak ada partner atau sku yang cocok.": "Tidak ada partner atau SKU yang cocok.",
+      "stock hp": "Level Stok",
+      "unit": "UNIT",
+
+      // Town Map
+      "peta kosong": "Peta Kosong",
+      "hq kami": "HQ KAMI",
+      "membuka pouch inventory…": "Membuka inventaris stok…",
+      "membuka pouch inventory...": "Membuka inventaris stok...",
+      "klik untuk fokus ke stok cafe ini": "Klik untuk fokus ke stok cafe ini",
+
+      // SKU/Partner empty states
+      "belum ada sku.": "Belum ada SKU.",
+      "tambah sku": "Tambah SKU",
+      "belum ada partner.": "Belum ada partner.",
+      "invite partner pertama": "Undang partner pertama",
+
+      // Search
+      "cari partner atau sku...": "Cari partner atau SKU...",
       
       // SKU Management
       "forge new artifact": "Tambah SKU Baru",
@@ -516,11 +714,68 @@
       "peta kongsian (virtual town)": "Peta Cafe Virtual",
       "menggambar peta…": "Menggambar peta…",
       "menggambar peta...": "Menggambar peta…",
-      "stok tersisa di partner": "Stok tersisa di partner",
-      "quest board (operasional)": "Quest Board (Operasional)",
+      "stok tersisa di partner": "Stok Tersisa di Partner",
       "partner aktif": "partner aktif",
       "stok aman": "stok aman",
-      "laporan masuk": "laporan masuk"
+      "laporan masuk": "laporan masuk",
+
+      // Movements page
+      "kirim titipan stok": "Kirim Titipan Stok",
+      "kirim stok masuk baru ke partner": "Kirim stok masuk baru ke partner",
+      "tarik sisa stok": "Tarik Sisa Stok",
+      "tarik kembali sisa stok dari partner": "Tarik kembali sisa stok dari partner",
+      "lengkapi laporan harian": "Lengkapi Laporan Harian",
+      "aliansi partner (cafe)": "Partner Cafe",
+      "stok awal aliansi": "Stok Awal Kemitraan",
+      "selesaikan misi (simpan semua)": "Selesaikan (Simpan Semua)",
+      "simpan titip": "Simpan Titip",
+      "simpan tarik": "Simpan Tarik",
+      "belum ada partner aktif": "Belum ada partner aktif",
+      "belum ada sku di brand ini.": "Belum ada SKU di brand ini.",
+      "belum ada sku di brand ini. tambah sku dulu.": "Belum ada SKU di brand ini. Tambah SKU dulu.",
+
+      // Settlement page
+      "belum ada settlement. generator jalan setiap minggu 23:59 wib.": "Belum ada settlement. Dibuat otomatis setiap Minggu 23:59 WIB.",
+
+      // Movements index
+      "belum ada movement untuk filter ini.": "Belum ada movement untuk filter ini.",
+      "belum ada partnership. invite partner dulu.": "Belum ada partnership. Undang partner dulu.",
+
+      // Tenant pages
+      "belum ada brand partner aktif. tunggu brand invite kamu.": "Belum ada brand partner aktif. Tunggu brand mengundang Anda.",
+      "belum ada sku yang bisa kamu jual.": "Belum ada SKU yang bisa Anda jual.",
+      "belum ada dispute. dispute muncul otomatis ketika ada selisih closing.": "Belum ada dispute. Dispute muncul otomatis ketika ada selisih closing.",
+      "belum ada pesan.": "Belum ada pesan.",
+      "kirim pesan": "Kirim Pesan",
+      "belum ada brand partner": "Belum ada brand partner",
+      "belum ada sku untuk partnership ini.": "Belum ada SKU untuk partnership ini.",
+
+      // Closings page
+      "hari": "hari",
+
+      // Revenue page
+      "memuat partner…": "Memuat partner…",
+      "memuat partner...": "Memuat partner...",
+      "memuat rincian ledger…": "Memuat rincian laporan…",
+      "memuat rincian ledger...": "Memuat rincian laporan...",
+      "memuat catatan penjualan…": "Memuat catatan penjualan…",
+      "memuat catatan penjualan...": "Memuat catatan penjualan...",
+
+      // Tenant Dashboard dynamic strings
+      "tugas hari ini": "Tugas Hari Ini",
+      "input terjual + sisa fisik untuk semua sku titipan hari ini.": "Input terjual + sisa fisik untuk semua SKU titipan hari ini.",
+      "deadline: 23:59 wib": "Deadline: 23:59 WIB",
+      "buka form": "Buka Form",
+      "closing hari ini sudah masuk ✓": "Closing hari ini sudah masuk ✓",
+      "terima kasih. brand akan review dan kirim settlement.": "Terima kasih. Brand akan review dan kirim settlement.",
+      "lihat riwayat": "Lihat Riwayat",
+      "brand partner": "Brand Partner",
+      "link cepat": "Link Cepat",
+      "lihat disputes →": "Lihat Disputes →",
+      "sku tersedia": "SKU Tersedia",
+      "aktif": "AKTIF",
+      "akun tenant tidak ditemukan.": "Akun tenant tidak ditemukan.",
+      "login ulang": "Login ulang"
     }
   };
   
