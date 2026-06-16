@@ -278,7 +278,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
       async function sendOtp(phone, btn) {
         if (isSending) return false;
         isSending = true;
-        if (btn) { btn.disabled = true; btn.textContent = "Mengirim…"; }
+        if (btn) { btn.disabled = true; btn.textContent = window.t("Mengirim…"); }
         try {
           const res = await fetch(`${API}/v1/auth/otp/request`, {
             method: "POST",
@@ -289,9 +289,9 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
           if (!res.ok || !json.ok) {
             const code = json?.error?.code;
             if (code === "OTP_RATE_LIMITED") {
-              showErr("Kebanyakan percobaan. Coba lagi ~1 jam.");
+              showErr(window.t("Kebanyakan percobaan. Coba lagi ~1 jam."));
             } else {
-              showErr("Gagal kirim OTP. Coba lagi.");
+              showErr(window.t("Gagal kirim OTP. Coba lagi."));
             }
             return false;
           }
@@ -303,9 +303,9 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
             $("#dev-code").textContent = json.data.devCode;
             $("#dev-code").style.display = "block";
             $("#code").value = json.data.devCode;
-            showInfo("Dev mode: kode OTP sudah diisi otomatis di bawah.");
+            showInfo(window.t("Dev mode: kode OTP sudah diisi otomatis di bawah."));
           } else {
-            showInfo("OTP dikirim. Cek WhatsApp kamu.");
+            showInfo(window.t("OTP dikirim. Cek WhatsApp kamu."));
           }
           return true;
         } catch (e) {
@@ -315,11 +315,11 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
           // eslint-disable-next-line no-console
           console.error("[login] sendOtp fetch failed:", e, { url: `${API}/v1/auth/otp/request` });
           const cause = (e && (e.message || e.name)) || "unknown";
-          showErr(`Tidak bisa konek ke server (${cause}). Hard-refresh (Ctrl+Shift+R) lalu coba lagi.`);
+          showErr(`${window.t('Tidak bisa konek ke server')} (${cause}). Hard-refresh (Ctrl+Shift+R).`);
           return false;
         } finally {
           isSending = false;
-          if (btn) { btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp"; }
+          if (btn) { btn.disabled = false; btn.textContent = window.t("Kirim OTP via WhatsApp"); }
         }
       }
 
@@ -333,7 +333,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
         
         const phone = countrySelect.value + core;
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-          showErr("Nomor HP tidak valid. Silakan masukkan nomor yang benar.");
+          showErr(window.t("Nomor HP tidak valid. Silakan masukkan nomor yang benar."));
           return;
         }
         await sendOtp(phone, $("#send-btn"));
@@ -362,8 +362,8 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
         hideMsg();
         normalizeOtp();
         const code = $("#code").value.trim();
-        if (!/^\d{6}$/.test(code)) { showErr("Kode harus 6 digit angka."); return; }
-        const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = "Memverifikasi…";
+        if (!/^\d{6}$/.test(code)) { showErr(window.t("Kode harus 6 digit angka.")); return; }
+        const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = window.t("Memverifikasi…");
         try {
           const res = await fetch(`${API}/v1/auth/otp/verify`, {
             method: "POST",
@@ -373,16 +373,16 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
             const c = json?.error?.code;
-            if (c === "OTP_INVALID") showErr("Kode salah. Coba lagi.");
-            else if (c === "OTP_EXPIRED") showErr("Kode sudah kadaluarsa. Kirim ulang.");
-            else if (c === "OTP_TOO_MANY_ATTEMPTS") showErr("Terlalu banyak percobaan. Kirim OTP baru.");
-            else showErr("Verifikasi gagal. Coba lagi.");
+            if (c === "OTP_INVALID") showErr(window.t("Kode salah. Coba lagi."));
+            else if (c === "OTP_EXPIRED") showErr(window.t("Kode sudah kadaluarsa. Kirim ulang."));
+            else if (c === "OTP_TOO_MANY_ATTEMPTS") showErr(window.t("Terlalu banyak percobaan. Kirim OTP baru."));
+            else showErr(window.t("Verifikasi gagal. Coba lagi."));
             return;
           }
           const token = json.data?.sessionToken;
           if (token) {
             localStorage.setItem("kongsian_session", token);
-            showInfo("Berhasil! Mengecek status verifikasi…");
+            showInfo(window.t("Berhasil! Mengecek status verifikasi…"));
             setTimeout(async () => {
               // P0 #3: gate on verification status. The API now returns 403 for
               // PENDING_VERIFICATION/REJECTED — we treat that as "blocked".
@@ -403,12 +403,12 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
               }
             }, 400);
           } else {
-            showErr("Tidak ada session token. Coba lagi.");
+            showErr(window.t("Tidak ada session token. Coba lagi."));
           }
         } catch (e) {
-          showErr("Tidak bisa konek ke server. Coba lagi.");
+          showErr(window.t("Tidak bisa konek ke server. Coba lagi."));
         } finally {
-          btn.disabled = false; btn.textContent = "Verifikasi";
+          btn.disabled = false; btn.textContent = window.t("Verifikasi");
         }
       });
 
@@ -418,11 +418,11 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
         hideMsg();
         const phone = lastPhone || (countrySelect.value + phoneInput.value.replace(/[^\d]/g, "").replace(/^0/, ""));
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-          showErr("Nomor tidak valid. Balik ke step 1 dan masukin lagi.");
+          showErr(window.t("Nomor tidak valid. Balik ke step 1 dan masukin lagi."));
           return;
         }
         const ok = await sendOtp(phone, null);
-        if (ok) showInfo("OTP baru dikirim. Cek WhatsApp kamu.");
+        if (ok) showInfo(window.t("OTP baru dikirim. Cek WhatsApp kamu."));
       });
     </script>
   </body>

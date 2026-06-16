@@ -353,7 +353,7 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
       async function sendOtp(phone, btn) {
         if (isSending) return false;
         isSending = true;
-        if (btn) { btn.disabled = true; btn.textContent = "Mengirim…"; }
+        if (btn) { btn.disabled = true; btn.textContent = window.t("Mengirim…"); }
         try {
           const res = await fetch(`${API}/v1/auth/otp/request`, {
             method: "POST",
@@ -363,8 +363,8 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
             const code = json?.error?.code;
-            if (code === "OTP_RATE_LIMITED") showErr("Kebanyakan percobaan. Coba lagi ~1 jam.");
-            else showErr("Gagal kirim OTP. Coba lagi.");
+            if (code === "OTP_RATE_LIMITED") showErr(window.t("Kebanyakan percobaan. Coba lagi ~1 jam."));
+            else showErr(window.t("Gagal kirim OTP. Coba lagi."));
             return false;
           }
           lastPhone = phone;
@@ -376,18 +376,18 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
             $("#dev-code").textContent = json.data.devCode;
             $("#dev-code").style.display = "block";
             $("#code").value = json.data.devCode;
-            showInfo("Dev mode: kode OTP sudah diisi otomatis. Pilih peran lalu klik daftar.");
+            showInfo(window.t("Dev mode: kode OTP sudah diisi otomatis. Pilih peran lalu klik daftar."));
           } else {
-            showInfo("OTP dikirim. Cek WhatsApp kamu.");
+            showInfo(window.t("OTP dikirim. Cek WhatsApp kamu."));
           }
           recheckVerify();
           return true;
         } catch (e) {
-          showErr("Tidak bisa konek ke server. Coba lagi.");
+          showErr(window.t("Tidak bisa konek ke server. Coba lagi."));
           return false;
         } finally {
           isSending = false;
-          if (btn) { btn.disabled = false; btn.textContent = "Kirim OTP via WhatsApp"; }
+          if (btn) { btn.disabled = false; btn.textContent = window.t("Kirim OTP via WhatsApp"); }
         }
       }
 
@@ -401,7 +401,7 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
         
         const phone = countrySelect.value + core;
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-          showErr("Nomor HP tidak valid. Silakan masukkan nomor yang benar.");
+          showErr(window.t("Nomor HP tidak valid. Silakan masukkan nomor yang benar."));
           return;
         }
         await sendOtp(phone, $("#send-btn"));
@@ -415,10 +415,10 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
         if (codeEl) codeEl.value = codeEl.value.replace(/\D/g, "").slice(0, 6);
         const code = codeEl.value.trim();
         const name = $("#name").value.trim();
-        if (!/^\d{6}$/.test(code)) { showErr("Kode harus 6 digit angka."); return; }
-        if (name.length < 2) { showErr("Nama minimal 2 karakter."); return; }
-        if (!chosenRole) { showErr("Pilih peran: Brand atau Cafe."); return; }
-        const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = "Memverifikasi…";
+        if (!/^\d{6}$/.test(code)) { showErr(window.t("Kode harus 6 digit angka.")); return; }
+        if (name.length < 2) { showErr(window.t("Nama minimal 2 karakter.")); return; }
+        if (!chosenRole) { showErr(window.t("Pilih peran: Brand atau Cafe.")); return; }
+        const btn = $("#verify-btn"); btn.disabled = true; btn.textContent = window.t("Memverifikasi…");
         try {
           const res = await fetch(`${API}/v1/auth/otp/verify`, {
             method: "POST",
@@ -428,11 +428,11 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
             const c = json?.error?.code;
-            if (c === "OTP_INVALID") showErr("Kode salah. Coba lagi.");
-            else if (c === "OTP_EXPIRED") showErr("Kode sudah kadaluarsa. Kirim ulang.");
-            else if (c === "OTP_TOO_MANY_ATTEMPTS") showErr("Terlalu banyak percobaan. Kirim OTP baru.");
-            else if (c === "REGISTRATION_REQUIRED") showErr("Nama + peran wajib untuk pendaftaran pertama.");
-            else showErr("Verifikasi gagal. Coba lagi.");
+            if (c === "OTP_INVALID") showErr(window.t("Kode salah. Coba lagi."));
+            else if (c === "OTP_EXPIRED") showErr(window.t("Kode sudah kadaluarsa. Kirim ulang."));
+            else if (c === "OTP_TOO_MANY_ATTEMPTS") showErr(window.t("Terlalu banyak percobaan. Kirim OTP baru."));
+            else if (c === "REGISTRATION_REQUIRED") showErr(window.t("Nama + peran wajib untuk pendaftaran pertama."));
+            else showErr(window.t("Verifikasi gagal. Coba lagi."));
             return;
           }
           const token = json.data?.sessionToken;
@@ -445,7 +445,7 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
               const r = await fetch(`${API}/v1/brands/me`, { headers: { Authorization: `Bearer ${token}` } });
               const j = await r.json().catch(() => ({}));
               if (r.status === 403 && j?.error?.code === "VERIFICATION_PENDING") {
-                showVerificationBlock(j.error.message || "Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.");
+                showVerificationBlock(window.t(j.error.message || "Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam."));
                 return;
               }
             } catch {}
@@ -453,21 +453,21 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
             const vs = user?.verificationStatus;
             const role = chosenRole; // BRAND | TENANT — chosen at registration
             if (vs === "PENDING_VERIFICATION" || vs === "REJECTED") {
-              showVerificationBlock("Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam.");
+              showVerificationBlock(window.t("Akun kamu belum diverifikasi admin. Tunggu max 1x24 jam."));
             } else {
-              showInfo("Berhasil! Mengarahkan ke dashboard…");
+              showInfo(window.t("Berhasil! Mengarahkan ke dashboard…"));
               setTimeout(() => {
                 window.location.href = role === "BRAND" ? "/dashboard/brand" : "/dashboard/tenant";
               }, 400);
             }
           } else {
-            showErr("Tidak ada session token. Coba lagi.");
+            showErr(window.t("Tidak ada session token. Coba lagi."));
           }
         } catch (e) {
-          showErr("Tidak bisa konek ke server. Coba lagi.");
+          showErr(window.t("Tidak bisa konek ke server. Coba lagi."));
         } finally {
           recheckVerify();
-          btn.textContent = "Verifikasi & daftar";
+          btn.textContent = window.t("Verifikasi & daftar");
         }
       });
 
@@ -477,11 +477,11 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
         hideMsg();
         const phone = lastPhone || (countrySelect.value + phoneInput.value.replace(/[^\d]/g, "").replace(/^0/, ""));
         if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-          showErr("Nomor tidak valid. Balik ke step 1 dan masukin lagi.");
+          showErr(window.t("Nomor tidak valid. Balik ke step 1 dan masukin lagi."));
           return;
         }
         const ok = await sendOtp(phone, null);
-        if (ok) showInfo("OTP baru dikirim. Cek WhatsApp kamu.");
+        if (ok) showInfo(window.t("OTP baru dikirim. Cek WhatsApp kamu."));
       });
     </script>
   </body>
