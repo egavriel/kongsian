@@ -90,7 +90,7 @@ const title = `Dispute — ${APP_NAME}`;
 
       async function load() {
         const r = await jget(`/v1/disputes/${id}`);
-        if (!r.ok) { showErr(r.error?.code || "Gagal memuat dispute."); return; }
+        if (!r.ok) { showErr(r.error?.code || window.t("Gagal memuat dispute.")); return; }
         dispute = r.data.dispute;
         callerRole = r.data.callerRole;
         render();
@@ -152,21 +152,21 @@ const title = `Dispute — ${APP_NAME}`;
         const pm = document.getElementById("post-msg");
         if (pm) pm.addEventListener("click", async () => {
           const body = document.getElementById("msg-body").value.trim();
-          if (!body) { showErr("Pesan kosong."); return; }
+          if (!body) { showErr(window.t("Pesan kosong.")); return; }
           const r = await jpost(`/v1/disputes/${id}/messages`, { body });
-          if (!r.ok) { showErr(r.error?.code || "Gagal kirim pesan."); return; }
-          showOk("Pesan terkirim ✓");
+          if (!r.ok) { showErr(r.error?.code || window.t("Gagal kirim pesan.")); return; }
+          showOk(window.t("Pesan terkirim ✓"));
           document.getElementById("msg-body").value = "";
           await load();
         });
         const rb = document.getElementById("resolve-btn");
         if (rb) rb.addEventListener("click", async () => {
           const resolution = document.getElementById("res-text").value.trim();
-          if (!resolution) { showErr("Tulis resolusi dulu."); return; }
-          if (!confirm("Tandai dispute ini resolved?")) return;
+          if (!resolution) { showErr(window.t("Tulis resolusi dulu.")); return; }
+          if (!confirm(window.t("Tandai dispute ini resolved?"))) return;
           const r = await jpost(`/v1/disputes/${id}/resolve`, { resolution });
-          if (!r.ok) { showErr(r.error?.code || "Gagal resolve."); return; }
-          showOk("Dispute resolved ✓");
+          if (!r.ok) { showErr(r.error?.code || window.t("Gagal resolve.")); return; }
+          showOk(window.t("Dispute resolved ✓"));
           await load();
         });
       }

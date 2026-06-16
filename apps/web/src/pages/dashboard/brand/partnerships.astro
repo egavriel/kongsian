@@ -6,6 +6,7 @@ const title = `Partnerships — ${APP_NAME}`;
 <!doctype html>
 <html lang="id">
   <head>
+    <script src="/i18n-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -640,13 +641,13 @@ const title = `Partnerships — ${APP_NAME}`;
             const id = btn.dataset.id;
             if (btn.dataset.act === "activate") {
               const r = await jpost(`/v1/partnerships/${id}/activate`, {});
-              if (!r.ok) showErr("Gagal aktifkan: " + (r.error?.code || "?"));
-              else { showOk("Partnership diaktifkan."); load(); }
+              if (!r.ok) showErr(window.t("gagal aktifkan: ") + (r.error?.code || "?"));
+              else { showOk(window.t("partnership diaktifkan.")); load(); }
             } else if (btn.dataset.act === "suspend") {
-              if (!confirm("Suspend partnership ini?")) return;
+              if (!confirm(window.t("suspend partnership ini?"))) return;
               const r = await jpost(`/v1/partnerships/${id}/suspend`, {});
-              if (!r.ok) showErr("Gagal suspend: " + (r.error?.code || "?"));
-              else { showOk("Partnership disuspend."); load(); }
+              if (!r.ok) showErr(window.t("gagal suspend: ") + (r.error?.code || "?"));
+              else { showOk(window.t("partnership disuspend.")); load(); }
             } else if (btn.dataset.act === "edit") {
               const brandVal = Math.round(Number(btn.dataset.splitBrand) / 100);
               const tenantVal = Math.round(Number(btn.dataset.splitTenant) / 100);
@@ -700,7 +701,7 @@ const title = `Partnerships — ${APP_NAME}`;
         phoneInput.value = core;
         
         const phone = countrySelect.value + core;
-        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr("Nomor HP tidak valid."); return; }
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) { showErr(window.t("nomor hp tidak valid.")); return; }
         
         const address = document.getElementById("address").value.trim();
         const startDay = document.getElementById("start-day").value;
@@ -716,15 +717,15 @@ const title = `Partnerships — ${APP_NAME}`;
         });
         if (!r.ok) {
           const c = r.error?.code;
-          if (c === "INVITE_RATE_LIMITED") showErr("Kebanyakan invite ke nomor itu. Coba ~1 jam.");
-          else showErr("Gagal invite: " + (c || "?"));
+          if (c === "INVITE_RATE_LIMITED") showErr(window.t("Kebanyakan invite ke nomor itu. Coba ~1 jam."));
+          else showErr(window.t("gagal invite: ") + (c || "?"));
           return;
         }
         let extra = "";
         if (r.data?.invite?.devCode) {
           extra = `<div class="dev-code">DEV OTP: ${r.data.invite.devCode}</div>`;
         }
-        showOk(`Invite terkirim ke ${phone}. Tenant: <b>${r.data.tenant.name}</b> (${r.data.isNewTenant ? "baru" : "existing"}). ${extra}`, extra);
+        showOk(window.t("invite terkirim ke") + ` ${phone}. Tenant: <b>${r.data.tenant.name}</b> (${r.data.isNewTenant ? window.t("baru") : window.t("existing")}). ${extra}`, extra);
         document.getElementById("invite-form").reset();
         phoneInput.placeholder = PLACEHOLDERS["+62"]; // Reset to default placeholder
         load();
@@ -743,7 +744,7 @@ const title = `Partnerships — ${APP_NAME}`;
         const splitTenant = Number(document.getElementById("edit-split-tenant").value) * 100;
         if (splitBrand + splitTenant !== 10000) {
           const editErr = document.getElementById("edit-err");
-          editErr.textContent = "Total split harus 100% (contoh: 70% dan 30%).";
+          editErr.textContent = window.t("total split harus 100% (contoh: 70% dan 30%).");
           editErr.style.display = "block";
           return;
         }
@@ -755,11 +756,11 @@ const title = `Partnerships — ${APP_NAME}`;
         });
         if (!r.ok) {
           const editErr = document.getElementById("edit-err");
-          editErr.textContent = "Gagal simpan: " + (r.error?.code || "?");
+          editErr.textContent = window.t("gagal simpan: ") + (r.error?.code || "?");
           editErr.style.display = "block";
         } else {
           document.getElementById("edit-modal").style.display = "none";
-          showOk("Siklus settlement berhasil diupdate.");
+          showOk(window.t("siklus settlement berhasil diupdate."));
           load();
         }
       });

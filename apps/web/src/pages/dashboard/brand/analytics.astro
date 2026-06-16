@@ -25,6 +25,7 @@ const title = `Analytics — ${APP_NAME}`;
 <!doctype html>
 <html lang="id" data-role="brand">
   <head>
+    <script src="/i18n-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -540,7 +541,7 @@ const title = `Analytics — ${APP_NAME}`;
           setTimeout(() => URL.revokeObjectURL(a.href), 5000);
         } catch (err) {
           if (err && err.code === "UNAUTHENTICATED") return;
-          alert("Gagal: " + (err?.message || "Unknown"));
+          alert(window.t("Gagal") + ": " + (err?.message || window.t("Unknown")));
         } finally {
           btn.disabled = false;
           btn.textContent = orig;

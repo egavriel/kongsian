@@ -164,14 +164,14 @@ const title = `Settlement — ${APP_NAME}`;
         const pb = document.getElementById("pdf-btn");
         if (pb) pb.addEventListener("click", async () => {
           pb.disabled = true;
-          pb.textContent = "Membuat PDF…";
+          pb.textContent = window.t("Membuat PDF…");
           try {
             const res = await fetch(API + `/v1/settlements/${id}/pdf`, { headers: authH });
             if (!res.ok) {
               const j = await res.json().catch(() => ({}));
-              showErr(j.error?.code || `Gagal (${res.status})`);
+              showErr(j.error?.code || `${window.t("Gagal")} (${res.status})`);
               pb.disabled = false;
-              pb.textContent = "📄 Download PDF Rekap";
+              pb.textContent = "📄 " + window.t("Download PDF Rekap");
               return;
             }
             const blob = await res.blob();
@@ -185,30 +185,30 @@ const title = `Settlement — ${APP_NAME}`;
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            showOk("PDF diunduh ✓");
+            showOk(window.t("PDF diunduh ✓"));
             pb.disabled = false;
-            pb.textContent = "📄 Download PDF Rekap";
+            pb.textContent = "📄 " + window.t("Download PDF Rekap");
           } catch (e) {
-            showErr("Gagal download: " + (e?.message || e));
+            showErr(window.t("Gagal download: ") + (e?.message || e));
             pb.disabled = false;
-            pb.textContent = "📄 Download PDF Rekap";
+            pb.textContent = "📄 " + window.t("Download PDF Rekap");
           }
         });
         const ab = document.getElementById("approve-btn");
         if (ab) ab.addEventListener("click", async () => {
-          if (!confirm("Approve settlement ini? Tenant akan di-notify.")) return;
+          if (!confirm(window.t("Approve settlement ini? Tenant akan di-notify."))) return;
           const r = await jpost(`/v1/settlements/${id}/approve`, {});
-          if (!r.ok) { showErr(r.error?.code || "Gagal approve."); return; }
-          showOk("Settlement di-approve ✓");
+          if (!r.ok) { showErr(r.error?.code || window.t("Gagal approve.")); return; }
+          showOk(window.t("Settlement di-approve ✓"));
           await load();
         });
-        const pb = document.getElementById("mark-paid-btn");
-        if (pb) pb.addEventListener("click", async () => {
+        const mpb = document.getElementById("mark-paid-btn");
+        if (mpb) mpb.addEventListener("click", async () => {
           const note = document.getElementById("paid-note")?.value?.trim() ?? "";
-          if (!confirm("Tandai settlement sudah dibayar? (Bukti transfer harus sudah di-upload manual via WA)")) return;
+          if (!confirm(window.t("Tandai settlement sudah dibayar? (Bukti transfer harus sudah di-upload manual via WA)"))) return;
           const r = await jpost(`/v1/settlements/${id}/mark-paid`, { note });
-          if (!r.ok) { showErr(r.error?.code || "Gagal mark paid. " + (r.error?.message || "")); return; }
-          showOk("Settlement paid ✓");
+          if (!r.ok) { showErr(r.error?.code || window.t("Gagal mark paid. ") + (r.error?.message || "")); return; }
+          showOk(window.t("Settlement paid ✓"));
           await load();
         });
       }

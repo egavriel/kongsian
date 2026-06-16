@@ -8,6 +8,7 @@ export const ssr = false;
 <!doctype html>
 <html lang="id">
   <head>
+    <script src="/i18n-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -448,12 +449,13 @@ export const ssr = false;
         const savedCount = Object.values(state.stokAwal || {}).filter((v) => (v || 0) > 0).length;
         if (savedCount === 0) return;
         const ok = window.confirm(
-          `Hapus ${savedCount} entri Stok Awal yang tersimpan untuk tanggal ${date}?\n\n` +
-          `Tindakan ini akan mempengaruhi Sisa Sistem. Tidak bisa di-undo (kecuali kamu input ulang).`
+          window.t("hapus stok awal confirm message")
+            .replace("{count}", savedCount)
+            .replace("{date}", date)
         );
         if (!ok) return;
         const btn = document.getElementById("stok-awal-reset");
-        btn.disabled = true; btn.textContent = "Menghapus…";
+        btn.disabled = true; btn.textContent = window.t("Menghapus…");
         try {
           const r = await fetch(API + "/v1/movements", {
             method: "DELETE",

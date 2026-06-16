@@ -6,6 +6,7 @@ const title = `SKU — ${APP_NAME}`;
 <!doctype html>
 <html lang="id">
   <head>
+    <script src="/i18n-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -470,18 +471,18 @@ const title = `SKU — ${APP_NAME}`;
           btn.addEventListener("click", async () => {
             const id = btn.dataset.id;
             if (btn.dataset.act === "del") {
-              if (!confirm(`Hapus SKU "${btn.dataset.name}"?`)) return;
+              if (!confirm(`${window.t("Hapus SKU")} "${btn.dataset.name}"?`)) return;
               const r = await jdel(`/v1/skus/${id}`);
-              if (!r.ok) showErr("Gagal hapus: " + (r.error?.code || "?"));
-              else { showOk("SKU dinonaktifkan."); load(); }
+              if (!r.ok) showErr(window.t("Gagal hapus: ") + (r.error?.code || "?"));
+              else { showOk(window.t("SKU dinonaktifkan.")); load(); }
             } else if (btn.dataset.act === "price") {
-              const v = prompt(`Harga baru untuk SKU (Rp):`, btn.dataset.price);
+              const v = prompt(window.t("Harga baru untuk SKU (Rp):"), btn.dataset.price);
               if (!v) return;
               const n = parseInt(v, 10);
-              if (!n || n < 100) { showErr("Harga tidak valid."); return; }
+              if (!n || n < 100) { showErr(window.t("Harga tidak valid.")); return; }
               const r = await jpatch(`/v1/skus/${id}`, { priceIdr: n });
-              if (!r.ok) showErr("Gagal update: " + (r.error?.code || "?"));
-              else { showOk("Harga diupdate."); load(); }
+              if (!r.ok) showErr(window.t("Gagal update: ") + (r.error?.code || "?"));
+              else { showOk(window.t("Harga diupdate.")); load(); }
             }
           });
         });
@@ -494,11 +495,11 @@ const title = `SKU — ${APP_NAME}`;
         const name = document.getElementById("name").value.trim();
         const price = parseInt(document.getElementById("price").value, 10);
         const shelf = parseInt(document.getElementById("shelf").value, 10);
-        if (!code || !name || !price) { showErr("Kode, nama, harga wajib."); return; }
+        if (!code || !name || !price) { showErr(window.t("Kode, nama, harga wajib.")); return; }
         const me = await jget("/v1/brands/me");
         const r = await jpost("/v1/skus", { brandId: me.data.brandId, code, name, priceIdr: price, masaSimpanHari: shelf });
-        if (!r.ok) { showErr("Gagal: " + (r.error?.code || "?")); return; }
-        showOk(r.data?.alreadyExists ? "SKU sudah ada." : "SKU ditambah.");
+        if (!r.ok) { showErr(window.t("Gagal: ") + (r.error?.code || "?")); return; }
+        showOk(r.data?.alreadyExists ? window.t("SKU sudah ada.") : window.t("SKU ditambah."));
         document.getElementById("add-form").reset();
         document.getElementById("shelf").value = "7";
         load();
