@@ -14,38 +14,242 @@ const title = `Movements — ${APP_NAME}`;
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
-      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; }
-      a { color:#38bdf8; text-decoration:none; }
-      .shell { max-width:480px; margin:0 auto; padding:0 0 80px; }
-      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
-      .back { color:#94a3b8; font-size:14px; }
-      h1 { font-size:20px; margin:0; }
-      main { padding:20px; }
-      .filter { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-      .filter button { background:#0f172a; border:1px solid #1e293b; color:#f1f5f9; padding:6px 12px; border-radius:999px; cursor:pointer; font-size:13px; }
-      .filter button.active { background:#fbbf24; color:#0b1220; border-color:#fbbf24; }
-      .partner-pick { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
-      .partner-pick button { background:#0f172a; border:1px solid #1e293b; color:#f1f5f9; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:12px; }
-      .partner-pick button.active { border-color:#fbbf24; }
-      .new-btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
-      .new-btns a { background:#0f172a; border:1px solid #1e293b; color:#f1f5f9; border-radius:10px; padding:12px; text-align:center; font-size:14px; font-weight:600; }
-      .new-btns a:hover { border-color:#fbbf24; text-decoration:none; }
-      .list { display:flex; flex-direction:column; gap:8px; }
-      .mv { background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; align-items:center; gap:12px; }
-      .kind { font-size:11px; padding:3px 8px; border-radius:6px; font-weight:700; letter-spacing:0.04em; min-width:64px; text-align:center; }
-      .kind.TITIP { background:rgba(52,211,153,.15); color:#34d399; }
-      .kind.TARIK { background:rgba(251,113,133,.15); color:#fb7185; }
-      .kind.TERJUAL_OPENING, .kind.TERJUAL_CORRECTION { background:rgba(251,191,36,.15); color:#fbbf24; }
-      .kind.ADJUSTMENT { background:rgba(56,189,248,.15); color:#38bdf8; }
-      .info { flex:1; }
-      .info .sku { font-weight:600; }
-      .info .meta { font-size:12px; color:#94a3b8; }
-      .qty { font-weight:700; font-size:18px; min-width:50px; text-align:right; }
-      .qty.pos { color:#34d399; }
-      .qty.neg { color:#fb7185; }
-      .thumb { width:48px; height:48px; border-radius:8px; background:#1e293b; overflow:hidden; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:20px; }
-      .thumb img { width:100%; height:100%; object-fit:cover; }
-      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
+      body {
+        margin: 0;
+        background: #090d16;
+        color: #f1f5f9;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: #38bdf8; text-decoration: none; }
+      .shell { max-width: 520px; margin: 0 auto; padding: 0 0 80px; }
+      
+      header.top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 2px solid #1e293b;
+        position: sticky;
+        top: 0;
+        background: rgba(9, 13, 22, 0.95);
+        backdrop-filter: blur(8px);
+        z-index: 5;
+      }
+      .back {
+        color: #94a3b8;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: color 0.15s ease;
+      }
+      .back:hover { color: #fbbf24; }
+      h1 { font-size: 18px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
+      main { padding: 20px; }
+
+      /* Action Buttons */
+      .new-btns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .new-btn {
+        background: #0f172a;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        border-radius: 14px;
+        padding: 14px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 800;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 3px 3px 0px 0px #020617;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        cursor: pointer;
+      }
+      .new-btn:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 5px 5px 0px 0px #020617;
+        text-decoration: none;
+      }
+      .new-btn.btn-titip:hover {
+        border-color: #34d399;
+        color: #34d399;
+      }
+      .new-btn.btn-tarik:hover {
+        border-color: #fb7185;
+        color: #fb7185;
+      }
+      .new-btn .btn-icon {
+        font-size: 20px;
+      }
+
+      /* Partner Selection Row */
+      .partner-label {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .partner-pick {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+      }
+      .partner-pick::-webkit-scrollbar { display: none; }
+      .partner-pick button {
+        background: #0f172a;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        padding: 8px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: 2px 2px 0px 0px #020617;
+        transition: all 0.15s ease;
+      }
+      .partner-pick button:hover {
+        border-color: #fbbf24;
+      }
+      .partner-pick button.active {
+        background: #fbbf24;
+        color: #0b1220;
+        border-color: #0b1220;
+        box-shadow: 3px 3px 0px 0px #020617;
+        transform: translate(-1px, -1px);
+      }
+
+      /* Filter Toggle pills */
+      .filter {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+      }
+      .filter::-webkit-scrollbar { display: none; }
+      .filter button {
+        background: #0f172a;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        padding: 6px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        box-shadow: 2px 2px 0px 0px #020617;
+        transition: all 0.15s ease;
+      }
+      .filter button:hover {
+        border-color: #fbbf24;
+      }
+      .filter button.active {
+        background: #fbbf24;
+        color: #0b1220;
+        border-color: #0b1220;
+        box-shadow: 0 0 0 0 transparent;
+        transform: translate(1px, 1px);
+      }
+
+      /* Movements List and Row Card */
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .mv {
+        background: #0f172a;
+        border: 2px solid #1e293b;
+        border-radius: 16px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 3px 3px 0px 0px #020617;
+        transition: all 0.2s ease;
+      }
+      .mv:hover {
+        border-color: #fbbf24;
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #020617;
+      }
+      .kind {
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        min-width: 80px;
+        text-align: center;
+        border: 1px solid transparent;
+      }
+      .kind.TITIP { background: rgba(52, 211, 153, 0.08); color: #34d399; border-color: rgba(52, 211, 153, 0.2); }
+      .kind.TARIK { background: rgba(251, 113, 133, 0.08); color: #fb7185; border-color: rgba(251, 113, 133, 0.2); }
+      .kind.TERJUAL_OPENING, .kind.TERJUAL_CORRECTION { background: rgba(251, 191, 36, 0.08); color: #fbbf24; border-color: rgba(251, 191, 36, 0.2); }
+      .kind.ADJUSTMENT { background: rgba(56, 189, 248, 0.08); color: #38bdf8; border-color: rgba(56, 189, 248, 0.2); }
+      
+      .info { flex: 1; min-width: 0; }
+      .info .sku { font-weight: 700; font-size: 14px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .info .meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+      
+      .qty {
+        font-weight: 800;
+        font-size: 18px;
+        min-width: 56px;
+        text-align: right;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      .qty.pos { color: #34d399; }
+      .qty.neg { color: #fb7185; }
+
+      .thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #1e293b;
+        border: 2px solid #1e293b;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 18px;
+        box-shadow: 2px 2px 0px 0px #020617;
+        flex-shrink: 0;
+      }
+      .thumb img { width: 100%; height: 100%; object-fit: cover; }
+      
+      .empty {
+        background: #0f172a;
+        border: 2px dashed #1e293b;
+        border-radius: 16px;
+        padding: 32px 24px;
+        text-align: center;
+        color: #94a3b8;
+        font-weight: 600;
+      }
+      .empty a {
+        color: #fbbf24;
+        text-decoration: underline;
+        font-weight: 700;
+      }
     </style>
   </head>
   <body>
@@ -57,22 +261,32 @@ const title = `Movements — ${APP_NAME}`;
       </header>
       <main>
         <div class="new-btns">
-          <a href="/dashboard/brand/movements/new-titip">+ Titip</a>
-          <a href="/dashboard/brand/movements/new-tarik">+ Tarik</a>
+          <a href="/dashboard/brand/movements/new-titip" class="new-btn btn-titip">
+            <span class="btn-icon">📦</span>
+            <span class="btn-text">Kirim Titipan Stok</span>
+          </a>
+          <a href="/dashboard/brand/movements/new-tarik" class="new-btn btn-tarik">
+            <span class="btn-icon">↩️</span>
+            <span class="btn-text">Tarik Sisa Stok</span>
+          </a>
         </div>
 
+        <span class="partner-label">Pilih Partner Cafe</span>
         <div id="partner-pick" class="partner-pick"></div>
+        
         <div class="filter">
           <button data-filter="ALL" class="active">Semua</button>
           <button data-filter="TITIP">Titip</button>
           <button data-filter="TARIK">Tarik</button>
           <button data-filter="TERJUAL">Terjual</button>
         </div>
+        
         <div class="list" id="list">
           <div class="empty">Memuat…</div>
         </div>
       </main>
     </div>
+
     <script define:vars={{ API_BASE_URL }}>
       const API = API_BASE_URL.replace(/\/$/, "");
       const tok = localStorage.getItem("kongsian_session");
@@ -84,12 +298,16 @@ const title = `Movements — ${APP_NAME}`;
       const pickEl = document.getElementById("partner-pick");
       const listEl = document.getElementById("list");
 
+      function getLocale() {
+        return localStorage.getItem("kongsian_lang") === "id" ? "id-ID" : "en-US";
+      }
+
       function fmtDate(s) {
         const d = new Date(s);
-        return new Intl.DateTimeFormat("id-ID", { weekday:"short", day:"2-digit", month:"short" }).format(d);
+        return new Intl.DateTimeFormat(getLocale(), { weekday:"short", day:"2-digit", month:"short" }).format(d);
       }
       function fmtDateTime(unix) {
-        return new Date(unix * 1000).toLocaleString("id-ID", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+        return new Date(unix * 1000).toLocaleString(getLocale(), { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
       }
 
       function applyFilter() {
@@ -129,9 +347,10 @@ const title = `Movements — ${APP_NAME}`;
           const foto = m.fotoR2Key
             ? `<div class="thumb" title="ada foto"><img src="https://${(m.fotoR2Key.startsWith('http')?m.fotoR2Key: '')}" alt="foto" onerror="this.parentElement.textContent='📷'"/></div>`
             : `<div class="thumb">📦</div>`;
+          const kindKey = m.kind.replace("TERJUAL_","").toLowerCase();
           return `
             <div class="mv">
-              <span class="kind ${m.kind}">${m.kind.replace("TERJUAL_","")}</span>
+              <span class="kind ${m.kind}"><span>${kindKey}</span></span>
               <div class="info">
                 <div class="sku">${sku ? sku.code + " · " + sku.name : "(?)"}</div>
                 <div class="meta">${fmtDate(m.movementDate)} · ${fmtDateTime(m.submittedAt)}</div>
@@ -158,7 +377,7 @@ const title = `Movements — ${APP_NAME}`;
         state.partnerships = b.data.partnerships || [];
         state.skus = b.data.skus || [];
         if (state.partnerships.length === 0) {
-          listEl.innerHTML = `<div class="empty">Belum ada partnership. <a href="/dashboard/brand/partnerships">Invite partner dulu</a>.</div>`;
+          listEl.innerHTML = `<div class="empty"><span>belum ada partnership.</span> <a href="/dashboard/brand/partnerships"><span>undang partner dulu</span></a>.</div>`;
           return;
         }
         pickEl.innerHTML = state.partnerships.map(p => `
