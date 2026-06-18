@@ -1054,14 +1054,19 @@ const title = `Settlements — ${APP_NAME}`;
               logging: false
             }).then(canvas => {
               reportEl.classList.remove("export-active");
-              const imgData = canvas.toDataURL("image/png");
+              // Use JPEG with 90% quality to compress the file size to 1-2mb
+              const imgData = canvas.toDataURL("image/jpeg", 0.90);
               const { jsPDF } = window.jspdf;
               
-              const pdf = new jsPDF("p", "mm", "a4");
-              const imgWidth = 210 - 20; // 10mm margins
-              const imgHeight = (canvas.height * imgWidth) / canvas.width;
+              // Size the PDF pages dynamically to match the canvas aspect ratio
+              // with zero margins, eliminating any default white background/borders.
+              const pdf = new jsPDF({
+                orientation: canvas.width > canvas.height ? "l" : "p",
+                unit: "pt",
+                format: [canvas.width, canvas.height]
+              });
               
-              pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+              pdf.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height, undefined, "FAST");
               pdf.save(`settlement_${tenantName.replace(/\s+/g, "_")}_${startStr}_to_${endStr}.pdf`);
               
               pdfBtn.innerHTML = originalText;
