@@ -245,11 +245,13 @@ const title = `Settlements — ${APP_NAME}`;
       }
       .breakdown-name {
         color: #cbd5e1;
-        font-size: 10px;
+        font-size: 8px;
         text-transform: uppercase;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.01em;
         text-align: left;
-        padding-right: 8px;
+        padding-right: 6px;
+        line-height: 1.2;
+        word-break: break-word;
       }
       .breakdown-qty {
         font-family: monospace;
@@ -257,6 +259,7 @@ const title = `Settlements — ${APP_NAME}`;
         font-weight: 800;
         text-align: right;
         white-space: nowrap;
+        font-size: 9px;
       }
 
       /* Hide daily breakdown details during PDF/PNG exports */
@@ -902,12 +905,12 @@ const title = `Settlements — ${APP_NAME}`;
               <div class="report-header">
                 <div class="report-brand-row">
                   <div class="report-brand-name">${brandName}</div>
-                  <div class="report-badge">Preview</div>
+                  <div class="report-badge no-export">Preview</div>
                 </div>
                 <div class="report-meta">
                   <div class="report-meta-row"><span class="icon">☕</span> Partner: <strong>${tenantName}</strong></div>
                   <div class="report-meta-row"><span class="icon">📅</span> Periode: <strong>${periodLabel}</strong></div>
-                  <div class="report-meta-row"><span class="icon">💰</span> Split: <strong>Brand ${splitBrandPct}% | Cafe ${splitTenantPct}%</strong></div>
+                  <div class="report-meta-row"><span class="icon">💰</span> Split: <strong>Brand ${splitBrandPct}% | Partner ${splitTenantPct}%</strong></div>
                 </div>
               </div>
 
@@ -929,9 +932,9 @@ const title = `Settlements — ${APP_NAME}`;
                   <div class="sub">brand portion</div>
                 </div>
                 <div class="summary-stat">
-                  <div class="lbl">🏪 Share Cafe (${splitTenantPct}%)</div>
+                  <div class="lbl">🏪 Share Partner (${splitTenantPct}%)</div>
                   <div class="val sky">${fmtRp(tenantShare)}</div>
-                  <div class="sub">cafe portion</div>
+                  <div class="sub">partner portion</div>
                 </div>
               </div>
 
@@ -974,7 +977,7 @@ const title = `Settlements — ${APP_NAME}`;
           `🏪 Brand: ${brandName}`,
           `☕ Partner: ${tenantName}`,
           `📅 Periode: ${periodLabel}`,
-          `💰 Split: Brand ${splitBrandPct}% | Cafe ${splitTenantPct}%`,
+          `💰 Split: Brand ${splitBrandPct}% | Partner ${splitTenantPct}%`,
           ``,
           `━━━ RINCIAN PENJUALAN ━━━`,
           dailyText,
@@ -984,7 +987,7 @@ const title = `Settlements — ${APP_NAME}`;
           `📦 Total Item: ${totalQty} cup`,
           ...(breakdownText ? [breakdownText.trimEnd()] : []),
           `👑 Share Brand (${splitBrandPct}%): ${fmtRp(brandShare)}`,
-          `🏪 Share Cafe (${splitTenantPct}%): ${fmtRp(tenantShare)}`,
+          `🏪 Share Partner (${splitTenantPct}%): ${fmtRp(tenantShare)}`,
           ``,
           `💸 TAGIHAN KE PARTNER: ${fmtRp(brandShare)}`,
           `💳 REKENING PEMBAYARAN (BCA): 719 531 6091`,
