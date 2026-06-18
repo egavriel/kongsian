@@ -236,6 +236,8 @@ const title = `Settlements — ${APP_NAME}`;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
       }
       .tagihan-label {
         font-size: 11px;
@@ -244,10 +246,49 @@ const title = `Settlements — ${APP_NAME}`;
         text-transform: uppercase;
         letter-spacing: 0.06em;
       }
-      .tagihan-amount {
-        font-size: 22px;
-        font-weight: 900;
+      .payment-details {
+        display: grid;
+        grid-template-columns: auto auto auto;
+        gap: 6px 0;
+        align-items: center;
+      }
+      .payment-row {
+        display: contents;
+      }
+      .payment-lbl {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        text-align: right;
+      }
+      .payment-colon {
+        color: #475569;
+        margin: 0 8px;
+        font-weight: 800;
+        text-align: center;
+      }
+      .payment-val {
         color: #fbbf24;
+        font-size: 13px;
+        font-weight: 800;
+        text-align: left;
+      }
+
+      @media (max-width: 480px) {
+        .tagihan-box {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .payment-details {
+          width: 100%;
+          justify-content: start;
+        }
+        .payment-lbl {
+          text-align: left;
+        }
       }
 
       /* Daily Breakdown */
@@ -828,8 +869,19 @@ const title = `Settlements — ${APP_NAME}`;
               </div>
 
               <div class="tagihan-box">
-                <div class="tagihan-label">💸 Tagihan ke Partner</div>
-                <div class="tagihan-amount">${fmtRp(brandShare)}</div>
+                <div class="tagihan-label">💳 Payment Account</div>
+                <div class="payment-details">
+                  <div class="payment-row">
+                    <span class="payment-lbl">Account Name</span>
+                    <span class="payment-colon">:</span>
+                    <span class="payment-val">HANNIEL KAIROS INDONESIA</span>
+                  </div>
+                  <div class="payment-row">
+                    <span class="payment-lbl">Account No (BCA)</span>
+                    <span class="payment-colon">:</span>
+                    <span class="payment-val">719 531 6091</span>
+                  </div>
+                </div>
               </div>
 
               <div style="border-top: 2px solid #1e293b;">
@@ -867,6 +919,8 @@ const title = `Settlements — ${APP_NAME}`;
           `🏪 Share Cafe (${splitTenantPct}%): ${fmtRp(tenantShare)}`,
           ``,
           `💸 TAGIHAN KE PARTNER: ${fmtRp(brandShare)}`,
+          `💳 REKENING PEMBAYARAN (BCA): 719 531 6091`,
+          `A/N: HANNIEL KAIROS INDONESIA`,
           `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
         ].join("\n");
 
