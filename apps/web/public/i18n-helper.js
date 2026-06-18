@@ -587,7 +587,9 @@
       "items terjual": "items sold",
       "siklus aktif": "Active Cycle",
       "siklus lalu": "Past Cycle",
-      "minggu lalu": "week ago"
+      "minggu lalu": "week ago",
+      "export pdf": "Export PDF",
+      "export png": "Export PNG"
     },
     id: {
       // Settlement Preview Report
@@ -617,6 +619,8 @@
       "siklus aktif": "Siklus Aktif",
       "siklus lalu": "Siklus Lalu",
       "minggu lalu": "Minggu Lalu",
+      "export pdf": "Ekspor PDF",
+      "export png": "Ekspor PNG",
       // Global Header & Shared
       "brand dashboard": "Dashboard Brand",
       "tenant dashboard": "Dashboard Tenant",

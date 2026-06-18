@@ -13,6 +13,8 @@ const title = `Settlements — ${APP_NAME}`;
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" is:inline></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" is:inline></script>
     <style is:global>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
@@ -361,6 +363,18 @@ const title = `Settlements — ${APP_NAME}`;
         border-color: #1da851;
       }
       .btn-wa:hover { background: #22c55e; }
+      .btn-pdf {
+        background: #ef4444;
+        color: #ffffff;
+        border-color: #b91c1c;
+      }
+      .btn-pdf:hover { background: #dc2626; border-color: #ef4444; }
+      .btn-png {
+        background: #3b82f6;
+        color: #ffffff;
+        border-color: #1d4ed8;
+      }
+      .btn-png:hover { background: #2563eb; border-color: #3b82f6; }
 
       /* Existing Settlements List */
       .settle-card {
@@ -777,54 +791,58 @@ const title = `Settlements — ${APP_NAME}`;
 
         reportContainer.innerHTML = `
           <div class="report-card">
-            <div class="report-header">
-              <div class="report-brand-row">
-                <div class="report-brand-name">${brandName}</div>
-                <div class="report-badge">Preview</div>
+            <div id="printable-report" style="background: #0f172a;">
+              <div class="report-header">
+                <div class="report-brand-row">
+                  <div class="report-brand-name">${brandName}</div>
+                  <div class="report-badge">Preview</div>
+                </div>
+                <div class="report-meta">
+                  <div class="report-meta-row"><span class="icon">☕</span> Partner: <strong>${tenantName}</strong></div>
+                  <div class="report-meta-row"><span class="icon">📅</span> Periode: <strong>${periodLabel}</strong></div>
+                  <div class="report-meta-row"><span class="icon">💰</span> Split: <strong>Brand ${splitBrandPct}% | Cafe ${splitTenantPct}%</strong></div>
+                </div>
               </div>
-              <div class="report-meta">
-                <div class="report-meta-row"><span class="icon">☕</span> Partner: <strong>${tenantName}</strong></div>
-                <div class="report-meta-row"><span class="icon">📅</span> Periode: <strong>${periodLabel}</strong></div>
-                <div class="report-meta-row"><span class="icon">💰</span> Split: <strong>Brand ${splitBrandPct}% | Cafe ${splitTenantPct}%</strong></div>
+
+              <div class="summary-grid">
+                <div class="summary-stat">
+                  <div class="lbl">🪙 Total Omzet</div>
+                  <div class="val gold">${fmtRp(totalGross)}</div>
+                  <div class="sub">gross revenue</div>
+                </div>
+                <div class="summary-stat">
+                  <div class="lbl">📦 Total Item</div>
+                  <div class="val">${totalQty} <span style="font-size:12px;color:#64748b">cup</span></div>
+                  <div class="sub">items terjual</div>
+                </div>
+                <div class="summary-stat">
+                  <div class="lbl">👑 Share Brand (${splitBrandPct}%)</div>
+                  <div class="val emerald">${fmtRp(brandShare)}</div>
+                  <div class="sub">brand portion</div>
+                </div>
+                <div class="summary-stat">
+                  <div class="lbl">🏪 Share Cafe (${splitTenantPct}%)</div>
+                  <div class="val sky">${fmtRp(tenantShare)}</div>
+                  <div class="sub">cafe portion</div>
+                </div>
+              </div>
+
+              <div class="tagihan-box">
+                <div class="tagihan-label">💸 Tagihan ke Partner</div>
+                <div class="tagihan-amount">${fmtRp(brandShare)}</div>
+              </div>
+
+              <div style="border-top: 2px solid #1e293b;">
+                <div style="padding:14px 20px 6px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em">📋 Rincian Harian</div>
+                ${dailyHtml}
               </div>
             </div>
 
-            <div class="summary-grid">
-              <div class="summary-stat">
-                <div class="lbl">🪙 Total Omzet</div>
-                <div class="val gold">${fmtRp(totalGross)}</div>
-                <div class="sub">gross revenue</div>
-              </div>
-              <div class="summary-stat">
-                <div class="lbl">📦 Total Item</div>
-                <div class="val">${totalQty} <span style="font-size:12px;color:#64748b">cup</span></div>
-                <div class="sub">items terjual</div>
-              </div>
-              <div class="summary-stat">
-                <div class="lbl">👑 Share Brand (${splitBrandPct}%)</div>
-                <div class="val emerald">${fmtRp(brandShare)}</div>
-                <div class="sub">brand portion</div>
-              </div>
-              <div class="summary-stat">
-                <div class="lbl">🏪 Share Cafe (${splitTenantPct}%)</div>
-                <div class="val sky">${fmtRp(tenantShare)}</div>
-                <div class="sub">cafe portion</div>
-              </div>
-            </div>
-
-            <div class="tagihan-box">
-              <div class="tagihan-label">💸 Tagihan ke Partner</div>
-              <div class="tagihan-amount">${fmtRp(brandShare)}</div>
-            </div>
-
-            <div style="border-top: 2px solid #1e293b;">
-              <div style="padding:14px 20px 6px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em">📋 Rincian Harian</div>
-              ${dailyHtml}
-            </div>
-
-            <div class="action-bar">
+            <div class="action-bar" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <button class="btn btn-copy" id="copy-btn" type="button">📋 Copy Text</button>
               <button class="btn btn-wa" id="wa-btn" type="button">💬 Kirim WA</button>
+              <button class="btn btn-pdf" id="pdf-btn" type="button">📄 Export PDF</button>
+              <button class="btn btn-png" id="png-btn" type="button">🖼️ Export PNG</button>
             </div>
           </div>
         `;
@@ -893,6 +911,78 @@ const title = `Settlements — ${APP_NAME}`;
           waBtn.addEventListener("click", () => {
             const url = `https://wa.me/?text=${encodeURIComponent(window._reportText)}`;
             window.open(url, "_blank");
+          });
+        }
+
+        // Bind PDF export button
+        const pdfBtn = document.getElementById("pdf-btn");
+        if (pdfBtn) {
+          pdfBtn.addEventListener("click", () => {
+            const reportEl = document.getElementById("printable-report");
+            if (!reportEl) return;
+            const originalText = pdfBtn.innerHTML;
+            pdfBtn.textContent = "⌛ Exporting...";
+            pdfBtn.disabled = true;
+
+            html2canvas(reportEl, {
+              backgroundColor: "#0f172a",
+              scale: 2,
+              useCORS: true,
+              logging: false
+            }).then(canvas => {
+              const imgData = canvas.toDataURL("image/png");
+              const { jsPDF } = window.jspdf;
+              
+              const pdf = new jsPDF("p", "mm", "a4");
+              const imgWidth = 210 - 20; // 10mm margins
+              const imgHeight = (canvas.height * imgWidth) / canvas.width;
+              
+              pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+              pdf.save(`settlement_${tenantName.replace(/\s+/g, "_")}_${startStr}_to_${endStr}.pdf`);
+              
+              pdfBtn.innerHTML = originalText;
+              pdfBtn.disabled = false;
+              showToast("PDF report saved ✓");
+            }).catch(err => {
+              console.error(err);
+              pdfBtn.innerHTML = originalText;
+              pdfBtn.disabled = false;
+              showToast("Failed to export PDF");
+            });
+          });
+        }
+
+        // Bind PNG export button
+        const pngBtn = document.getElementById("png-btn");
+        if (pngBtn) {
+          pngBtn.addEventListener("click", () => {
+            const reportEl = document.getElementById("printable-report");
+            if (!reportEl) return;
+            const originalText = pngBtn.innerHTML;
+            pngBtn.textContent = "⌛ Exporting...";
+            pngBtn.disabled = true;
+
+            html2canvas(reportEl, {
+              backgroundColor: "#0f172a",
+              scale: 2,
+              useCORS: true,
+              logging: false
+            }).then(canvas => {
+              const url = canvas.toDataURL("image/png");
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `settlement_${tenantName.replace(/\s+/g, "_")}_${startStr}_to_${endStr}.png`;
+              a.click();
+              
+              pngBtn.innerHTML = originalText;
+              pngBtn.disabled = false;
+              showToast("PNG image saved ✓");
+            }).catch(err => {
+              console.error(err);
+              pngBtn.innerHTML = originalText;
+              pngBtn.disabled = false;
+              showToast("Failed to export PNG");
+            });
           });
         }
       }
