@@ -12,47 +12,488 @@ const title = `Settlements — ${APP_NAME}`;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
-      body { margin:0; background:#0b1220; color:#f1f5f9; font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; }
-      a { color:#38bdf8; text-decoration:none; }
-      .shell { max-width:520px; margin:0 auto; padding:0 0 80px; }
-      header.top { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e293b; position:sticky; top:0; background:rgba(11,18,32,.92); backdrop-filter:blur(6px); z-index:5; }
-      .back { color:#94a3b8; font-size:13px; }
-      h1 { font-size:18px; margin:0; }
-      main { padding:20px; }
-      .err { background:rgba(251,113,133,.12); color:#fb7185; border:1px solid rgba(251,113,133,.3); padding:12px; border-radius:10px; font-size:14px; margin-bottom:12px; }
-      .empty { background:#0f172a; border:1px dashed #1e293b; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; }
-      .loading { color:#94a3b8; text-align:center; padding:24px; }
-      .settle-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; margin-bottom:10px; display:block; color:inherit; }
-      .settle-card:hover { border-color:#fbbf24; text-decoration:none; }
-      .settle-card .head { display:flex; justify-content:space-between; align-items:start; margin-bottom:8px; }
-      .settle-card .week { font-weight:700; }
-      .settle-card .omzet { font-size:18px; color:#fbbf24; font-weight:700; margin-top:4px; }
-      .settle-card .split { display:flex; gap:12px; font-size:12px; color:#94a3b8; margin-top:4px; }
-      .badge { font-size:11px; padding:2px 8px; border-radius:999px; font-weight:700; }
-      .badge.draft { background:rgba(96,165,250,.15); color:#60a5fa; }
-      .badge.pending_brand { background:rgba(251,191,36,.15); color:#fbbf24; }
-      .badge.brand_approved { background:rgba(52,211,153,.15); color:#34d399; }
-      .badge.paid { background:rgba(168,85,247,.15); color:#a855f7; }
-      .badge.disputed { background:rgba(251,113,133,.15); color:#fb7185; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top, #0b1220 0%, #030712 100%);
+        background-attachment: fixed;
+        color: #f1f5f9;
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: #38bdf8; text-decoration: none; transition: color 0.15s ease; }
+      a:hover { color: #7dd3fc; }
+
+      .shell { max-width: 520px; margin: 0 auto; padding: 0 0 100px; }
+
+      header.top {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; border-bottom: 2px solid #1e293b;
+        position: sticky; top: 0; background: rgba(3, 7, 18, 0.85);
+        backdrop-filter: blur(20px); z-index: 50;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      }
+      .brand-name { font-weight: 900; font-size: 16px; color: #f8fafc; letter-spacing: -0.02em; }
+      .role-tag { font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.2); font-weight: 800; letter-spacing: 0.06em; }
+      .back { color: #94a3b8; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+      .back:hover { color: #fbbf24; }
+
+      main { padding: 20px; }
+
+      /* Page Header Panel */
+      .page-header-panel {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+        box-shadow: 4px 4px 0px 0px #020617;
+      }
+      .page-header-layout {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .page-header-icon {
+        font-size: 28px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 2px solid rgba(16, 185, 129, 0.2);
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .page-header-info { flex: 1; }
+      .page-header-title {
+        font-size: 10px;
+        font-weight: 800;
+        color: #10b981;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .page-header-subtitle {
+        font-size: 16px;
+        font-weight: 800;
+        color: #ffffff;
+      }
+
+      /* Neobrutalist RPG Card */
+      .rpg-card {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        box-shadow: 4px 4px 0px 0px #020617;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+
+      .filter-card {
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+
+      label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+      select {
+        background: #090d16;
+        border: 2px solid #1e293b;
+        color: #f1f5f9;
+        padding: 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-family: inherit;
+        font-weight: 700;
+        width: 100%;
+        min-height: 48px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      select:focus {
+        outline: none;
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      }
+
+      /* Section Title */
+      .section-title {
+        font-size: 11px;
+        font-weight: 900;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 28px 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Report Card */
+      .report-card {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        box-shadow: 4px 4px 0px 0px #020617;
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .report-header {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%);
+        border-bottom: 2px solid #1e293b;
+        padding: 20px;
+      }
+      .report-brand-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .report-brand-name {
+        font-size: 20px;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+      }
+      .report-badge {
+        font-size: 9px;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: rgba(251, 191, 36, 0.1);
+        color: #fbbf24;
+        border: 1.5px solid rgba(251, 191, 36, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .report-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .report-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 600;
+      }
+      .report-meta-row .icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+      .report-meta-row strong { color: #e2e8f0; font-weight: 700; }
+
+      /* Summary Stats Grid */
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        border-bottom: 2px solid #1e293b;
+      }
+      .summary-stat {
+        padding: 16px 20px;
+        border-right: 1px solid rgba(30, 41, 59, 0.6);
+        border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+      }
+      .summary-stat:nth-child(2n) { border-right: none; }
+      .summary-stat:nth-child(n+3) { border-bottom: none; }
+      .summary-stat .lbl {
+        font-size: 9px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .summary-stat .val {
+        font-size: 18px;
+        font-weight: 900;
+        color: #ffffff;
+        line-height: 1.25;
+      }
+      .summary-stat .val.gold { color: #fbbf24; }
+      .summary-stat .val.emerald { color: #10b981; }
+      .summary-stat .val.sky { color: #38bdf8; }
+      .summary-stat .sub {
+        font-size: 10px;
+        color: #475569;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      /* Invoice / Tagihan Box */
+      .tagihan-box {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.06) 0%, rgba(245, 158, 11, 0.04) 100%);
+        border-top: 2px solid rgba(251, 191, 36, 0.2);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tagihan-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: #fbbf24;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .tagihan-amount {
+        font-size: 22px;
+        font-weight: 900;
+        color: #fbbf24;
+      }
+
+      /* Daily Breakdown */
+      .daily-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+      }
+      .daily-section:last-child { border-bottom: none; }
+      .daily-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .daily-date {
+        font-size: 13px;
+        font-weight: 800;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .daily-date .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+      }
+      .daily-date .dot.active { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+      .daily-date .dot.empty { background: #334155; }
+      .daily-subtotal {
+        font-size: 13px;
+        font-weight: 800;
+        color: #10b981;
+      }
+      .daily-subtotal.zero { color: #475569; }
+      .daily-items {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding-left: 14px;
+      }
+      .daily-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 600;
+      }
+      .daily-item .name { display: flex; align-items: center; gap: 4px; }
+      .daily-item .qty-badge {
+        font-size: 10px;
+        font-weight: 800;
+        background: rgba(251, 191, 36, 0.1);
+        color: #fbbf24;
+        padding: 1px 5px;
+        border-radius: 4px;
+        min-width: 20px;
+        text-align: center;
+      }
+      .daily-item .price { color: #64748b; font-size: 11px; }
+      .daily-empty {
+        font-size: 12px;
+        color: #475569;
+        font-weight: 600;
+        padding-left: 14px;
+        font-style: italic;
+      }
+
+      /* Action Buttons */
+      .action-bar {
+        display: flex;
+        gap: 8px;
+        padding: 16px 20px;
+        border-top: 2px solid #1e293b;
+      }
+      .btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-weight: 800;
+        border: 2.5px solid #1e293b;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+        box-shadow: 3px 3px 0px 0px #020617;
+      }
+      .btn:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #020617;
+      }
+      .btn:active {
+        transform: translate(1px, 1px);
+        box-shadow: 1px 1px 0px 0px #020617;
+      }
+      .btn-copy {
+        background: #0f172a;
+        color: #f1f5f9;
+        border-color: #334155;
+      }
+      .btn-copy:hover { border-color: #10b981; color: #10b981; }
+      .btn-copy.copied { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.08); }
+      .btn-wa {
+        background: #25d366;
+        color: #ffffff;
+        border-color: #1da851;
+      }
+      .btn-wa:hover { background: #22c55e; }
+
+      /* Existing Settlements List */
+      .settle-card {
+        background: #0f172a;
+        border: 2.5px solid #1e293b;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 12px;
+        display: block;
+        color: inherit;
+        box-shadow: 3px 3px 0px 0px #020617;
+        transition: all 0.2s ease;
+      }
+      .settle-card:hover {
+        border-color: #fbbf24;
+        text-decoration: none;
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #020617;
+      }
+      .settle-card .head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
+      .settle-card .week { font-weight: 800; font-size: 14px; }
+      .settle-card .omzet { font-size: 18px; color: #fbbf24; font-weight: 900; margin-top: 4px; }
+      .settle-card .split { display: flex; gap: 12px; font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+      .badge { font-size: 10px; padding: 4px 10px; border-radius: 999px; font-weight: 800; letter-spacing: 0.06em; }
+      .badge.draft { background: rgba(96, 165, 250, 0.1); color: #60a5fa; border: 1.5px solid rgba(96, 165, 250, 0.15); }
+      .badge.pending_brand { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1.5px solid rgba(251, 191, 36, 0.15); }
+      .badge.brand_approved { background: rgba(52, 211, 153, 0.1); color: #34d399; border: 1.5px solid rgba(52, 211, 153, 0.15); }
+      .badge.paid { background: rgba(168, 85, 247, 0.1); color: #a855f7; border: 1.5px solid rgba(168, 85, 247, 0.15); }
+      .badge.disputed { background: rgba(251, 113, 133, 0.1); color: #fb7185; border: 1.5px solid rgba(251, 113, 133, 0.15); }
+
+      .empty {
+        background: rgba(15, 23, 42, 0.45);
+        border: 2.5px dashed #1e293b;
+        border-radius: 16px;
+        padding: 32px 20px;
+        text-align: center;
+        color: #94a3b8;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .err { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 2px solid rgba(244, 63, 94, 0.2); padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+      .loading { color: #94a3b8; text-align: center; padding: 24px; font-weight: 700; font-size: 13px; }
+
+      /* Toast notification */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #10b981;
+        color: #ffffff;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 13px;
+        z-index: 999;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* Divider */
+      .section-divider {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #1e293b, transparent);
+        margin: 32px 0;
+      }
     </style>
   </head>
   <body>
     <div class="shell">
       <header class="top">
-        <a class="back" href="/dashboard/brand">← Brand</a>
-        <h1>Settlements</h1>
-        <span><NotificationBell /></span>
+        <a class="back" href="/dashboard/brand">← Brand Dashboard</a>
+        <h1 class="brand-name">Settlements</h1>
+        <div style="display:flex;align-items:center;gap:10px">
+          <NotificationBell />
+          <span class="role-tag">SETTLEMENT</span>
+        </div>
       </header>
       <main>
-        <div id="err" class="err" style="display:none"></div>
+        <!-- Page Header -->
+        <div class="page-header-panel">
+          <div class="page-header-layout">
+            <div class="page-header-icon">📊</div>
+            <div class="page-header-info">
+              <div class="page-header-title">Weekly Settlement</div>
+              <div class="page-header-subtitle">Laporan & Tagihan Mingguan</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="rpg-card filter-card">
+          <div id="err" class="err" style="display:none"></div>
+
+          <label>
+            <span>Pilih Partner Cafe</span>
+            <select id="partner-filter">
+              <option value="">Memuat partner…</option>
+            </select>
+          </label>
+
+          <label style="margin-bottom:0;">
+            <span>Pilih Siklus Mingguan</span>
+            <select id="cycle-filter" disabled>
+              <option value="">Pilih partner terlebih dahulu</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Preview Report -->
+        <div id="preview-section" style="display:none">
+          <h2 class="section-title"><span>📋</span> Preview Laporan Settlement</h2>
+          <div id="report-container"></div>
+        </div>
+
+        <!-- Section Divider -->
+        <div class="section-divider" id="divider" style="display:none"></div>
+
+        <!-- Existing Settlements List -->
+        <h2 class="section-title" id="history-title" style="display:none"><span>📜</span> Riwayat Settlement</h2>
         <div id="list">
           <div class="loading">Memuat…</div>
         </div>
       </main>
     </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
     <script define:vars={{ API_BASE_URL }}>
       window.__KONGSIAN_API__ = API_BASE_URL;
@@ -64,34 +505,430 @@ const title = `Settlements — ${APP_NAME}`;
 
       const errEl = document.getElementById("err");
       const listEl = document.getElementById("list");
-      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; };
+      const partnerFilter = document.getElementById("partner-filter");
+      const cycleFilter = document.getElementById("cycle-filter");
+      const previewSection = document.getElementById("preview-section");
+      const reportContainer = document.getElementById("report-container");
+      const historyTitle = document.getElementById("history-title");
+      const dividerEl = document.getElementById("divider");
+      const toastEl = document.getElementById("toast");
 
-      function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n || 0); }
+      const showErr = (m) => { errEl.textContent = m; errEl.style.display = "block"; };
+      const fmtRp = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n || 0);
+
+      const DAY_MAP = { SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
+      const INDO_DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const INDO_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+      const ENG_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      let brandData = null;
+      let skuMap = {};
+      let brandName = "";
+      let brandId = null;
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        setTimeout(() => toastEl.classList.remove("show"), 2500);
+      }
+
+      function formatDateLocalYMD(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const d = String(dateObj.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function formatDateIndo(dateObj) {
+        const d = dateObj.getDate();
+        const m = INDO_MONTH_NAMES[dateObj.getMonth()];
+        return `${d} ${m}`;
+      }
+
+      function formatDateFullIndo(dateObj) {
+        const dayName = window.t ? window.t(INDO_DAY_NAMES[dateObj.getDay()].toLowerCase()) : INDO_DAY_NAMES[dateObj.getDay()];
+        const d = dateObj.getDate();
+        const m = INDO_MONTH_NAMES[dateObj.getMonth()];
+        return `${dayName}, ${d} ${m}`;
+      }
+
+      function formatDateForReport(dateObj) {
+        const d = dateObj.getDate();
+        const m = INDO_MONTH_NAMES[dateObj.getMonth()];
+        const y = dateObj.getFullYear();
+        return `${d} ${m} ${y}`;
+      }
+
       function fmtDate(s) {
         if (!s) return "—";
-        return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day:"2-digit", month:"short" });
+        return new Date(s + "T00:00:00").toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
       }
+
       function badgeCls(s) { return (s || "").toLowerCase(); }
 
-      const me = await jget("/v1/brands/me");
-      let brandId = me.ok && me.data?.brandId;
-      if (!brandId) { showErr("Brand tidak ditemukan."); listEl.innerHTML = ""; }
+      function calculateCycles(startDayName) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayDay = today.getDay();
+        const startDayInt = DAY_MAP[startDayName] ?? 1;
 
-      async function load() {
-        if (!brandId) return;
-        const r = await jget(`/v1/brands/${brandId}/settlements?limit=50`);
-        if (!r.ok) { showErr(r.error?.code || "Gagal memuat settlements."); listEl.innerHTML = ""; return; }
-        const items = r.data?.settlements || [];
-        if (items.length === 0) {
-          listEl.innerHTML = `<div class="empty">Belum ada settlement. Generator jalan setiap Minggu 23:59 WIB.</div>`;
+        let offset = (todayDay - startDayInt + 7) % 7;
+        const currentStart = new Date(today.getTime() - offset * 24 * 60 * 60 * 1000);
+
+        const cycles = [];
+        for (let i = 0; i < 4; i++) {
+          const cStart = new Date(currentStart.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+          const cEnd = new Date(cStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+          const startStr = formatDateLocalYMD(cStart);
+          const endStr = formatDateLocalYMD(cEnd);
+
+          let label = "";
+          if (i === 0) {
+            label = `${window.t ? window.t("Siklus Aktif") : "Siklus Aktif"} (${formatDateIndo(cStart)} – ${formatDateIndo(cEnd)})`;
+          } else {
+            label = `${window.t ? window.t("Siklus Lalu") : "Siklus Lalu"} – ${i} ${window.t ? window.t("Minggu Lalu") : "Minggu Lalu"} (${formatDateIndo(cStart)} – ${formatDateIndo(cEnd)})`;
+          }
+
+          cycles.push({ value: `${startStr}:${endStr}`, label });
+        }
+        return cycles;
+      }
+
+      // ---- Load Dashboard Data ----
+      async function loadDashboard() {
+        const res = await jget("/v1/ops/brand-dashboard");
+        if (!res.ok || !res.data) {
+          showErr(window.t ? window.t("Gagal memuat data brand. Coba lagi.") : "Gagal memuat data brand.");
           return;
         }
+        brandData = res.data;
+        brandName = brandData.brand?.name || "Brand";
+
+        // Build SKU map
+        (brandData.skus || []).forEach(s => {
+          skuMap[s.id] = s;
+        });
+
+        const activePartnerships = (brandData.partnerships || []).filter(p => p.status === "ACTIVE");
+        if (activePartnerships.length === 0) {
+          partnerFilter.innerHTML = `<option value="">${window.t ? window.t("Belum ada partner aktif") : "Belum ada partner aktif"}</option>`;
+          return;
+        }
+
+        partnerFilter.innerHTML = activePartnerships.map(p => {
+          const startLabel = window.t ? window.t(INDO_DAY_NAMES[DAY_MAP[p.settlementStartDay]].toLowerCase()) : INDO_DAY_NAMES[DAY_MAP[p.settlementStartDay]];
+          const endLabel = window.t ? window.t(INDO_DAY_NAMES[DAY_MAP[p.settlementEndDay]].toLowerCase()) : INDO_DAY_NAMES[DAY_MAP[p.settlementEndDay]];
+          return `<option value="${p.id}" data-start="${p.settlementStartDay}" data-end="${p.settlementEndDay}" data-split-brand="${p.revenueSplitBrandBps}" data-split-tenant="${p.revenueSplitTenantBps}" data-tenant-name="${p.tenant?.name || 'Cafe'}">${p.tenant?.name || 'Cafe'} (${startLabel} – ${endLabel})</option>`;
+        }).join("");
+
+        handlePartnerChange();
+      }
+
+      function handlePartnerChange() {
+        const option = partnerFilter.options[partnerFilter.selectedIndex];
+        if (!option || !option.value) {
+          cycleFilter.innerHTML = `<option value="">${window.t ? window.t("Pilih partner terlebih dahulu") : "Pilih partner terlebih dahulu"}</option>`;
+          cycleFilter.disabled = true;
+          previewSection.style.display = "none";
+          return;
+        }
+
+        const startDay = option.getAttribute("data-start");
+        const cycles = calculateCycles(startDay);
+
+        cycleFilter.innerHTML = cycles.map(c => `<option value="${c.value}">${c.label}</option>`).join("");
+        cycleFilter.disabled = false;
+
+        handleCycleChange();
+      }
+
+      async function handleCycleChange() {
+        const pId = partnerFilter.value;
+        const cycleVal = cycleFilter.value;
+        if (!pId || !cycleVal) {
+          previewSection.style.display = "none";
+          return;
+        }
+
+        const [startStr, endStr] = cycleVal.split(":");
+        previewSection.style.display = "block";
+        reportContainer.innerHTML = `<div class="loading">${window.t ? window.t("Menghitung settlement…") : "Menghitung settlement…"}</div>`;
+
+        // Retrieve splits and partner name
+        const option = partnerFilter.options[partnerFilter.selectedIndex];
+        const splitBrandBps = Number(option.getAttribute("data-split-brand") || 7000);
+        const splitTenantBps = Number(option.getAttribute("data-split-tenant") || 3000);
+        const tenantName = option.getAttribute("data-tenant-name") || "Cafe";
+        const splitBrandPct = (splitBrandBps / 100).toFixed(0);
+        const splitTenantPct = (splitTenantBps / 100).toFixed(0);
+
+        const res = await jget(`/v1/movements?partnershipId=${pId}&from=${startStr}&to=${endStr}`);
+        if (!res.ok || !res.data) {
+          reportContainer.innerHTML = `<div class="empty">${window.t ? window.t("Gagal memuat data penjualan untuk siklus ini.") : "Gagal memuat data penjualan."}</div>`;
+          return;
+        }
+
+        // Process movements (kind = TERJUAL_*)
+        const sales = res.data.filter(m => m.kind === "TERJUAL_OPENING" || m.kind === "TERJUAL_CORRECTION");
+
+        // Group by date, then by SKU
+        const dateSalesMap = {};
+        let totalQty = 0;
+        let totalGross = 0;
+
+        sales.forEach(s => {
+          const qty = Math.abs(s.qty);
+          const date = s.movementDate;
+          const sku = skuMap[s.skuId];
+          const price = sku ? sku.priceIdr : 0;
+          const subtotal = qty * price;
+
+          totalQty += qty;
+          totalGross += subtotal;
+
+          if (!dateSalesMap[date]) {
+            dateSalesMap[date] = { qty: 0, gross: 0, items: {} };
+          }
+          dateSalesMap[date].qty += qty;
+          dateSalesMap[date].gross += subtotal;
+
+          const skuKey = s.skuId;
+          if (!dateSalesMap[date].items[skuKey]) {
+            dateSalesMap[date].items[skuKey] = {
+              name: sku ? sku.name : "Unknown",
+              code: sku ? sku.code : "???",
+              price: price,
+              qty: 0
+            };
+          }
+          dateSalesMap[date].items[skuKey].qty += qty;
+        });
+
+        const brandShare = totalGross * (splitBrandBps / 10000);
+        const tenantShare = totalGross * (splitTenantBps / 10000);
+
+        // Generate 7 days of the cycle
+        const startDate = new Date(startStr + "T00:00:00");
+        const endDate = new Date(endStr + "T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let dailyHtml = "";
+        let dailyText = "";
+
+        for (let i = 0; i < 7; i++) {
+          const dayDate = new Date(startDate);
+          dayDate.setDate(startDate.getDate() + i);
+          const dayStr = formatDateLocalYMD(dayDate);
+          const isFuture = dayDate > today;
+          const daySales = dateSalesMap[dayStr];
+
+          const dayLabel = formatDateFullIndo(dayDate);
+
+          if (daySales && daySales.qty > 0) {
+            const itemsArr = Object.values(daySales.items);
+            const itemsHtml = itemsArr.map(it => `
+              <div class="daily-item">
+                <span class="name">
+                  <span class="qty-badge">${it.qty}×</span>
+                  <span>${it.name}</span>
+                  <span class="price">(${fmtRp(it.price)})</span>
+                </span>
+                <span style="color:#e2e8f0;font-weight:700">= ${fmtRp(it.qty * it.price)}</span>
+              </div>
+            `).join("");
+
+            dailyHtml += `
+              <div class="daily-section">
+                <div class="daily-header">
+                  <span class="daily-date"><span class="dot active"></span> ${dayLabel}</span>
+                  <span class="daily-subtotal">${fmtRp(daySales.gross)}</span>
+                </div>
+                <div class="daily-items">${itemsHtml}</div>
+              </div>
+            `;
+
+            // Text version
+            dailyText += `\n📆 ${dayLabel}\n`;
+            itemsArr.forEach(it => {
+              dailyText += `  • ${it.qty}× ${it.name} (${fmtRp(it.price)}) = ${fmtRp(it.qty * it.price)}\n`;
+            });
+            dailyText += `  Subtotal: ${fmtRp(daySales.gross)}\n`;
+          } else {
+            const status = isFuture ? "Belum Dimulai" : "Kosong";
+            const statusDisplay = window.t ? window.t(status) : status;
+            dailyHtml += `
+              <div class="daily-section">
+                <div class="daily-header">
+                  <span class="daily-date"><span class="dot empty"></span> ${dayLabel}</span>
+                  <span class="daily-subtotal zero">${isFuture ? '—' : 'Rp 0'}</span>
+                </div>
+                <div class="daily-empty">${statusDisplay}</div>
+              </div>
+            `;
+
+            dailyText += `\n📆 ${dayLabel}\n  (${statusDisplay})\n`;
+          }
+        }
+
+        // Build the report card HTML
+        const periodLabel = `${formatDateForReport(startDate)} – ${formatDateForReport(endDate)}`;
+
+        reportContainer.innerHTML = `
+          <div class="report-card">
+            <div class="report-header">
+              <div class="report-brand-row">
+                <div class="report-brand-name">${brandName}</div>
+                <div class="report-badge">Preview</div>
+              </div>
+              <div class="report-meta">
+                <div class="report-meta-row"><span class="icon">☕</span> Partner: <strong>${tenantName}</strong></div>
+                <div class="report-meta-row"><span class="icon">📅</span> Periode: <strong>${periodLabel}</strong></div>
+                <div class="report-meta-row"><span class="icon">💰</span> Split: <strong>Brand ${splitBrandPct}% | Cafe ${splitTenantPct}%</strong></div>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-stat">
+                <div class="lbl">🪙 Total Omzet</div>
+                <div class="val gold">${fmtRp(totalGross)}</div>
+                <div class="sub">gross revenue</div>
+              </div>
+              <div class="summary-stat">
+                <div class="lbl">📦 Total Item</div>
+                <div class="val">${totalQty} <span style="font-size:12px;color:#64748b">cup</span></div>
+                <div class="sub">items terjual</div>
+              </div>
+              <div class="summary-stat">
+                <div class="lbl">👑 Share Brand (${splitBrandPct}%)</div>
+                <div class="val emerald">${fmtRp(brandShare)}</div>
+                <div class="sub">brand portion</div>
+              </div>
+              <div class="summary-stat">
+                <div class="lbl">🏪 Share Cafe (${splitTenantPct}%)</div>
+                <div class="val sky">${fmtRp(tenantShare)}</div>
+                <div class="sub">cafe portion</div>
+              </div>
+            </div>
+
+            <div class="tagihan-box">
+              <div class="tagihan-label">💸 Tagihan ke Partner</div>
+              <div class="tagihan-amount">${fmtRp(brandShare)}</div>
+            </div>
+
+            <div style="border-top: 2px solid #1e293b;">
+              <div style="padding:14px 20px 6px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em">📋 Rincian Harian</div>
+              ${dailyHtml}
+            </div>
+
+            <div class="action-bar">
+              <button class="btn btn-copy" id="copy-btn" type="button">📋 Copy Text</button>
+              <button class="btn btn-wa" id="wa-btn" type="button">💬 Kirim WA</button>
+            </div>
+          </div>
+        `;
+
+        // Build plain text report for clipboard/WA
+        const reportText = [
+          `📊 LAPORAN SETTLEMENT MINGGUAN`,
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+          ``,
+          `🏪 Brand: ${brandName}`,
+          `☕ Partner: ${tenantName}`,
+          `📅 Periode: ${periodLabel}`,
+          `💰 Split: Brand ${splitBrandPct}% | Cafe ${splitTenantPct}%`,
+          ``,
+          `━━━ RINCIAN PENJUALAN ━━━`,
+          dailyText,
+          `━━━ RINGKASAN ━━━`,
+          ``,
+          `💰 Total Omzet: ${fmtRp(totalGross)}`,
+          `📦 Total Item: ${totalQty} cup`,
+          `👑 Share Brand (${splitBrandPct}%): ${fmtRp(brandShare)}`,
+          `🏪 Share Cafe (${splitTenantPct}%): ${fmtRp(tenantShare)}`,
+          ``,
+          `💸 TAGIHAN KE PARTNER: ${fmtRp(brandShare)}`,
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        ].join("\n");
+
+        // Store report text for copy/share
+        window._reportText = reportText;
+
+        // Bind copy button
+        const copyBtn = document.getElementById("copy-btn");
+        if (copyBtn) {
+          copyBtn.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(window._reportText);
+              copyBtn.classList.add("copied");
+              copyBtn.textContent = "✓ Copied!";
+              showToast("Laporan di-copy ke clipboard ✓");
+              setTimeout(() => {
+                copyBtn.classList.remove("copied");
+                copyBtn.textContent = "📋 Copy Text";
+              }, 2000);
+            } catch (e) {
+              // Fallback: textarea copy
+              const ta = document.createElement("textarea");
+              ta.value = window._reportText;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              ta.remove();
+              copyBtn.classList.add("copied");
+              copyBtn.textContent = "✓ Copied!";
+              showToast("Laporan di-copy ke clipboard ✓");
+              setTimeout(() => {
+                copyBtn.classList.remove("copied");
+                copyBtn.textContent = "📋 Copy Text";
+              }, 2000);
+            }
+          });
+        }
+
+        // Bind WA share button
+        const waBtn = document.getElementById("wa-btn");
+        if (waBtn) {
+          waBtn.addEventListener("click", () => {
+            const url = `https://wa.me/?text=${encodeURIComponent(window._reportText)}`;
+            window.open(url, "_blank");
+          });
+        }
+      }
+
+      // ---- Load Existing Settlements ----
+      async function loadSettlements() {
+        const me = await jget("/v1/brands/me");
+        brandId = me.ok && me.data?.brandId;
+        if (!brandId) {
+          listEl.innerHTML = "";
+          return;
+        }
+
+        const r = await jget(`/v1/brands/${brandId}/settlements?limit=50`);
+        if (!r.ok) {
+          listEl.innerHTML = `<div class="empty">${window.t ? window.t("Gagal memuat settlements.") : "Gagal memuat settlements."}</div>`;
+          return;
+        }
+
+        const items = r.data?.settlements || [];
+        if (items.length === 0) {
+          historyTitle.style.display = "none";
+          dividerEl.style.display = "none";
+          listEl.innerHTML = "";
+          return;
+        }
+
+        historyTitle.style.display = "flex";
+        dividerEl.style.display = "block";
+
         listEl.innerHTML = items.map(s => `
           <a class="settle-card" href="/dashboard/brand/settlements/${s.id}">
             <div class="head">
               <div>
                 <div class="week">${fmtDate(s.weekStartDate)} – ${fmtDate(s.weekEndDate)}</div>
-                <div class="meta" style="font-size:12px;color:#94a3b8">${s.totalTerjual} ${window.t("item terjual")}</div>
+                <div style="font-size:12px;color:#94a3b8;font-weight:600;margin-top:2px">${s.totalTerjual} <span>${window.t ? window.t("item terjual") : "item terjual"}</span></div>
               </div>
               <span class="badge ${badgeCls(s.status)}">${s.status}</span>
             </div>
@@ -104,7 +941,13 @@ const title = `Settlements — ${APP_NAME}`;
         `).join("");
       }
 
-      if (brandId) load();
+      // ---- Event Listeners ----
+      partnerFilter.addEventListener("change", handlePartnerChange);
+      cycleFilter.addEventListener("change", handleCycleChange);
+
+      // ---- Init ----
+      loadDashboard();
+      loadSettlements();
     </script>
   </body>
 </html>
