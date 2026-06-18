@@ -22,6 +22,7 @@ export const skus = sqliteTable(
     /** Shelf life in days. Required for Indonesian F&B titipan workflows. */
     masaSimpanHari: integer("masa_simpan_hari").notNull().default(7),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
+    imageB64: text("image_b64"),
     createdAt: integer("created_at")
       .notNull()
       .default(sql`(unixepoch())`),

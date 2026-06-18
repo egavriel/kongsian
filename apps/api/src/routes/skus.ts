@@ -19,6 +19,7 @@ const SkuUpsertSchema = z.object({
   priceIdr: z.number().int().positive().max(1_000_000_000),
   costIdr: z.number().int().nonnegative().optional(),
   masaSimpanHari: z.number().int().min(1).max(365).default(7),
+  imageB64: z.string().optional().nullable(),
 });
 const SkuPatchSchema = SkuUpsertSchema.partial().omit({ brandId: true });
 
@@ -87,7 +88,7 @@ router.post("/", async (c) => {
   if (!parsed.success) {
     return c.json({ ok: false, error: { code: "INVALID_INPUT", issues: parsed.error.flatten() } }, 400);
   }
-  const { brandId, code, name, priceIdr, costIdr, masaSimpanHari } = parsed.data;
+  const { brandId, code, name, priceIdr, costIdr, masaSimpanHari, imageB64 } = parsed.data;
   const owner = await assertBrandOwner(c.env, userId, brandId);
   if (!owner.ok) return c.json({ ok: false, error: { code: owner.error } }, owner.code as 403 | 404);
   const { db, brand } = owner;
@@ -113,6 +114,7 @@ router.post("/", async (c) => {
     costIdr: costIdr ?? null,
     masaSimpanHari,
     active: true,
+    imageB64: imageB64 ?? null,
     createdAt: now,
   });
 
@@ -153,6 +155,7 @@ router.patch("/:id", async (c) => {
   if (parsed.data.priceIdr) updates.priceIdr = parsed.data.priceIdr;
   if (parsed.data.costIdr !== undefined) updates.costIdr = parsed.data.costIdr;
   if (parsed.data.masaSimpanHari) updates.masaSimpanHari = parsed.data.masaSimpanHari;
+  if (parsed.data.imageB64 !== undefined) updates.imageB64 = parsed.data.imageB64;
   if (typeof parsed.data.code === "string" && parsed.data.code !== existing.code) {
     // Code change — ensure uniqueness.
     const [dup] = await db

@@ -329,6 +329,18 @@ const title = `SKU — ${APP_NAME}`;
       
       .err { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 2px solid rgba(244, 63, 94, 0.2); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
       .ok { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 2px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+
+      /* Modals */
+      .modal {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 100; padding: 20px;
+      }
+      .modal-content {
+        width: 100%; max-width: 400px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+      }
     </style>
   </head>
   <body>
@@ -372,6 +384,13 @@ const title = `SKU — ${APP_NAME}`;
               <span class="lbl">Shelf Life (Days)</span>
               <input id="shelf" name="shelf" type="number" min="1" max="365" value="7" required />
             </label>
+            <label>
+              <span class="lbl">Artifact Icon (Optional Upload)</span>
+              <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                <input id="image-input" type="file" accept="image/*" style="flex:1; padding:10px 12px;" />
+                <button type="button" id="remove-image-btn" class="btn btn-danger btn-sm" style="display:none; min-height:48px;">Remove</button>
+              </div>
+            </label>
 
             <!-- Live Preview Widget -->
             <div class="live-preview-container" id="live-preview-box">
@@ -379,6 +398,7 @@ const title = `SKU — ${APP_NAME}`;
               <div class="sku-row preview-card-glow" style="margin: 0;">
                 <div class="sku-main-info">
                   <div class="sku-code" id="preview-code">A</div>
+                  <img id="preview-img" style="display:none; width:44px; height:44px; object-fit:cover; image-rendering:pixelated; border-radius:12px; border:2px solid rgba(251,191,36,0.2); flex-shrink:0;" />
                   <div class="sku-info">
                     <div class="sku-name" id="preview-name">Double Choco</div>
                     <div class="sku-meta">
@@ -402,6 +422,49 @@ const title = `SKU — ${APP_NAME}`;
           <div class="empty">Memuat…</div>
         </div>
       </main>
+    </div>
+
+    <!-- Edit SKU Modal -->
+    <div id="edit-modal" class="modal" style="display:none">
+      <div class="modal-content rpg-card card" style="margin: 0; padding: 20px;">
+        <h2 style="margin:0 0 16px; font-size:16px; color:#fbbf24; font-weight:900; text-transform:uppercase; letter-spacing:0.05em;">Upgrade / Edit SKU</h2>
+        <div id="edit-err" class="err" style="display:none"></div>
+        <form id="edit-form">
+          <input type="hidden" id="edit-id" />
+          <div class="row2">
+            <label>
+              <span class="lbl">Item Code</span>
+              <input id="edit-code" name="code" maxlength="8" required />
+            </label>
+            <label>
+              <span class="lbl">Cost (Rp)</span>
+              <input id="edit-price" name="price" type="number" min="100" step="100" required />
+            </label>
+          </div>
+          <label>
+            <span class="lbl">Artifact Name</span>
+            <input id="edit-name" name="name" maxlength="60" required />
+          </label>
+          <label>
+            <span class="lbl">Shelf Life (Days)</span>
+            <input id="edit-shelf" name="shelf" type="number" min="1" max="365" required />
+          </label>
+          <label>
+            <span class="lbl">Artifact Icon (Optional Upload)</span>
+            <div style="display:flex; align-items:center; gap:12px; width:100%;">
+              <input id="edit-image-input" type="file" accept="image/*" style="flex:1; padding:10px 12px;" />
+              <button type="button" id="edit-remove-image-btn" class="btn btn-danger btn-sm" style="display:none; min-height:48px;">Remove</button>
+            </div>
+            <div style="margin-top:12px; display:flex; align-items:center; justify-content:center;">
+              <img id="edit-preview-img" style="display:none; width:80px; height:80px; object-fit:cover; image-rendering:pixelated; border-radius:12px; border:2.5px solid rgba(251,191,36,0.3);" />
+            </div>
+          </label>
+          <div style="display:flex; gap:12px; margin-top:20px;">
+            <button class="btn btn-ghost" type="button" id="edit-cancel" style="flex:1;">Cancel</button>
+            <button class="btn btn-primary" type="submit" style="flex:1;">Upgrade</button>
+          </div>
+        </form>
+      </div>
     </div>
     <script define:vars={{ API_BASE_URL }}>
       const API = API_BASE_URL.replace(/\/$/, "");
@@ -427,6 +490,83 @@ const title = `SKU — ${APP_NAME}`;
         return { name: "COMMON", color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)" };
       }
 
+      // Image upload processing with Sprite / Gamified pixel-art filter
+      let currentImageB64 = null;
+      let editImageB64 = null;
+
+      function processPixelFilter(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement("canvas");
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext("2d");
+            
+            // Draw image on canvas, cover scaling
+            const scale = Math.max(64 / img.width, 64 / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const x = (64 - w) / 2;
+            const y = (64 - h) / 2;
+            
+            ctx.filter = 'contrast(1.15) saturate(1.25)';
+            ctx.drawImage(img, x, y, w, h);
+            
+            const imgData = ctx.getImageData(0, 0, 64, 64);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              const a = data[i+3];
+              
+              // Binary transparency
+              if (a < 128) {
+                data[i+3] = 0;
+              } else {
+                data[i+3] = 255;
+                // Posterize RGB channels to 8 levels (spaced by 32)
+                data[i] = Math.min(255, Math.round(r / 32) * 32);
+                data[i+1] = Math.min(255, Math.round(g / 32) * 32);
+                data[i+2] = Math.min(255, Math.round(b / 32) * 32);
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            callback(canvas.toDataURL("image/png"));
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Add image elements
+      const imgInput = document.getElementById("image-input");
+      const removeImageBtn = document.getElementById("remove-image-btn");
+      const prevImg = document.getElementById("preview-img");
+
+      imgInput.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        processPixelFilter(file, (b64) => {
+          currentImageB64 = b64;
+          prevImg.src = b64;
+          prevImg.style.display = "block";
+          prevCode.style.display = "none";
+          removeImageBtn.style.display = "inline-flex";
+        });
+      });
+
+      removeImageBtn.addEventListener("click", () => {
+        currentImageB64 = null;
+        imgInput.value = "";
+        prevImg.style.display = "none";
+        prevImg.src = "";
+        prevCode.style.display = "flex";
+        removeImageBtn.style.display = "none";
+      });
+
       async function load() {
         const me = await jget("/v1/brands/me");
         if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }
@@ -443,10 +583,14 @@ const title = `SKU — ${APP_NAME}`;
         }
         list.innerHTML = r.data.map(s => {
           const rarity = getRarity(s.priceIdr);
+          const iconBlock = s.imageB64 
+            ? `<img src="${s.imageB64}" style="width:44px; height:44px; object-fit:cover; image-rendering:pixelated; border-radius:12px; border:2px solid rgba(251,191,36,0.2); flex-shrink:0;" />`
+            : `<div class="sku-code">${s.code}</div>`;
+
           return `
             <div class="sku-row ${s.active ? "" : "inactive"}">
               <div class="sku-main-info">
-                <div class="sku-code">${s.code}</div>
+                ${iconBlock}
                 <div class="sku-info">
                   <div class="sku-name">${s.name}</div>
                   <div class="sku-meta">
@@ -460,12 +604,13 @@ const title = `SKU — ${APP_NAME}`;
                 </div>
               </div>
               <div class="sku-actions">
-                <button class="btn btn-ghost btn-sm" data-act="price" data-id="${s.id}" data-price="${s.priceIdr}">Upgrade</button>
+                <button class="btn btn-ghost btn-sm" data-act="edit" data-id="${s.id}" data-code="${s.code}" data-name="${s.name}" data-price="${s.priceIdr}" data-shelf="${s.masaSimpanHari}" data-image="${s.imageB64 || ''}">Upgrade</button>
                 <button class="btn btn-danger btn-sm" data-act="del" data-id="${s.id}" data-name="${s.name}">Scrap</button>
               </div>
             </div>
           `;
         }).join("");
+
         // Bind actions
         list.querySelectorAll("button[data-act]").forEach(btn => {
           btn.addEventListener("click", async () => {
@@ -475,18 +620,108 @@ const title = `SKU — ${APP_NAME}`;
               const r = await jdel(`/v1/skus/${id}`);
               if (!r.ok) showErr(window.t("Gagal hapus: ") + (r.error?.code || "?"));
               else { showOk(window.t("SKU dinonaktifkan.")); load(); }
-            } else if (btn.dataset.act === "price") {
-              const v = prompt(window.t("Harga baru untuk SKU (Rp):"), btn.dataset.price);
-              if (!v) return;
-              const n = parseInt(v, 10);
-              if (!n || n < 100) { showErr(window.t("Harga tidak valid.")); return; }
-              const r = await jpatch(`/v1/skus/${id}`, { priceIdr: n });
-              if (!r.ok) showErr(window.t("Gagal update: ") + (r.error?.code || "?"));
-              else { showOk(window.t("Harga diupdate.")); load(); }
+            } else if (btn.dataset.act === "edit") {
+              const modal = document.getElementById("edit-modal");
+              const editId = document.getElementById("edit-id");
+              const editCode = document.getElementById("edit-code");
+              const editName = document.getElementById("edit-name");
+              const editPrice = document.getElementById("edit-price");
+              const editShelf = document.getElementById("edit-shelf");
+              const editImgIn = document.getElementById("edit-image-input");
+              const editPrevImg = document.getElementById("edit-preview-img");
+              const editRemoveBtn = document.getElementById("edit-remove-image-btn");
+              const editErr = document.getElementById("edit-err");
+
+              editErr.style.display = "none";
+              editId.value = id;
+              editCode.value = btn.dataset.code;
+              editName.value = btn.dataset.name;
+              editPrice.value = btn.dataset.price;
+              editShelf.value = btn.dataset.shelf;
+              editImgIn.value = ""; // Clear file selector
+
+              editImageB64 = btn.dataset.image || null;
+              if (editImageB64) {
+                editPrevImg.src = editImageB64;
+                editPrevImg.style.display = "block";
+                editRemoveBtn.style.display = "inline-flex";
+              } else {
+                editPrevImg.src = "";
+                editPrevImg.style.display = "none";
+                editRemoveBtn.style.display = "none";
+              }
+
+              modal.style.display = "flex";
             }
           });
         });
       }
+
+      // Edit modal controls
+      const editModal = document.getElementById("edit-modal");
+      const editCancel = document.getElementById("edit-cancel");
+      const editImgIn = document.getElementById("edit-image-input");
+      const editPrevImg = document.getElementById("edit-preview-img");
+      const editRemoveBtn = document.getElementById("edit-remove-image-btn");
+      const editForm = document.getElementById("edit-form");
+      const editErr = document.getElementById("edit-err");
+
+      editCancel.addEventListener("click", () => {
+        editModal.style.display = "none";
+      });
+
+      editImgIn.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        processPixelFilter(file, (b64) => {
+          editImageB64 = b64;
+          editPrevImg.src = b64;
+          editPrevImg.style.display = "block";
+          editRemoveBtn.style.display = "inline-flex";
+        });
+      });
+
+      editRemoveBtn.addEventListener("click", () => {
+        editImageB64 = null;
+        editImgIn.value = "";
+        editPrevImg.style.display = "none";
+        editPrevImg.src = "";
+        editRemoveBtn.style.display = "none";
+      });
+
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        editErr.style.display = "none";
+        const id = document.getElementById("edit-id").value;
+        const code = document.getElementById("edit-code").value.trim();
+        const name = document.getElementById("edit-name").value.trim();
+        const price = parseInt(document.getElementById("edit-price").value, 10);
+        const shelf = parseInt(document.getElementById("edit-shelf").value, 10);
+
+        if (!code || !name || !price) {
+          editErr.textContent = window.t("Kode, nama, harga wajib.");
+          editErr.style.display = "block";
+          return;
+        }
+
+        const r = await jpatch(`/v1/skus/${id}`, {
+          code,
+          name,
+          priceIdr: price,
+          masaSimpanHari: shelf,
+          imageB64: editImageB64
+        });
+
+        if (!r.ok) {
+          editErr.textContent = window.t("Gagal: ") + (r.error?.code || "?");
+          editErr.style.display = "block";
+          return;
+        }
+
+        editModal.style.display = "none";
+        showOk(window.t("SKU diupdate."));
+        load();
+      });
 
       document.getElementById("add-form").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -497,11 +732,25 @@ const title = `SKU — ${APP_NAME}`;
         const shelf = parseInt(document.getElementById("shelf").value, 10);
         if (!code || !name || !price) { showErr(window.t("Kode, nama, harga wajib.")); return; }
         const me = await jget("/v1/brands/me");
-        const r = await jpost("/v1/skus", { brandId: me.data.brandId, code, name, priceIdr: price, masaSimpanHari: shelf });
+        const r = await jpost("/v1/skus", { 
+          brandId: me.data.brandId, 
+          code, 
+          name, 
+          priceIdr: price, 
+          masaSimpanHari: shelf,
+          imageB64: currentImageB64
+        });
         if (!r.ok) { showErr(window.t("Gagal: ") + (r.error?.code || "?")); return; }
         showOk(r.data?.alreadyExists ? window.t("SKU sudah ada.") : window.t("SKU ditambah."));
         document.getElementById("add-form").reset();
         document.getElementById("shelf").value = "7";
+        // Reset image upload state
+        currentImageB64 = null;
+        imgInput.value = "";
+        prevImg.style.display = "none";
+        prevImg.src = "";
+        prevCode.style.display = "flex";
+        removeImageBtn.style.display = "none";
         load();
       });
 
@@ -546,7 +795,6 @@ const title = `SKU — ${APP_NAME}`;
       load();
       
       // Reset preview on form reset
-      const originalReset = document.getElementById("add-form").reset;
       document.getElementById("add-form").addEventListener("reset", () => {
         setTimeout(updatePreview, 50);
       });

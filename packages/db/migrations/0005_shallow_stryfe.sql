@@ -1,0 +1,1 @@
+ALTER TABLE `skus` ADD `image_b64` text;
