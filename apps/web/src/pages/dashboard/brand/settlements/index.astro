@@ -259,6 +259,11 @@ const title = `Settlements — ${APP_NAME}`;
         white-space: nowrap;
       }
 
+      /* Hide daily breakdown details during PDF/PNG exports */
+      .export-active .no-export {
+        display: none !important;
+      }
+
       /* Invoice / Tagihan Box */
       .tagihan-box {
         background: linear-gradient(135deg, rgba(251, 191, 36, 0.06) 0%, rgba(245, 158, 11, 0.04) 100%);
@@ -946,7 +951,7 @@ const title = `Settlements — ${APP_NAME}`;
                 </div>
               </div>
 
-              <div style="border-top: 2px solid #1e293b;">
+              <div class="no-export" style="border-top: 2px solid #1e293b;">
                 <div style="padding:14px 20px 6px;font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em">📋 Rincian Harian</div>
                 ${dailyHtml}
               </div>
@@ -1040,6 +1045,7 @@ const title = `Settlements — ${APP_NAME}`;
             const originalText = pdfBtn.innerHTML;
             pdfBtn.textContent = "⌛ Exporting...";
             pdfBtn.disabled = true;
+            reportEl.classList.add("export-active");
 
             html2canvas(reportEl, {
               backgroundColor: "#0f172a",
@@ -1047,6 +1053,7 @@ const title = `Settlements — ${APP_NAME}`;
               useCORS: true,
               logging: false
             }).then(canvas => {
+              reportEl.classList.remove("export-active");
               const imgData = canvas.toDataURL("image/png");
               const { jsPDF } = window.jspdf;
               
@@ -1062,6 +1069,7 @@ const title = `Settlements — ${APP_NAME}`;
               showToast("PDF report saved ✓");
             }).catch(err => {
               console.error(err);
+              reportEl.classList.remove("export-active");
               pdfBtn.innerHTML = originalText;
               pdfBtn.disabled = false;
               showToast("Failed to export PDF");
@@ -1078,6 +1086,7 @@ const title = `Settlements — ${APP_NAME}`;
             const originalText = pngBtn.innerHTML;
             pngBtn.textContent = "⌛ Exporting...";
             pngBtn.disabled = true;
+            reportEl.classList.add("export-active");
 
             html2canvas(reportEl, {
               backgroundColor: "#0f172a",
@@ -1085,6 +1094,7 @@ const title = `Settlements — ${APP_NAME}`;
               useCORS: true,
               logging: false
             }).then(canvas => {
+              reportEl.classList.remove("export-active");
               const url = canvas.toDataURL("image/png");
               const a = document.createElement("a");
               a.href = url;
@@ -1096,6 +1106,7 @@ const title = `Settlements — ${APP_NAME}`;
               showToast("PNG image saved ✓");
             }).catch(err => {
               console.error(err);
+              reportEl.classList.remove("export-active");
               pngBtn.innerHTML = originalText;
               pngBtn.disabled = false;
               showToast("Failed to export PNG");
