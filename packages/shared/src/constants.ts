@@ -3,7 +3,7 @@
  * Single source of truth — both web and api import from here.
  */
 
-export const APP_NAME = "Kongsian";
+export const APP_NAME = "Oatlet";
 export const APP_TAGLINE = "Titip. Terjual. Settle.";
 export const APP_DESCRIPTION =
   "Stock consignment management for Indonesian brand↔cafe partnerships. Track Titip, Terjual, and weekly settlements in one place.";
