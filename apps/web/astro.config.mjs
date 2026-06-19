@@ -8,7 +8,7 @@ export default defineConfig({
   adapter: cloudflare({
     platformProxy: { enabled: true },
   }),
-  site: "https://kongsian.app",
+  site: "https://oatlet.com",
   server: {
     port: 4321,
     host: true,
