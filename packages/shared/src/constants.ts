@@ -52,6 +52,9 @@ export const BPS_DENOMINATOR = 10000;
  * Production origins only. Dev (localhost) is added at module init below.
  */
 export const CORS_ALLOWLIST: string[] = [
+  "https://oatlet.com",
+  "https://www.oatlet.com",
+  // Legacy kongsian.app (kept for the old brand domain during transition)
   "https://kongsian.app",
   "https://www.kongsian.app",
   // Apex of the Pages project — what the user actually visits on
