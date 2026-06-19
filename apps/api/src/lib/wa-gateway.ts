@@ -24,7 +24,7 @@
  *   We send with the leading "+" — bridge handles it.
  *
  * Config (set via wrangler secret put, or in wrangler.<env>.toml for dev):
- *   WA_PROVIDER_URL      e.g. "https://wa-relay.kongsian.app"  (tunnel to local relay)
+ *   WA_PROVIDER_URL      e.g. "https://wa-relay.oatlet.com"  (tunnel to local relay)
  *   WA_PROVIDER_SECRET   shared secret for Authorization header
  *
  * Behavior when not configured:

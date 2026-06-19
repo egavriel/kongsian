@@ -54,9 +54,6 @@ export const BPS_DENOMINATOR = 10000;
 export const CORS_ALLOWLIST: string[] = [
   "https://oatlet.com",
   "https://www.oatlet.com",
-  // Legacy kongsian.app (kept for the old brand domain during transition)
-  "https://kongsian.app",
-  "https://www.kongsian.app",
   // Apex of the Pages project — what the user actually visits on
   // https://kongsian-web.pages.dev. The deployment-specific subdomains
   // (e.g. 9c3f65bf.kongsian-web.pages.dev) are matched by the regex

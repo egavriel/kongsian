@@ -1,0 +1,6 @@
+# Cloudflare Pages redirects
+# Format: <from> <to> <status>
+#
+# www.oatlet.com → oatlet.com (apex)
+# 301 = permanent redirect
+https://www.oatlet.com/* https://oatlet.com/:splat 301

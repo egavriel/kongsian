@@ -90,19 +90,19 @@ app.use("*", logger());
 
 /**
  * CORS — P0 audit fix #3.
- * Allowlist: kongsian.app + www + *.kongsian-web.pages.dev + localhost (dev only).
+ * Allowlist: oatlet.com + www + *.kongsian-web.pages.dev + localhost (dev only).
  * We use a function so unknown origins get rejected (not echoed).
  */
 app.use(
   "*",
   cors({
     origin: (origin) => {
-      if (!origin) return CORS_ALLOWLIST[0] || "https://kongsian.app";
+      if (!origin) return CORS_ALLOWLIST[0] || "https://oatlet.com";
       const allow =
         CORS_ALLOWLIST.includes(origin) ||
         /^https:\/\/[a-z0-9-]+\.kongsian-web\.pages\.dev$/i.test(origin) ||
         /^http:\/\/localhost:\d+$/i.test(origin);
-      return allow ? origin : CORS_ALLOWLIST[0] || "https://kongsian.app";
+      return allow ? origin : CORS_ALLOWLIST[0] || "https://oatlet.com";
     },
     credentials: true,
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],

@@ -22,7 +22,7 @@ const router = new Hono<{ Bindings: Bindings; Variables: Vars }>();
 
 // ---------------------------------------------------------------------------
 // PUBLIC route (no auth) — used by vanity URL landing page
-// `kongsian.app/<slug>`. Returns brand name + logo + description + active
+// `oatlet.com/<slug>`. Returns brand name + logo + description + active
 // tenant count. Throttled by Cloudflare's per-IP rate limit at the edge.
 // ---------------------------------------------------------------------------
 router.get("/by-slug/:slug", async (c) => {
