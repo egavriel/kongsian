@@ -1,6 +1,7 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../lib/api";
+import "../styles/global.css";
 const title = `Daftar — ${APP_NAME}`;
 // ?phone=628xxx deep-link pre-fill (from WA invites / shared links).
 // ?role=BRAND|TENANT pre-selects the role card (e.g. for a brand inviting
@@ -13,6 +14,7 @@ const prefillRole = roleParam === "BRAND" || roleParam === "TENANT" ? roleParam 
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>

@@ -1,12 +1,14 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../../lib/api";
+import "../../../../styles/global.css";
 const title = `Catat Tarik — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -52,7 +54,9 @@ const title = `Catat Tarik — ${APP_NAME}`;
       <header class="top">
         <a class="back" href="/dashboard/brand/movements">← Movements</a>
         <h1>Catat Tarik</h1>
-        <span></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+        </div>
       </header>
       <main>
         <div id="err" class="err" style="display:none"></div>
@@ -77,17 +81,33 @@ const title = `Catat Tarik — ${APP_NAME}`;
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
-      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
 
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
+
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+ 
       const errEl = document.getElementById("err");
       const okEl = document.getElementById("ok");
       const showErr = m => { errEl.textContent = m; errEl.style.display="block"; okEl.style.display="none"; };
       const showOk = m => { okEl.textContent = m; okEl.style.display="block"; errEl.style.display="none"; };
-
+ 
       const state = { brandId: null, partnerships: [], skus: [], sisaSistem: {}, partnershipId: null };
       document.getElementById("date").value = new Date().toISOString().slice(0, 10);
       function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
-
+ 
       function attachQtyStrip() {
         document.querySelectorAll("#sku-section .stepper").forEach(stepper => {
           const inp = stepper.querySelector("input[data-sku]");
@@ -109,7 +129,7 @@ const title = `Catat Tarik — ${APP_NAME}`;
           clamp();
         });
       }
-
+ 
       async function loadPartnerships() {
         const r = await jget("/v1/ops/init");
         if (!r.ok) {
@@ -120,12 +140,12 @@ const title = `Catat Tarik — ${APP_NAME}`;
           window.location.href = "/dashboard/brand";
           return;
         }
-
+ 
         const { brandId, skus, partnerships } = r.data;
         state.brandId = brandId;
         state.skus = skus || [];
         state.partnerships = partnerships || [];
-
+ 
         if (state.partnerships.length === 0) {
           document.getElementById("partnership").innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
           return;
@@ -133,7 +153,7 @@ const title = `Catat Tarik — ${APP_NAME}`;
         document.getElementById("partnership").innerHTML = `<option value="">— Pilih partner —</option>` +
           state.partnerships.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
       }
-
+ 
       async function renderSkus() {
         const sec = document.getElementById("sku-section");
         if (!state.partnershipId) { sec.innerHTML = `<div class="empty">Pilih partnership dulu.</div>`; document.getElementById("submit-btn").disabled = true; return; }
@@ -166,14 +186,14 @@ const title = `Catat Tarik — ${APP_NAME}`;
         document.getElementById("submit-btn").disabled = false;
         attachQtyStrip();
       }
-
+ 
       document.getElementById("partnership").addEventListener("change", (e) => {
         const pid = e.target.value;
         state.partnershipId = pid || null;
         renderSkus();
       });
       document.getElementById("date").addEventListener("change", () => { if (state.partnershipId) renderSkus(); });
-
+ 
       document.getElementById("submit-btn").addEventListener("click", async () => {
         errEl.style.display = "none"; okEl.style.display = "none";
         if (!state.partnershipId) { showErr("Pilih partnership dulu."); return; }
@@ -218,7 +238,7 @@ const title = `Catat Tarik — ${APP_NAME}`;
           btn.disabled = false; btn.textContent = "Simpan Tarik";
         }
       });
-
+ 
       loadPartnerships();
     </script>
   </body>

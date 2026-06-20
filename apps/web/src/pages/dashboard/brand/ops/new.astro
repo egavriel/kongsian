@@ -1,6 +1,7 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../../lib/api";
+import "../../../../styles/global.css";
 const title = `Catat Hari Ini — ${APP_NAME}`;
 export const prerender = false;
 export const ssr = false;
@@ -9,6 +10,7 @@ export const ssr = false;
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -59,7 +61,7 @@ export const ssr = false;
         box-shadow: 5px 5px 0px 0px #020617;
         border-color: #334155;
       }
-
+ 
       /* Quest Panel Header */
       .quest-header-panel {
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
@@ -246,12 +248,15 @@ export const ssr = false;
       <header class="top">
         <a class="back" href="/dashboard/brand">← Kembali</a>
         <h1 class="brand-name">Catat Hari Ini</h1>
-        <span class="role-tag">OPS QUEST</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+          <span class="role-tag">OPS QUEST</span>
+        </div>
       </header>
       <main>
         <div id="err" class="err" style="display:none"></div>
         <div id="ok" class="ok" style="display:none"></div>
-
+ 
         <!-- Quest Tracker Header Panel -->
         <div class="quest-header-panel">
           <div class="quest-header-layout">
@@ -262,7 +267,7 @@ export const ssr = false;
             </div>
           </div>
         </div>
-
+ 
         <label>
           <span class="lbl">Tanggal Quest (Hari)</span>
           <input id="date" type="date" required />
@@ -283,7 +288,7 @@ export const ssr = false;
             <div><div class="label">Sisa Rak Sistem</div><div class="value" id="ops-summary-sisa">0</div></div>
           </div>
         </div>
-
+ 
         <!-- Quest 1: Stok Awal -->
         <div class="section stok-awal">
           <div class="section-head">
@@ -293,28 +298,28 @@ export const ssr = false;
           <p class="hint">Persediaan logistik pertama yang sudah ada di partner sebelum mulai menggunakan sistem. Cukup diisi sekali di awal aliansi.</p>
           <div id="stok-awal-section"><div class="empty">Pilih partner aliansi dulu.</div></div>
         </div>
-
+ 
         <!-- Quest 2: Titip -->
         <div class="section quest-titip">
           <h2><span class="ic">📦</span> Quest: Pasok Logistik (Titip)</h2>
-          <p class="hint">Jumlah persediaan SKU baru yang Anda kirimkan ke partner aliansi hari ini.</p>
+          <p class="hint">Jumlah persediaan SKU baru yang Anda kirimkan to partner aliansi hari ini.</p>
           <div id="titip-section"><div class="empty">Pilih partner aliansi dulu.</div></div>
         </div>
-
+ 
         <!-- Quest 3: Tarik -->
         <div class="section quest-tarik">
           <h2><span class="ic">↩️</span> Quest: Tarik Kembali (Tarik)</h2>
           <p class="hint">Tarik sisa stok yang tidak terjual kembali ke inventori Anda.</p>
           <div id="tarik-section"><div class="empty">Pilih partner aliansi dulu.</div></div>
         </div>
-
+ 
         <!-- Quest 4: Terjual -->
         <div class="section quest-terjual">
           <h2><span class="ic">🪙</span> Quest: Catatan Kemenangan (Terjual)</h2>
           <p class="hint">Berapa cup/pack produk yang terjual hari ini. Digunakan untuk perhitungan koin mingguan.</p>
           <div id="terjual-section"><div class="empty">Pilih partner aliansi dulu.</div></div>
         </div>
-
+ 
         <button id="submit-btn" class="btn btn-primary" type="button" disabled>Selesaikan Misi (Simpan Semua)</button>
         <div id="ops-status" class="status" style="display:none"></div>
       </main>
@@ -324,23 +329,39 @@ export const ssr = false;
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
-      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
 
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
+
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+ 
       const errEl = document.getElementById("err");
       const okEl = document.getElementById("ok");
       const showErr = m => { errEl.textContent = m; errEl.style.display="block"; okEl.style.display="none"; window.scrollTo({ top: 0, behavior: "smooth" }); };
       const showOk = m => { okEl.textContent = m; okEl.style.display="block"; errEl.style.display="none"; };
       function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
-
+ 
       const state = { brandId: null, partnershipId: null, tenantId: null, skus: [], sisaSistem: {}, partnerships: [], stokAwal: {} };
       const STOK_AWAL_REASON = "Stok awal partnership";
       document.getElementById("date").value = new Date().toISOString().slice(0, 10);
-
+ 
       // Race guard: bump this on every partnership/date change. A response whose
       // sequence number is < the current one is stale (user picked a different
       // option before the previous fetch finished) and must NOT touch state.
       let loadSeq = 0;
-
+ 
       function renderSkeletons() {
         const skel = `
           <div class="skeleton-row">
@@ -360,7 +381,7 @@ export const ssr = false;
           document.getElementById(id).innerHTML = skel;
         }
       }
-
+ 
       function attachQtyStrip(sel) {
         // Strip non-digits on the hidden number input + wire minus/plus buttons.
         document.querySelectorAll(sel + " .stepper").forEach(stepper => {
@@ -384,7 +405,7 @@ export const ssr = false;
           clamp();
         });
       }
-
+ 
       function skuRow(s, kind, opts = {}) {
         const max = opts.max != null ? `max="${opts.max}"` : "";
         const dis = opts.disabled ? "disabled" : "";
@@ -404,7 +425,7 @@ export const ssr = false;
           </div>
         `;
       }
-
+ 
       function renderSections() {
         const disabled = !state.partnershipId || state.skus.length === 0;
         document.getElementById("submit-btn").disabled = disabled;
@@ -435,14 +456,14 @@ export const ssr = false;
         document.getElementById("terjual-section").innerHTML = state.skus.map(s => skuRow(s, "terjual")).join("");
         attachQtyStrip("#stok-awal-section"); attachQtyStrip("#titip-section"); attachQtyStrip("#tarik-section"); attachQtyStrip("#terjual-section");
       }
-
+ 
       function updateStokAwalResetButton() {
         const btn = document.getElementById("stok-awal-reset");
         if (!btn) return;
         const hasSaved = Object.values(state.stokAwal || {}).some((v) => (v || 0) > 0);
         btn.style.display = (state.partnershipId && hasSaved) ? "inline-block" : "none";
       }
-
+ 
       async function resetStokAwal() {
         if (!state.partnershipId) return;
         const date = document.getElementById("date").value;
@@ -479,7 +500,7 @@ export const ssr = false;
           btn.disabled = false; btn.textContent = "↺ Reset";
         }
       }
-
+ 
       function updateSummary() {
         const box = document.getElementById("ops-summary");
         const partnerName = document.getElementById("partnership")?.selectedOptions?.[0]?.text?.trim() || "(partner)";
@@ -496,7 +517,7 @@ export const ssr = false;
         document.getElementById("ops-summary-sisa").textContent = sisa.toLocaleString("id-ID");
         box.style.display = "block";
       }
-
+ 
       async function loadPartnershipScopedData() {
         if (!state.partnershipId) return;
         const seq = ++loadSeq;        // invalidate any in-flight previous load
@@ -504,7 +525,7 @@ export const ssr = false;
         const date = document.getElementById("date").value;
         const r = await jget(`/v1/ops/partnership-data?partnershipId=${state.partnershipId}&date=${date}`);
         if (seq !== loadSeq) return; // stale
-
+ 
         state.sisaSistem = {};
         state.stokAwal = {};
         if (r.ok) {
@@ -520,7 +541,7 @@ export const ssr = false;
         renderSections();
         updateSummary();
       }
-
+ 
       async function init() {
         const initData = await jget("/v1/ops/init");
         if (!initData.ok) {
@@ -531,12 +552,12 @@ export const ssr = false;
           window.location.href = "/dashboard/brand";
           return;
         }
-
+ 
         const { brandId, skus, partnerships } = initData.data;
         state.brandId = brandId;
         state.skus = skus || [];
         state.partnerships = partnerships || [];
-
+ 
         const sel = document.getElementById("partnership");
         if (state.partnerships.length === 0) {
           sel.innerHTML = `<option value="">— Belum ada partner aktif —</option>`;
@@ -545,7 +566,7 @@ export const ssr = false;
             state.partnerships.map(p => `<option value="${p.id}" data-tenant="${p.tenant?.id || ""}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
         }
         sel.disabled = false;
-
+ 
         sel.addEventListener("change", async (e) => {
           const opt = e.target.selectedOptions[0];
           state.partnershipId = e.target.value || null;
@@ -559,7 +580,7 @@ export const ssr = false;
           if (state.partnershipId) { await loadPartnershipScopedData(); }
         });
       }
-
+ 
       function readSectionItems(sectionSel, kind) {
         // For movements/batch: each item is { skuId, kind, qty }
         const items = [];
@@ -590,7 +611,7 @@ export const ssr = false;
         });
         return lines;
       }
-
+ 
       document.getElementById("stok-awal-reset").addEventListener("click", resetStokAwal);
       document.getElementById("submit-btn").addEventListener("click", async () => {
         errEl.style.display = "none"; okEl.style.display = "none";
@@ -611,7 +632,7 @@ export const ssr = false;
         if (stokAwalItems.length + titipItems.length + tarikItems.length + terjualLines.length === 0) {
           showErr("Minimal isi satu kolom (Stok Awal, Titip, Tarik, atau Terjual)."); return;
         }
-
+ 
         const btn = document.getElementById("submit-btn");
         btn.disabled = true; btn.textContent = "Menyimpan…";
         try {
@@ -628,21 +649,21 @@ export const ssr = false;
               terjualLines,
             }),
           });
-
+ 
           if (!r.ok) {
             const j = await r.json().catch(() => ({}));
             throw new Error(j?.error?.message || "Penyimpanan gagal.");
           }
-
+ 
           showOk(`Berhasil disimpan. Mengarahkan…`);
           setTimeout(() => { window.location.href = "/dashboard/brand/movements"; }, 1000);
         } catch (e) {
-          showErr(e.message || "Tidak bisa konek ke server.");
+          showErr(e.message || "Tidak bisa konek to server.");
         } finally {
           btn.disabled = false; btn.textContent = "Simpan Semua";
         }
       });
-
+ 
       init();
     </script>
   </body>

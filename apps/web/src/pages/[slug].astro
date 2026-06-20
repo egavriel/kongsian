@@ -26,6 +26,7 @@
  */
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../lib/api";
+import "../styles/global.css";
 
 const slug = Astro.params.slug ?? "";
 
@@ -58,6 +59,7 @@ const title = brandInfo ? `${brandInfo.brand.name} — ${APP_NAME}` : `${APP_NAM
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -100,18 +102,11 @@ const title = brandInfo ? `${brandInfo.brand.name} — ${APP_NAME}` : `${APP_NAM
       .stat-row .card { flex: 1; }
 
       .cta {
-        display: block; width: 100%; padding: 14px 20px; text-align: center;
-        font-size: 15px; font-weight: 700; border-radius: 12px;
-        background: #fbbf24; color: #0b1220; border: none; cursor: pointer;
-        margin-top: 8px;
+        display: block; text-align: center; background: #fbbf24; color: #0b1220;
+        padding: 14px; border-radius: 10px; font-weight: 700; margin-top: 16px;
       }
-      .cta:hover { background: #fde68a; text-decoration: none; }
-      .cta.secondary { background: transparent; color: #38bdf8; border: 1px solid #1e293b; }
-      .cta.secondary:hover { border-color: #94a3b8; }
-      .err { background: rgba(251, 113, 133, .12); color: #fb7185; border: 1px solid rgba(251, 113, 133, .3); padding: 24px; border-radius: 12px; text-align: center; }
-      .err h2 { margin: 0 0 8px; font-size: 18px; }
-      .err p { margin: 0; font-size: 13px; color: #cbd5e1; }
-      .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #64748b; }
+      .cta.secondary { background: transparent; color: #f1f5f9; border: 1px solid #1e293b; margin-top: 8px; }
+      .footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 32px; }
     </style>
   </head>
   <body>
@@ -195,11 +190,11 @@ const title = brandInfo ? `${brandInfo.brand.name} — ${APP_NAME}` : `${APP_NAM
             if (!res.ok) return;
             const j = await res.json();
             if (!j.ok) return;
-            const { role, brandId, tenantId } = j.data;
+            const { role, brandId: loggedBrandId } = j.data;
             const card = document.getElementById("login-state");
             const text = document.getElementById("login-state-text");
             const cta = document.getElementById("primary-cta");
-            if (role === "BRAND" && brandId === brandId) {
+            if (role === "BRAND" && loggedBrandId === brandId) {
               text.textContent = "Kamu owner brand ini";
               cta.textContent = "Buka Brand Dashboard";
               cta.href = "/dashboard/brand";

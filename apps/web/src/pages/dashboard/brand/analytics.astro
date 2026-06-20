@@ -20,12 +20,14 @@
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
 import NotificationBell from "../../../components/NotificationBell.astro";
+import "../../../styles/global.css";
 const title = `Analytics — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id" data-role="brand">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -272,6 +274,7 @@ const title = `Analytics — ${APP_NAME}`;
       <header class="top">
         <a href="/dashboard/brand" class="back">← <span data-i18n="brand dashboard">Dashboard Brand</span></a>
         <div style="display:flex; gap:10px; align-items:center;">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
           <span class="role-tag">ARCHIVES</span>
           <NotificationBell />
         </div>
@@ -303,6 +306,22 @@ const title = `Analytics — ${APP_NAME}`;
     <script src="/kongsian-auth-bus.js" defer is:inline></script>
     <script define:vars={{ API_BASE_URL }}>
       window.__KONGSIAN_API__ = API_BASE_URL;
+
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
+
       // -----------------------------------------------------------------------
       // State from URL
       // -----------------------------------------------------------------------

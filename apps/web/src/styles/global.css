@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap');
+
 :root {
   --bg: #0b1220;
   --bg-soft: #0f172a;
@@ -14,8 +16,26 @@
   --max-w: 1120px;
 }
 
+/* Playful Theme Variable Overrides (Harvest Moon & Dr. Stone inspired) */
+html[data-ui-theme="playful"] {
+  /* New Dr. Stone Light Theme Palette (Lite UI) */
+  --bg: #f4efe6;         /* Sandy Soil clay background (warm sand) */
+  --bg-soft: #fffdfa;    /* Clean parchment paper for cards */
+  --fg: #3d281c;         /* Deep timber bark brown for readable text */
+  --fg-muted: #7d6556;   /* Soft wood-ash grey-brown */
+  --brand: #e76f51;      /* Stone-fired terracotta clay orange (Primary) */
+  --brand-fg: #ffffff;
+  --accent: #52b788;     /* Vibrant leaf/grass canopy green (Secondary) */
+  --line: #4e3629;       /* Dark log-outline brown for borders & shadows */
+  --good: #2a9d8f;       /* Emerald river water teal */
+  --warn: #e9c46a;       /* Dried thatch straw gold */
+  --bad: #e76f51;        /* Terracotta red */
+  --radius: 8px;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
 body {
   background: var(--bg);
   color: var(--fg);
@@ -23,7 +43,20 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background 0.3s ease, color 0.3s ease;
 }
+
+/* Apply clean sans-serif when playful theme is active */
+html[data-ui-theme="playful"] body {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: normal;
+  background: var(--bg) !important;
+  background-image: none !important;
+  color: var(--fg) !important;
+}
+
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 img { max-width: 100%; height: auto; }
@@ -41,35 +74,761 @@ section + section { border-top: 1px solid var(--line); }
   font-weight: 700;
   margin-bottom: 12px;
 }
+html[data-ui-theme="playful"] .eyebrow {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: normal;
+}
+
 h1 { font-size: clamp(36px, 6vw, 56px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em; }
 h2 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0 0 14px; letter-spacing: -0.01em; }
 h3 { font-size: 18px; margin: 0 0 8px; }
+
+html[data-ui-theme="playful"] h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(16px, 3.5vw, 24px) !important;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+}
+html[data-ui-theme="playful"] h2 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(12px, 3vw, 18px) !important;
+  line-height: 1.3;
+}
+html[data-ui-theme="playful"] h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
 p  { color: var(--fg-muted); margin: 0 0 12px; }
 .lead { font-size: 18px; color: var(--fg-muted); max-width: 640px; }
 
 .btn {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 20px; border-radius: 10px; font-weight: 600;
   border: 1px solid transparent; cursor: pointer; font-size: 15px;
-  transition: transform .05s ease, background .15s ease, border-color .15s ease;
+  transition: transform .05s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 .btn-primary { background: var(--brand); color: var(--brand-fg); }
 .btn-primary:hover { background: #f59e0b; text-decoration: none; }
 .btn-ghost   { background: transparent; color: var(--fg); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--fg-muted); text-decoration: none; }
 
+/* Playful Button Overrides */
+html[data-ui-theme="playful"] .btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  border: 3px solid var(--line) !important;
+  box-shadow: 3px 3px 0px 0px var(--line) !important;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+html[data-ui-theme="playful"] .btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .btn-primary {
+  background: #52b788 !important; /* Leaf/Grass Green background */
+  color: #ffffff !important;
+}
+html[data-ui-theme="playful"] .btn-primary:hover {
+  background: #409a72 !important;
+}
+html[data-ui-theme="playful"] .btn-accent {
+  background: #e76f51 !important; /* Terracotta clay orange */
+  color: #ffffff !important;
+}
+html[data-ui-theme="playful"] .btn-accent:hover {
+  background: #cf5e42 !important;
+}
+html[data-ui-theme="playful"] .btn-danger {
+  background: var(--bad) !important;
+  color: #ffffff !important;
+}
+html[data-ui-theme="playful"] .btn-danger:hover {
+  background: #cf5e42 !important;
+}
+html[data-ui-theme="playful"] .btn-ghost {
+  background: #d8c3a5 !important; /* Soft sand-wood brown */
+  color: #3d281c !important;
+  border-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .btn-ghost:hover {
+  background: #c3ae90 !important;
+}
+html[data-ui-theme="playful"] .btn-sm {
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+  border-width: 2.5px !important;
+  box-shadow: 2px 2px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .btn-sm:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px 0px var(--line) !important;
+}
+
 .grid { display: grid; gap: 24px; }
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 800px) { .grid-3 { grid-template-columns: 1fr; } }
 
-.card {
+/* Cards & RPG Cards */
+.card, .rpg-card, .quest-header-panel {
   background: var(--bg-soft);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 24px;
   display: flex; flex-direction: column; gap: 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* Playful Cards Overrides (Dr. Stone Clay / Paper Vibe) */
+html[data-ui-theme="playful"] .card,
+html[data-ui-theme="playful"] .rpg-card,
+html[data-ui-theme="playful"] .quest-header-panel {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .card:hover,
+html[data-ui-theme="playful"] .rpg-card:hover,
+html[data-ui-theme="playful"] .quest-header-panel:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 5px 5px 0px 0px var(--line) !important;
+  border-color: var(--line) !important;
+}
+
 .card .tag { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand); font-weight: 700; }
+html[data-ui-theme="playful"] .card .tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: normal;
+}
 
 .muted { color: var(--fg-muted); }
 .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; padding: 2px 6px; border-radius: 6px; background: #111827; border: 1px solid var(--line); color: var(--fg); }
+
+html[data-ui-theme="playful"] .kbd {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  background: #e9ecef;
+  border-color: var(--line);
+  color: var(--fg);
+}
+
+/* Inputs & Form Overrides on Playful theme */
+html[data-ui-theme="playful"] input,
+html[data-ui-theme="playful"] select,
+html[data-ui-theme="playful"] textarea {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700;
+  background: #fffdfa !important;
+  color: var(--fg) !important;
+  border: 2.5px solid var(--line) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+html[data-ui-theme="playful"] input:focus,
+html[data-ui-theme="playful"] select:focus,
+html[data-ui-theme="playful"] textarea:focus {
+  border-color: var(--accent) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.15) !important;
+}
+
+/* Quest and level items */
+html[data-ui-theme="playful"] .quest-tracker-icon {
+  background: #fcfbf7 !important;
+  border: 3px solid var(--line) !important;
+  font-size: 32px !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .quest-tracker-title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 8px !important;
+  color: var(--accent) !important;
+}
+html[data-ui-theme="playful"] .quest-tracker-subtitle {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700;
+}
+
+/* HP Bar EXP Bar styling overrides */
+html[data-ui-theme="playful"] .hp-bar-fill {
+  background: linear-gradient(90deg, #52b788 0%, #74c69d 100%) !important;
+}
+
+/* Modal overlays */
+html[data-ui-theme="playful"] .block-modal,
+html[data-ui-theme="playful"] .modal {
+  background: rgba(61, 40, 28, 0.4) !important; /* Semi-transparent timber brown */
+}
+html[data-ui-theme="playful"] .block-card,
+html[data-ui-theme="playful"] .modal-content {
+  background: var(--bg-soft) !important;
+  border: 4px solid var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: 6px 6px 0px 0px var(--line) !important;
+}
+
+/* Header customization on Playful theme */
+html[data-ui-theme="playful"] header.top {
+  border-bottom: 3.5px solid var(--line) !important;
+  background: var(--bg-soft) !important;
+}
+html[data-ui-theme="playful"] .brand-name {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 12px !important;
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .role-tag {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 7px !important;
+  background: rgba(82, 183, 136, 0.1) !important;
+  border: 2px solid rgba(82, 183, 136, 0.3) !important;
+  color: var(--accent) !important;
+}
+
+/* Tables in Playful theme */
+html[data-ui-theme="playful"] th {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 800;
+  color: var(--fg) !important;
+  border-bottom: 3px solid var(--line) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+html[data-ui-theme="playful"] td {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 14px !important;
+  border-bottom: 2px solid var(--line) !important;
+  color: var(--fg) !important;
+}
+
+/* Theme Toggle Button Style (Floating or Header) */
+.theme-toggle-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.theme-toggle-btn:hover {
+  border-color: var(--brand);
+  background: rgba(255,255,255,0.02);
+}
+
+html[data-ui-theme="playful"] .theme-toggle-btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px !important;
+  border: 2.5px solid var(--line) !important;
+  box-shadow: 2px 2px 0px 0px var(--line) !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  width: 34px !important;
+  height: 34px !important;
+  background: var(--bg-soft) !important;
+  color: var(--fg) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+html[data-ui-theme="playful"] .theme-toggle-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px 0px var(--line) !important;
+}
+
+/* Playful RPG Stat box and lists */
+html[data-ui-theme="playful"] .rpg-stat-box {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  box-shadow: 3px 3px 0px 0px var(--line) !important;
+  color: var(--fg) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .rpg-stat-box:hover {
+  border-color: var(--line) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .rpg-stat-icon {
+  background: #fffdfa !important;
+  border: 2px solid var(--line) !important;
+}
+html[data-ui-theme="playful"] .rpg-stat-lbl {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  color: var(--fg-muted) !important;
+  font-size: 10px !important;
+}
+html[data-ui-theme="playful"] .rpg-stat-val {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 900 !important;
+  color: var(--fg) !important;
+  font-size: 18px !important;
+}
+html[data-ui-theme="playful"] .rpg-stat-sub {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--fg-muted) !important;
+  font-weight: 600 !important;
+  font-size: 10px !important;
+}
+
+/* Playful Quest Card overrides */
+html[data-ui-theme="playful"] .quest-card {
+  background: #f2cc8f !important; /* Rich harvest wheat / strong sand yellow */
+  border: 3px solid var(--line) !important;
+  box-shadow: 4px 4px 0px var(--line) !important;
+  color: var(--fg) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .quest-card:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 5px 5px 0px var(--line) !important;
+  border-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .quest-title {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .quest-desc {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 11px !important;
+  color: #5d4234 !important; /* Slightly darker readable muted text on gold */
+  font-weight: 600 !important;
+}
+html[data-ui-theme="playful"] .quest-icon {
+  background: #fffdfa !important;
+  border: 2px solid var(--line) !important;
+  color: var(--fg) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .quest-xp-badge {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 7px !important;
+  padding: 3px 6px !important;
+  background: var(--bg-soft) !important;
+  color: var(--accent) !important;
+  border: 2px solid var(--line) !important;
+  border-radius: 4px !important;
+}
+
+/* Playful town map overrides */
+html[data-ui-theme="playful"] .town-viewport {
+  background: radial-gradient(circle at center, #fffdfa 0%, #f4efe6 100%) !important;
+  border: 3px solid var(--line) !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .road-cell {
+  background: rgba(78, 54, 41, 0.1) !important;
+  color: var(--fg-muted) !important;
+}
+html[data-ui-theme="playful"] .grass-cell {
+  color: #52b788 !important;
+  opacity: 0.9 !important;
+}
+html[data-ui-theme="playful"] .building-label {
+  color: var(--fg) !important;
+  background: var(--bg-soft) !important;
+  border: 2px solid var(--line) !important;
+  border-radius: 4px !important;
+}
+html[data-ui-theme="playful"] .floating-bubble {
+  background: var(--bg-soft) !important;
+  border: 2.5px solid var(--line) !important;
+  box-shadow: 0 4px 10px rgba(78, 54, 41, 0.2) !important;
+}
+html[data-ui-theme="playful"] .floating-bubble.zero { border-color: var(--bad) !important; }
+html[data-ui-theme="playful"] .floating-bubble.low { border-color: var(--warn) !important; }
+html[data-ui-theme="playful"] .floating-bubble.closing { border-color: var(--brand) !important; }
+html[data-ui-theme="playful"] .floating-bubble.settlement { border-color: var(--accent) !important; }
+
+/* Playful sisa list pouch overrides */
+html[data-ui-theme="playful"] .sisa-card {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .partner-icon {
+  background: var(--bg) !important;
+  border-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .partner-name {
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+}
+html[data-ui-theme="playful"] .pouch-item {
+  background: var(--bg) !important;
+  border: 2px solid var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: 2px 2px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .pouch-item.zero { border-color: var(--bad) !important; background: rgba(231, 111, 81, 0.05) !important; }
+html[data-ui-theme="playful"] .pouch-item.low { border-color: var(--warn) !important; background: rgba(233, 196, 106, 0.05) !important; }
+html[data-ui-theme="playful"] .pouch-item.ok { border-color: var(--accent) !important; background: rgba(82, 183, 136, 0.05) !important; }
+
+html[data-ui-theme="playful"] .sku-code {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  color: var(--fg) !important;
+  background: #f2cc8f !important;
+  border: 1.5px solid var(--line) !important;
+}
+html[data-ui-theme="playful"] .sku-name {
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+}
+html[data-ui-theme="playful"] .sku-price {
+  color: var(--fg-muted) !important;
+}
+html[data-ui-theme="playful"] .stock-badge {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+}
+html[data-ui-theme="playful"] .stock-badge.zero { background: rgba(231, 111, 81, 0.1) !important; color: var(--bad) !important; border: 1.5px solid var(--bad) !important; }
+html[data-ui-theme="playful"] .stock-badge.low { background: rgba(233, 196, 106, 0.1) !important; color: #b58d1b !important; border: 1.5px solid var(--warn) !important; }
+html[data-ui-theme="playful"] .stock-badge.ok { background: rgba(82, 183, 136, 0.1) !important; color: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
+
+html[data-ui-theme="playful"] .stock-progress-container {
+  background: rgba(78, 54, 41, 0.1) !important;
+  border: 1px solid var(--line) !important;
+}
+html[data-ui-theme="playful"] .stock-progress-bar.low { background: var(--warn) !important; }
+html[data-ui-theme="playful"] .stock-progress-bar.ok { background: var(--accent) !important; }
+
+html[data-ui-theme="playful"] .rpg-log-viewport {
+  background: var(--bg) !important;
+  border: 2.5px solid var(--line) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+html[data-ui-theme="playful"] .combat-row {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--fg-muted) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+html[data-ui-theme="playful"] .log-entity {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .log-time {
+  color: var(--fg-muted) !important;
+}
+
+html[data-ui-theme="playful"] .partner {
+  background: var(--bg) !important;
+  border: 2.5px solid var(--line) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .partner:hover {
+  border-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .partner .name {
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+}
+html[data-ui-theme="playful"] .partner .meta {
+  color: var(--fg-muted) !important;
+}
+
+html[data-ui-theme="playful"] .sku-pill {
+  background: var(--bg-soft) !important;
+  border: 2px solid var(--line) !important;
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .sku-pill:hover {
+  background: #f2cc8f !important;
+}
+
+html[data-ui-theme="playful"] .badge.active { background: rgba(82, 183, 136, 0.1) !important; color: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
+html[data-ui-theme="playful"] .badge.pending { background: rgba(233, 196, 106, 0.1) !important; color: #b58d1b !important; border: 1.5px solid var(--warn) !important; }
+html[data-ui-theme="playful"] .badge.suspended { background: rgba(231, 111, 81, 0.1) !important; color: var(--bad) !important; border: 1.5px solid var(--bad) !important; }
+
+html[data-ui-theme="playful"] .badge.legendary { background: #faedcd !important; color: #7f5539 !important; border: 2px solid var(--line) !important; }
+html[data-ui-theme="playful"] .badge.epic { background: #e0aaff !important; color: #3c096c !important; border: 2px solid var(--line) !important; }
+html[data-ui-theme="playful"] .badge.rare { background: #d8f3dc !important; color: #1b4332 !important; border: 2px solid var(--line) !important; }
+html[data-ui-theme="playful"] .badge.common { background: #e9ecef !important; color: #495057 !important; border: 2px solid var(--line) !important; }
+
+html[data-ui-theme="playful"] .filter-tabs {
+  background: rgba(78, 54, 41, 0.05) !important;
+  border: 2.5px solid var(--line) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .filter-tab {
+  color: var(--fg-muted) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+}
+html[data-ui-theme="playful"] .filter-tab:hover {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .filter-tab.active {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  box-shadow: 2px 2px 0px 0px var(--line) !important;
+  border: 2px solid var(--line) !important;
+}
+
+html[data-ui-theme="playful"] .search-input {
+  background: var(--bg-soft) !important;
+  border: 2.5px solid var(--line) !important;
+  border-radius: 8px !important;
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+}
+html[data-ui-theme="playful"] .search-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 3px 3px 0px 0px var(--line) !important;
+}
+
+/* Playful notification bell overrides */
+html[data-ui-theme="playful"] .nb-btn {
+  border: 2.5px solid var(--line) !important;
+  color: var(--fg) !important;
+  background: var(--bg-soft) !important;
+  border-radius: 8px !important;
+  box-shadow: 2px 2px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .nb-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .nb-pop {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: 6px 6px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .nb-pop-head {
+  border-bottom: 2px solid var(--line) !important;
+}
+html[data-ui-theme="playful"] .nb-pop-head h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .nb-pop-head a {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--accent) !important;
+}
+html[data-ui-theme="playful"] .nb-item {
+  border-bottom: 1px solid var(--line) !important;
+}
+html[data-ui-theme="playful"] .nb-item:hover {
+  background: rgba(78, 54, 41, 0.05) !important;
+}
+html[data-ui-theme="playful"] .nb-item.unread {
+  background: rgba(82, 183, 136, 0.08) !important;
+}
+html[data-ui-theme="playful"] .nb-title {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .nb-body {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--fg-muted) !important;
+}
+html[data-ui-theme="playful"] .nb-time {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  color: var(--fg-muted) !important;
+}
+
+/* Card Text Color Overrides for Lite UI Mode */
+html[data-ui-theme="playful"] .card h1, html[data-ui-theme="playful"] .rpg-card h1,
+html[data-ui-theme="playful"] .card h2, html[data-ui-theme="playful"] .rpg-card h2,
+html[data-ui-theme="playful"] .card h3, html[data-ui-theme="playful"] .rpg-card h3,
+html[data-ui-theme="playful"] .card p, html[data-ui-theme="playful"] .rpg-card p,
+html[data-ui-theme="playful"] .card strong, html[data-ui-theme="playful"] .rpg-card strong,
+html[data-ui-theme="playful"] .card .greet, html[data-ui-theme="playful"] .rpg-card .greet,
+html[data-ui-theme="playful"] .card .xp-text, html[data-ui-theme="playful"] .rpg-card .xp-text,
+html[data-ui-theme="playful"] .card .char-title, html[data-ui-theme="playful"] .rpg-card .char-title {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .card span:not(.badge):not(.quest-xp-badge):not(.sku-code):not(.rpg-stat-icon):not(.partner-icon):not(.avatar-edit-badge),
+html[data-ui-theme="playful"] .rpg-card span:not(.badge):not(.quest-xp-badge):not(.sku-code):not(.rpg-stat-icon):not(.partner-icon):not(.avatar-edit-badge) {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .greet,
+html[data-ui-theme="playful"] .xp-text,
+html[data-ui-theme="playful"] .char-title,
+html[data-ui-theme="playful"] .rpg-stat-lbl,
+html[data-ui-theme="playful"] .rpg-stat-sub,
+html[data-ui-theme="playful"] .sku-price {
+  color: var(--fg-muted) !important;
+}
+
+/* Playful SKU Row Overrides (Parchment Paper Vibe) */
+html[data-ui-theme="playful"] .sku-row {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+  border-radius: 8px !important;
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .sku-row:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 5px 5px 0px 0px var(--line) !important;
+  border-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .sku-actions {
+  border-top-color: var(--line) !important;
+}
+
+/* Playful Live Preview Box Overrides */
+html[data-ui-theme="playful"] .live-preview-container {
+  background: rgba(78, 54, 41, 0.05) !important;
+  border: 2.5px dashed var(--line) !important;
+  box-shadow: none !important;
+}
+html[data-ui-theme="playful"] .preview-tag {
+  background: var(--brand) !important; /* Terracotta Orange */
+  color: #ffffff !important;
+  border: 2px solid var(--line) !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 7px !important;
+  top: -11px !important;
+}
+
+/* Rarity badges overrides in playful mode */
+html[data-ui-theme="playful"] .rarity-badge {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 7px !important;
+  padding: 4px 6px !important;
+  border-radius: 4px !important;
+  border: 2px solid var(--line) !important;
+}
+html[data-ui-theme="playful"] .rarity-badge.common { background: #e9ecef !important; color: #495057 !important; }
+html[data-ui-theme="playful"] .rarity-badge.rare { background: #d8f3dc !important; color: #1b4332 !important; }
+html[data-ui-theme="playful"] .rarity-badge.epic { background: #e0aaff !important; color: #3c096c !important; }
+html[data-ui-theme="playful"] .rarity-badge.legendary { background: #faedcd !important; color: #7f5539 !important; }
+
+/* Empty state / Loading state overrides */
+html[data-ui-theme="playful"] .empty {
+  background: rgba(78, 54, 41, 0.05) !important;
+  border: 2.5px dashed var(--line) !important;
+  border-radius: 8px !important;
+  color: var(--fg-muted) !important;
+}
+
+/* Playful Daily Quest / Operations overrides */
+html[data-ui-theme="playful"] .section {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  box-shadow: 3px 3px 0px 0px var(--line) !important;
+  border-radius: 8px !important;
+}
+html[data-ui-theme="playful"] .section h2 {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .section .hint {
+  color: var(--fg-muted) !important;
+}
+html[data-ui-theme="playful"] .section.stok-awal h2 { color: #8a5cf5 !important; }
+html[data-ui-theme="playful"] .section.quest-titip h2 { color: var(--accent) !important; }
+html[data-ui-theme="playful"] .section.quest-tarik h2 { color: var(--bad) !important; }
+html[data-ui-theme="playful"] .section.quest-terjual h2 { color: #d97706 !important; }
+
+html[data-ui-theme="playful"] .sk-row,
+html[data-ui-theme="playful"] .sk-row * {
+  border-bottom-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .sk-label .name,
+html[data-ui-theme="playful"] :global(.sk-label .name) {
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 700 !important;
+}
+html[data-ui-theme="playful"] .sk-label .code,
+html[data-ui-theme="playful"] :global(.sk-label .code) {
+  color: var(--fg) !important;
+  background: #f2cc8f !important;
+  border: 1.5px solid var(--line) !important;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+html[data-ui-theme="playful"] .sk-label .meta,
+html[data-ui-theme="playful"] :global(.sk-label .meta),
+html[data-ui-theme="playful"] .sk-label .stok,
+html[data-ui-theme="playful"] :global(.sk-label .stok) {
+  color: var(--fg-muted) !important;
+}
+html[data-ui-theme="playful"] .sk-row input,
+html[data-ui-theme="playful"] :global(.sk-row input) {
+  background: #fffdfa !important;
+  border: 2px solid var(--line) !important;
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 800 !important;
+}
+html[data-ui-theme="playful"] .stepper .step-btn,
+html[data-ui-theme="playful"] :global(.stepper .step-btn) {
+  background: #d8c3a5 !important; /* soft log brown */
+  border: 2px solid var(--line) !important;
+  color: var(--fg) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-weight: 900 !important;
+}
+html[data-ui-theme="playful"] .stepper .step-btn:hover:not(:disabled),
+html[data-ui-theme="playful"] :global(.stepper .step-btn:hover:not(:disabled)) {
+  background: #c3ae90 !important;
+  color: var(--fg) !important;
+}
+
+html[data-ui-theme="playful"] .summary-card {
+  background: var(--bg-soft) !important;
+  border: 3px dashed var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+/* Playful Tenant Closing page overrides */
+html[data-ui-theme="playful"] .foto {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .foto h2 {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .summary,
+html[data-ui-theme="playful"] .table-wrap {
+  background: var(--bg-soft) !important;
+  border: 3px solid var(--line) !important;
+  border-radius: 8px !important;
+  box-shadow: 4px 4px 0px 0px var(--line) !important;
+}
+html[data-ui-theme="playful"] .summary .lbl {
+  color: var(--fg-muted) !important;
+}
+html[data-ui-theme="playful"] .summary .val {
+  color: var(--fg) !important;
+}
+html[data-ui-theme="playful"] .table-wrap h2 {
+  color: var(--fg) !important;
+}

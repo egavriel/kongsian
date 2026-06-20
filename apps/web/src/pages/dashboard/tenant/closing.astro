@@ -2,12 +2,14 @@
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
 import NotificationBell from "../../../components/NotificationBell.astro";
+import "../../../styles/global.css";
 const title = `Closing Harian — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -82,7 +84,10 @@ const title = `Closing Harian — ${APP_NAME}`;
       <header class="top">
         <a class="back" href="/dashboard/tenant">← Tenant</a>
         <h1>Closing Harian</h1>
-        <span><NotificationBell /></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+          <NotificationBell />
+        </div>
       </header>
       <main>
         <div id="err" class="err" style="display:none"></div>
@@ -122,7 +127,7 @@ const title = `Closing Harian — ${APP_NAME}`;
         </div>
 
         <div class="foto">
-          <h2>Foto chiller / display (opsional)</h2>
+          <h2>Foto display (opsional)</h2>
           <input id="foto" type="file" accept="image/*" capture="environment" />
           <div id="preview" class="preview"></div>
         </div>
@@ -140,6 +145,21 @@ const title = `Closing Harian — ${APP_NAME}`;
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
       async function jpost(p, b) { return (await fetch(API+p, { method:"POST", headers: authH, body: JSON.stringify(b) })).json().catch(()=>({})); }
       function uuid() { return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4)).toString(16)); }
+
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
 
       const errEl = document.getElementById("err");
       const okEl = document.getElementById("ok");
@@ -224,7 +244,6 @@ const title = `Closing Harian — ${APP_NAME}`;
         // Live diff calculation
         const sumSkuEl = document.getElementById("sum-skus");
         const sumRevEl = document.getElementById("sum-revenue");
-        let totalRev = 0;
         document.querySelectorAll("#sku-rows .sk-row").forEach(row => {
           const sid = row.dataset.sku;
           const tInp = row.querySelector('input[data-field="terjual"]');
@@ -233,12 +252,6 @@ const title = `Closing Harian — ${APP_NAME}`;
             const t = parseInt(tInp.value, 10) || 0;
             const sisa = parseInt(sInp.value, 10) || 0;
             const sku = state.skus.find(x => x.id === sid);
-            const stokSistem = (sku && sku.stokSistem != null) ? sku.stokSistem : null;
-            if (stokSistem != null) {
-              const expected = stokSistem - t;
-              const diff = expected - sisa;
-              // We don't have a diff column; just show match/warn
-            }
             // Update running totals
             const newTotal = Array.from(document.querySelectorAll("#sku-rows .sk-row")).reduce((acc, r) => {
               const ti = parseInt(r.querySelector('input[data-field="terjual"]').value, 10) || 0;
@@ -318,7 +331,6 @@ const title = `Closing Harian — ${APP_NAME}`;
         const btn = document.getElementById("submit-btn");
         btn.disabled = true; btn.textContent = "Mengirim…";
         try {
-          // Single call to closing endpoint (handles both terjual + sisa-fisik)
           const path = `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/terjual`;
           const r = await fetch(API + path, {
             method: "POST",
@@ -327,7 +339,6 @@ const title = `Closing Harian — ${APP_NAME}`;
           });
           const json = await r.json().catch(() => ({}));
           if (r.ok && json.ok) {
-            // Try to also push sisa-fisik if endpoint exists
             const sisaLines = lines.filter(l => l.sisaFisik != null).map(l => ({ skuId: l.skuId, sisaFisik: l.sisaFisik }));
             if (sisaLines.length) {
               await fetch(API + `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/sisa-fisik`, {
@@ -336,7 +347,6 @@ const title = `Closing Harian — ${APP_NAME}`;
                 body: JSON.stringify({ lines: sisaLines, fotoR2Url: uploadedFotoUrl || undefined }),
               }).catch(() => {});
             }
-            // Try submit
             await fetch(API + `/v1/tenants/${state.tenantId}/partnerships/${state.partnershipId}/closings/${date}/submit`, {
               method: "POST",
               headers: { ...authH, "Idempotency-Key": uuid() },

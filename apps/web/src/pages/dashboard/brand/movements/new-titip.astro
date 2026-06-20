@@ -1,12 +1,14 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../../lib/api";
+import "../../../../styles/global.css";
 const title = `Catat Titip — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -65,7 +67,9 @@ const title = `Catat Titip — ${APP_NAME}`;
       <header class="top">
         <a class="back" href="/dashboard/brand/movements">← Movements</a>
         <h1>Catat Titip</h1>
-        <span></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+        </div>
       </header>
       <main>
         <div id="err" class="err" style="display:none"></div>
@@ -101,6 +105,22 @@ const title = `Catat Titip — ${APP_NAME}`;
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
+
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
       function attachQtyStrip() {
         document.querySelectorAll("#sku-section .stepper").forEach(stepper => {
@@ -158,6 +178,12 @@ const title = `Catat Titip — ${APP_NAME}`;
         }
         document.getElementById("partnership").innerHTML = `<option value="">— Pilih partner —</option>` +
           state.partnerships.map(p => `<option value="${p.id}">${p.tenant?.name || "(tenant?)"}</option>`).join("");
+      }
+
+      async function loadPartnershipSisa() {
+        if (!state.partnershipId) return;
+        const date = document.getElementById("date").value;
+        const r = await jget(`/v1/ops/partnership-data?partnershipId=${state.partnershipId}&date=${date}`);
       }
 
       function renderSkus() {

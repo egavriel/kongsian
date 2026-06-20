@@ -1,6 +1,7 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../lib/api";
+import "../styles/global.css";
 const title = `Masuk — ${APP_NAME}`;
 // ?registered=1 banner shown when user just registered
 const showRegisteredBanner = Astro.url.searchParams.get("registered") === "1";
@@ -13,6 +14,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -138,7 +140,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
       <div class="card">
         {showRegisteredBanner && (
           <div class="info" style="margin-bottom:16px">
-            <strong>Akun kamu sedang diverifikasi admin.</strong> Kami akan kabari via WA max 1x24 jam. Untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.
+            <strong>Akun kamu sedang diverifikasi admin. Strong> Kami akan kabari via WA max 1x24 jam. Untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.
           </div>
         )}
         <span class="eyebrow">Masuk</span>
@@ -174,7 +176,7 @@ const phoneParam = (Astro.url.searchParams.get("phone") ?? "").trim();
           </label>
           <button class="btn btn-primary" type="submit" id="send-btn">Kirim OTP via WhatsApp</button>
           <p class="small" style="margin-top:16px">
-            Belum punya akun? Prosesnya &lt; 10 menit — kami auto-create akun pas verifikasi pertama.
+            Belum punya akun? Prosesnya &lt; 10 menu — kami auto-create akun pas verifikasi pertama.
           </p>
         </form>
 

@@ -1,12 +1,14 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../../lib/api";
+import "../../../../styles/global.css";
 const title = `Movements — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -48,7 +50,7 @@ const title = `Movements — ${APP_NAME}`;
       .back:hover { color: #fbbf24; }
       h1 { font-size: 18px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
       main { padding: 20px; }
-
+ 
       /* Action Buttons */
       .new-btns {
         display: grid;
@@ -90,7 +92,7 @@ const title = `Movements — ${APP_NAME}`;
       .new-btn .btn-icon {
         font-size: 20px;
       }
-
+ 
       /* Partner Selection Row */
       .partner-label {
         font-size: 11px;
@@ -133,7 +135,7 @@ const title = `Movements — ${APP_NAME}`;
         box-shadow: 3px 3px 0px 0px #020617;
         transform: translate(-1px, -1px);
       }
-
+ 
       /* Filter Toggle pills */
       .filter {
         display: flex;
@@ -166,7 +168,7 @@ const title = `Movements — ${APP_NAME}`;
         box-shadow: 0 0 0 0 transparent;
         transform: translate(1px, 1px);
       }
-
+ 
       /* Movements List and Row Card */
       .list {
         display: flex;
@@ -218,7 +220,7 @@ const title = `Movements — ${APP_NAME}`;
       }
       .qty.pos { color: #34d399; }
       .qty.neg { color: #fb7185; }
-
+ 
       .thumb {
         width: 44px;
         height: 44px;
@@ -257,7 +259,9 @@ const title = `Movements — ${APP_NAME}`;
       <header class="top">
         <a class="back" href="/dashboard/brand">← Brand</a>
         <h1>Movements</h1>
-        <span></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+        </div>
       </header>
       <main>
         <div class="new-btns">
@@ -270,7 +274,7 @@ const title = `Movements — ${APP_NAME}`;
             <span class="btn-text">Tarik Sisa Stok</span>
           </a>
         </div>
-
+ 
         <span class="partner-label">Pilih Partner Cafe</span>
         <div id="partner-pick" class="partner-pick"></div>
         
@@ -286,22 +290,38 @@ const title = `Movements — ${APP_NAME}`;
         </div>
       </main>
     </div>
-
+ 
     <script define:vars={{ API_BASE_URL }}>
       const API = API_BASE_URL.replace(/\/$/, "");
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
-      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
 
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
+
+      async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
+ 
       const state = { partnerships: [], skus: [], activePartner: null, filter: "ALL" };
       const pickEl = document.getElementById("partner-pick");
       const listEl = document.getElementById("list");
-
+ 
       function getLocale() {
         return localStorage.getItem("kongsian_lang") === "id" ? "id-ID" : "en-US";
       }
-
+ 
       function fmtDate(s) {
         const d = new Date(s);
         return new Intl.DateTimeFormat(getLocale(), { weekday:"short", day:"2-digit", month:"short" }).format(d);
@@ -309,21 +329,21 @@ const title = `Movements — ${APP_NAME}`;
       function fmtDateTime(unix) {
         return new Date(unix * 1000).toLocaleString(getLocale(), { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
       }
-
+ 
       function applyFilter() {
         document.querySelectorAll(".filter button").forEach(b => {
           b.classList.toggle("active", b.dataset.filter === state.filter);
         });
         render();
       }
-
+ 
       document.querySelectorAll(".filter button").forEach(b => {
         b.addEventListener("click", () => {
           state.filter = b.dataset.filter;
           applyFilter();
         });
       });
-
+ 
       function render() {
         if (!state.activePartner) {
           listEl.innerHTML = `<div class="empty">Pilih partnership di atas untuk lihat history.</div>`;
@@ -361,14 +381,14 @@ const title = `Movements — ${APP_NAME}`;
           `;
         }).join("");
       }
-
+ 
       async function loadMovements(pid) {
         state.activePartner = pid;
         const r = await jget(`/v1/movements?partnershipId=${pid}`);
         state._movements = r.ok ? (r.data || []) : [];
         render();
       }
-
+ 
       async function init() {
         const me = await jget("/v1/brands/me");
         if (!me.ok || !me.data.brandId) { window.location.href = "/dashboard/brand"; return; }

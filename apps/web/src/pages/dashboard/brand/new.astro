@@ -1,12 +1,14 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
+import "../../../styles/global.css";
 const title = `Brand Baru — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -63,7 +65,10 @@ const title = `Brand Baru — ${APP_NAME}`;
     <div class="shell">
       <header class="top">
         <div class="brand-name">{APP_NAME}</div>
-        <a href="/dashboard/brand" class="back">← Kembali</a>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+          <a href="/dashboard/brand" class="back">← Kembali</a>
+        </div>
       </header>
       <main>
         <h1>Brand baru</h1>
@@ -89,6 +94,21 @@ const title = `Brand Baru — ${APP_NAME}`;
       const API = API_BASE_URL.replace(/\/$/, "");
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
+
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
 
       // Slug auto-derive: lowercase, non-allowed chars → '-', collapse runs.
       // Visible so the user can see what the URL will be.

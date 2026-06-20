@@ -1,12 +1,14 @@
 ---
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
+import "../../../styles/global.css";
 const title = `SKU — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -348,7 +350,10 @@ const title = `SKU — ${APP_NAME}`;
       <header class="top">
         <a class="back" href="/dashboard/brand">← Brand Dashboard</a>
         <h1 class="brand-name">Kelola SKU</h1>
-        <span class="role-tag">ARSENAL</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
+          <span class="role-tag">ARSENAL</span>
+        </div>
       </header>
       <main>
         <div class="quest-header-panel">
@@ -471,6 +476,22 @@ const title = `SKU — ${APP_NAME}`;
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
+
       async function jget(p) { return (await fetch(API+p, { headers: authH })).json().catch(()=>({})); }
       async function jpost(p,b) { return (await fetch(API+p, { method:"POST", headers:authH, body:JSON.stringify(b) })).json().catch(()=>({})); }
       async function jpatch(p,b) { return (await fetch(API+p, { method:"PATCH", headers:authH, body:JSON.stringify(b) })).json().catch(()=>({})); }
@@ -484,10 +505,10 @@ const title = `SKU — ${APP_NAME}`;
       function fmtRp(n) { return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", maximumFractionDigits:0 }).format(n); }
 
       function getRarity(price) {
-        if (price >= 40000) return { name: "LEGENDARY", color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)" };
-        if (price >= 25000) return { name: "EPIC", color: "#c084fc", bg: "rgba(192,132,252,0.1)", border: "rgba(192,132,252,0.3)" };
-        if (price >= 15000) return { name: "RARE", color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.3)" };
-        return { name: "COMMON", color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)" };
+        if (price >= 40000) return { class: "legendary", name: "LEGENDARY", color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.3)" };
+        if (price >= 25000) return { class: "epic", name: "EPIC", color: "#c084fc", bg: "rgba(192,132,252,0.1)", border: "rgba(192,132,252,0.3)" };
+        if (price >= 15000) return { class: "rare", name: "RARE", color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.3)" };
+        return { class: "common", name: "COMMON", color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)" };
       }
 
       // Image upload processing with Sprite / Gamified pixel-art filter
@@ -594,7 +615,7 @@ const title = `SKU — ${APP_NAME}`;
                 <div class="sku-info">
                   <div class="sku-name">${s.name}</div>
                   <div class="sku-meta">
-                    <span class="rarity-badge" style="color:${rarity.color}; background:${rarity.bg}; border-color:${rarity.border}">${rarity.name}</span>
+                    <span class="rarity-badge ${rarity.class}" style="color:${rarity.color}; background:${rarity.bg}; border-color:${rarity.border}">${rarity.name}</span>
                     <span class="dot-separator">·</span>
                     <span>🪙 ${fmtRp(s.priceIdr)}</span>
                     <span class="dot-separator">·</span>
@@ -778,6 +799,7 @@ const title = `SKU — ${APP_NAME}`;
         prevShelf.innerHTML = `⏳ ${shelf} <span>hari</span>`;
 
         const rarity = getRarity(price);
+        prevRarity.className = `rarity-badge ${rarity.class}`;
         prevRarity.innerHTML = `<span>${rarity.name.toLowerCase()}</span>`;
         prevRarity.style.color = rarity.color;
         prevRarity.style.background = rarity.bg;

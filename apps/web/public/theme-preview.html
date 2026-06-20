@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="id" data-ui-theme="playful">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dr. Stone Light Theme Mockup Preview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      /* Proposed CSS Variables for "Playful Light Theme" (Dr. Stone Nature Vibe) */
+      :root {
+        /* Default Dark Theme */
+        --bg: #0b1220;
+        --bg-soft: #0f172a;
+        --fg: #f1f5f9;
+        --fg-muted: #94a3b8;
+        --brand: #fbbf24;
+        --brand-fg: #0b1220;
+        --accent: #38bdf8;
+        --line: #1e293b;
+        --good: #34d399;
+        --warn: #fbbf24;
+        --bad: #fb7185;
+      }
+
+      html[data-ui-theme="playful"] {
+        /* New Dr. Stone Light Theme Palette */
+        --bg: #f4efe6;         /* Sandy Soil clay background (warm sand) */
+        --bg-soft: #fffdfa;    /* Clean parchment paper for cards */
+        --fg: #3d281c;         /* Deep timber bark brown for readable text */
+        --fg-muted: #7d6556;   /* Soft wood-ash grey-brown */
+        --brand: #e76f51;      /* Stone-fired terracotta clay orange (Primary) */
+        --brand-fg: #ffffff;
+        --accent: #52b788;     /* Vibrant leaf/grass canopy green (Secondary) */
+        --line: #4e3629;       /* Dark log-outline brown for borders & shadows */
+        --good: #2a9d8f;       /* Emerald river water teal */
+        --warn: #e9c46a;       /* Dried thatch straw gold */
+        --bad: #e76f51;        /* Terracotta red */
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 40px 20px;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+
+      /* Toned-down typography:
+         Keep clean modern 'Plus Jakarta Sans' for the general body text, buttons, inputs, and numbers
+         so it is extremely easy on the eyes and readable. Only use 'Press Start 2P' for select titles/badges. */
+      html[data-ui-theme="playful"] body {
+        font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      h1, h2, h3 {
+        margin-top: 0;
+        font-weight: 900;
+        color: var(--fg);
+        letter-spacing: -0.02em;
+      }
+
+      html[data-ui-theme="playful"] h1 {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 16px;
+        line-height: 1.4;
+        margin-bottom: 24px;
+        text-transform: uppercase;
+        letter-spacing: -0.03em;
+      }
+      html[data-ui-theme="playful"] h2 {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 11px;
+        line-height: 1.4;
+        margin-bottom: 16px;
+        margin-top: 30px;
+        letter-spacing: -0.02em;
+      }
+
+      /* Color Swatches Grid */
+      .swatch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        margin-bottom: 30px;
+      }
+
+      .swatch-card {
+        background: var(--bg-soft);
+        border: 3px solid var(--line);
+        box-shadow: 4px 4px 0px var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+      }
+
+      .swatch-color {
+        height: 60px;
+        border-radius: 4px;
+        border: 2px solid var(--line);
+        margin-bottom: 8px;
+      }
+
+      .swatch-name {
+        font-weight: 800;
+        font-size: 14px;
+        margin-bottom: 2px;
+      }
+
+      .swatch-hex {
+        font-size: 11px;
+        color: var(--fg-muted);
+        font-family: monospace;
+      }
+
+      /* Interactive Elements Card */
+      .mock-card {
+        background: var(--bg-soft);
+        border: 3px solid var(--line);
+        box-shadow: 4px 4px 0px var(--line);
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 30px;
+      }
+
+      /* Buttons Styled with Natural Elements and highly legible text */
+      .btn-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 20px 0;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 18px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+      }
+
+      html[data-ui-theme="playful"] .btn {
+        font-family: 'Plus Jakarta Sans', sans-serif; /* Readable text font */
+        font-size: 13px;
+        font-weight: 800;
+        border: 3px solid var(--line) !important;
+        box-shadow: 3px 3px 0px 0px var(--line) !important;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
+
+      html[data-ui-theme="playful"] .btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px 0px var(--line) !important;
+      }
+
+      /* Primary Button - Grass Green */
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      html[data-ui-theme="playful"] .btn-primary {
+        background: #52b788 !important; /* Leaf/Grass Green background */
+        color: #ffffff !important;
+      }
+      html[data-ui-theme="playful"] .btn-primary:hover {
+        background: #409a72 !important;
+      }
+
+      /* Accent Button - Terracotta Clay Orange */
+      .btn-accent {
+        background: var(--brand);
+        color: #fff;
+      }
+      html[data-ui-theme="playful"] .btn-accent {
+        background: #e76f51 !important; /* Terracotta clay orange */
+        color: #ffffff !important;
+      }
+      html[data-ui-theme="playful"] .btn-accent:hover {
+        background: #cf5e42 !important;
+      }
+
+      /* Ghost/Secondary Button - Warm Log Brown */
+      .btn-ghost {
+        background: transparent;
+        color: var(--fg);
+        border: 2px solid var(--line);
+      }
+      html[data-ui-theme="playful"] .btn-ghost {
+        background: #d8c3a5 !important; /* Soft sand-wood brown */
+        color: #3d281c !important;
+        border-color: var(--line) !important;
+      }
+      html[data-ui-theme="playful"] .btn-ghost:hover {
+        background: #c3ae90 !important;
+      }
+
+      /* Mock inputs */
+      .field {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-weight: 800;
+        margin-bottom: 6px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      input, select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2.5px solid var(--line);
+        background: var(--bg-soft);
+        color: var(--fg);
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: border-color 0.2s ease;
+      }
+      html[data-ui-theme="playful"] input,
+      html[data-ui-theme="playful"] select {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        background: #fffdfa !important;
+        color: var(--fg) !important;
+      }
+      input:focus, select:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      /* Floating Toggler */
+      .theme-switch-bar {
+        background: var(--bg-soft);
+        border: 3px solid var(--line);
+        box-shadow: 4px 4px 0px var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+      }
+      .theme-switch-bar span {
+        font-weight: 800;
+      }
+
+      /* Rarity Tags */
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 800;
+        border-radius: 6px;
+        border: 2px solid var(--line);
+        text-transform: uppercase;
+        margin-right: 6px;
+      }
+      html[data-ui-theme="playful"] .badge {
+        font-family: 'Press Start 2P', monospace;
+        font-size: 7px;
+        padding: 4px 6px;
+      }
+      .badge.common { background: #e9ecef; color: #495057; }
+      .badge.rare { background: #d8f3dc; color: #1b4332; }
+      .badge.epic { background: #e0aaff; color: #3c096c; }
+      .badge.legendary { background: #faedcd; color: #7f5539; }
+
+      .sku-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 2px dashed var(--line);
+      }
+      .sku-item:last-child {
+        border-bottom: none;
+      }
+
+      /* Lively button grid styling */
+      .lively-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      .sprite-card {
+        background: var(--bg-soft);
+        border: 3px solid var(--line);
+        box-shadow: 4px 4px 0px var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+      }
+      .sprite-card:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0px var(--line);
+      }
+      
+      /* Playful Sprite Cards with Strong Warm Straw/Sand Background */
+      html[data-ui-theme="playful"] .sprite-card {
+        background: #f2cc8f !important; /* Rich harvest wheat / strong sand yellow */
+        border: 3px solid var(--line) !important;
+        box-shadow: 4px 4px 0px var(--line) !important;
+      }
+      html[data-ui-theme="playful"] .sprite-card:hover {
+        transform: translate(-1px, -1px) !important;
+        box-shadow: 5px 5px 0px var(--line) !important;
+      }
+
+      .sprite-card .info {
+        display: flex;
+        flex-direction: column;
+      }
+      .sprite-card .lbl-title {
+        font-weight: 900;
+        font-size: 15px;
+      }
+      html[data-ui-theme="playful"] .sprite-card .lbl-title {
+        font-family: 'Plus Jakarta Sans', sans-serif; /* Much cleaner readable title */
+        font-size: 14px;
+        font-weight: 900;
+      }
+      .sprite-card .lbl-sub {
+        font-size: 11px;
+        color: var(--fg-muted);
+      }
+      html[data-ui-theme="playful"] .sprite-card .lbl-sub {
+        font-size: 11px;
+        color: #5d4234 !important; /* Slightly darker readable muted text on gold */
+        font-weight: 600;
+      }
+      .sprite-icon {
+        font-size: 24px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      
+      <!-- Theme Toggler Bar -->
+      <div class="theme-switch-bar">
+        <span>Pratinjau Tema (Toggle Theme):</span>
+        <button id="toggle-btn" class="btn btn-ghost" style="padding: 6px 12px; font-size: 13px;">☕ Switch UI</button>
+      </div>
+
+      <h1>🌾 Kerajaan Sains (Oatlet Light UI)</h1>
+      <p style="margin-bottom: 24px;">Ini adalah pratinjau konsep desain tema <strong>Dr. Stone Light Mode</strong>. Menggunakan latar belakang tanah liat hangat, garis log kayu gelap, warna aksen hijau daun, dan jingga tanah liat.</p>
+
+      <h2>🎨 Swatch Palet Warna (Color Swatches)</h2>
+      <div class="swatch-grid">
+        <!-- Sand Background -->
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #f4efe6;"></div>
+          <div class="swatch-name">Sand Bg</div>
+          <div class="swatch-hex">#f4efe6</div>
+        </div>
+        <!-- Parchment Card -->
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #fffdfa;"></div>
+          <div class="swatch-name">Paper Bg</div>
+          <div class="swatch-hex">#fffdfa</div>
+        </div>
+        <!-- Log Outline -->
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #4e3629;"></div>
+          <div class="swatch-name">Log Line</div>
+          <div class="swatch-hex">#4e3629</div>
+        </div>
+        <!-- Grass Green Button -->
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #52b788;"></div>
+          <div class="swatch-name">Grass Green</div>
+          <div class="swatch-hex">#52b788</div>
+        </div>
+        <!-- Terracotta Clay Orange -->
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #e76f51;"></div>
+          <div class="swatch-name">Terracotta</div>
+          <div class="swatch-hex">#e76f51</div>
+        </div>
+        <!-- Text Timber Brown -->
+        <div class="swatch-card">
+          <div class="swatch-color" style="background: #3d281c;"></div>
+          <div class="swatch-name">Timber Text</div>
+          <div class="swatch-hex">#3d281c</div>
+        </div>
+      </div>
+
+      <h2>✨ Wording Profesional & Lively Sprites</h2>
+      <p>Kata-kata tetap fungsional dan mudah dimengerti pengguna umum (bukan istilah gaming rumit), tetapi dipadukan dengan sprite yang hidup:</p>
+      
+      <div class="lively-grid">
+        <!-- Add Log -->
+        <div class="sprite-card">
+          <div class="info">
+            <span class="lbl-title">➕ 🖋️ Add Daily Log</span>
+            <span class="lbl-sub">Catat Ops Hari Ini</span>
+          </div>
+          <span class="sprite-icon">📝</span>
+        </div>
+        <!-- Add SKU -->
+        <div class="sprite-card">
+          <div class="info">
+            <span class="lbl-title">➕ 📦 Add Product</span>
+            <span class="lbl-sub">Tambah SKU Baru</span>
+          </div>
+          <span class="sprite-icon">🏷️</span>
+        </div>
+        <!-- Undang Partner -->
+        <div class="sprite-card">
+          <div class="info">
+            <span class="lbl-title">➕ 🤝 Add Partner</span>
+            <span class="lbl-sub">Undang Partner Cafe</span>
+          </div>
+          <span class="sprite-icon">📜</span>
+        </div>
+        <!-- Mutasi Stok -->
+        <div class="sprite-card">
+          <div class="info">
+            <span class="lbl-title">🚚 Stock Movement</span>
+            <span class="lbl-sub">Mutasi & Logistik</span>
+          </div>
+          <span class="sprite-icon">📦</span>
+        </div>
+        <!-- Rincian Omset -->
+        <div class="sprite-card">
+          <div class="info">
+            <span class="lbl-title">🪙 Revenue Details</span>
+            <span class="lbl-sub">Rincian Omset</span>
+          </div>
+          <span class="sprite-icon">💰</span>
+        </div>
+        <!-- Settlements -->
+        <div class="sprite-card">
+          <div class="info">
+            <span class="lbl-title">⚖️ Settle Report</span>
+            <span class="lbl-sub">Laporan Keuangan</span>
+          </div>
+          <span class="sprite-icon">💼</span>
+        </div>
+      </div>
+
+      <h2>🛠️ Contoh Card & Elemen Form</h2>
+      <div class="mock-card">
+        <h3>➕ Add Product</h3>
+        
+        <div class="field">
+          <label>Nama SKU / Item</label>
+          <input type="text" value="Strawberry Overnight Oats" />
+        </div>
+
+        <div class="field">
+          <label>Aliansi Partner (Cafe)</label>
+          <select>
+            <option>Senopati Guild (Cafe Senopati)</option>
+            <option>Kemang Outpost (Cafe Kemang)</option>
+          </select>
+        </div>
+
+        <div class="btn-container">
+          <button class="btn btn-primary">➕ Save (Grass Green)</button>
+          <button class="btn btn-accent">🔥 Fire (Terracotta Orange)</button>
+          <button class="btn btn-ghost">↺ Reset (Log Brown)</button>
+        </div>
+      </div>
+
+      <h2>📦 Item Inventory (Daftar SKU)</h2>
+      <div class="mock-card" style="padding: 16px;">
+        <div class="sku-item">
+          <div>
+            <span class="badge legendary">Epic</span>
+            <strong>Oat Strawberry</strong>
+          </div>
+          <div>🪙 Rp 42.000</div>
+        </div>
+        <div class="sku-item">
+          <div>
+            <span class="badge rare">Rare</span>
+            <strong>Oat Double Chocolate</strong>
+          </div>
+          <div>🪙 Rp 24.000</div>
+        </div>
+        <div class="sku-item">
+          <div>
+            <span class="badge common">Common</span>
+            <strong>Mineral Water</strong>
+          </div>
+          <div>🪙 Rp 10.000</div>
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      const btn = document.getElementById("toggle-btn");
+      const html = document.documentElement;
+      
+      // Load current theme
+      let currentTheme = localStorage.getItem("oatlet_ui_theme_preview") || "playful";
+      html.setAttribute("data-ui-theme", currentTheme);
+      updateBtnText();
+
+      function updateBtnText() {
+        btn.innerHTML = currentTheme === "playful" 
+          ? "🌾 Playful Light" 
+          : "☕ Default Dark";
+      }
+
+      btn.addEventListener("click", () => {
+        currentTheme = currentTheme === "playful" ? "default" : "playful";
+        html.setAttribute("data-ui-theme", currentTheme);
+        localStorage.setItem("oatlet_ui_theme_preview", currentTheme);
+        updateBtnText();
+      });
+    </script>
+  </body>
+</html>

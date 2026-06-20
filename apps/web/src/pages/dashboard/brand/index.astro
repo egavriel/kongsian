@@ -2,17 +2,18 @@
 import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
 import NotificationBell from "../../../components/NotificationBell.astro";
+import "../../../styles/global.css";
 const title = `Brand Dashboard — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
   <head>
     <script src="/i18n-helper.js" is:inline></script>
+    <script src="/theme-helper.js" is:inline></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style is:global>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
@@ -806,6 +807,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
           <div class="brand-name">{APP_NAME}</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
+          <button id="theme-toggle" class="theme-toggle-btn">☕</button>
           <NotificationBell />
           <span class="role-tag">BRAND</span>
           <button id="logout" class="logout">Keluar</button>
@@ -889,7 +891,7 @@ const title = `Brand Dashboard — ${APP_NAME}`;
 
         <!-- Virtual Town Map -->
         <div class="section-header-rpg">
-          <h2>Peta Kongsian (Virtual Town)</h2>
+          <h2>Peta Oatlet (Virtual Town)</h2>
         </div>
         <div class="town-viewport" id="town-viewport">
           <div class="town-map" id="town-map">
@@ -1048,6 +1050,21 @@ const title = `Brand Dashboard — ${APP_NAME}`;
       const tok = localStorage.getItem("kongsian_session");
       if (!tok) { window.location.href = "/login"; }
       const authH = { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" };
+
+      // Theme Toggle logic
+      const toggleBtn = document.getElementById("theme-toggle");
+      if (toggleBtn) {
+        const updateThemeBtnText = (theme) => {
+          toggleBtn.innerHTML = theme === "playful" ? "🌾" : "☕";
+        };
+        updateThemeBtnText(window.OatletTheme.getTheme());
+        window.addEventListener("oatlet:themechange", (e) => {
+          updateThemeBtnText(e.detail.theme);
+        });
+        toggleBtn.addEventListener("click", () => {
+          window.OatletTheme.toggleTheme();
+        });
+      }
 
       let globalData = null;
 
