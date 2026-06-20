@@ -832,3 +832,25 @@ html[data-ui-theme="playful"] .summary .val {
 html[data-ui-theme="playful"] .table-wrap h2 {
   color: var(--fg) !important;
 }
+
+/* Mobile Header optimizations to prevent horizontal overflow */
+@media (max-width: 480px) {
+  header.top {
+    padding: 12px 10px !important;
+  }
+  .role-tag {
+    display: none !important;
+  }
+  header.top div[style*="display:flex"],
+  header.top div[style*="display: flex"] {
+    gap: 6px !important;
+  }
+  #i18n-switcher-injected {
+    margin-right: 0 !important;
+  }
+  html[data-ui-theme="playful"] header.top > div:first-child,
+  html[data-ui-theme="playful"] header.top .brand-name {
+    font-size: 10px !important;
+  }
+}
+
