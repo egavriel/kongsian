@@ -451,6 +451,22 @@ const title = `Settlements — ${APP_NAME}`;
         border-color: #b91c1c;
       }
       .btn-pdf:hover { background: #dc2626; border-color: #ef4444; }
+      .report-tagline {
+        text-align: center;
+        font-size: 11px;
+        color: #94a3b8;
+        padding: 18px 20px;
+        border-top: 1.5px dashed #1e293b;
+        margin-top: 15px;
+      }
+      .report-tagline a {
+        color: #fbbf24;
+        font-weight: 700;
+        text-decoration: underline;
+      }
+      .report-tagline a:hover {
+        color: #f59e0b;
+      }
       .btn-png {
         background: #3b82f6;
         color: #ffffff;
@@ -587,6 +603,9 @@ const title = `Settlements — ${APP_NAME}`;
           <div class="loading">Memuat…</div>
         </div>
       </main>
+      <footer class="tagline-footer">
+        Built with <a href="https://oatlet.com" target="_blank">Oatlet App</a> — Trusted and proudly used by <a href="https://www.instagram.com/littlehanniel" target="_blank">@littlehanniel</a>
+      </footer>
     </div>
 
     <!-- Toast -->
@@ -971,6 +990,11 @@ const title = `Settlements — ${APP_NAME}`;
                     <span class="payment-val">719 531 6091</span>
                   </div>
                 </div>
+              </div>
+
+              <!-- Tagline for PDF/PNG exports -->
+              <div class="report-tagline">
+                Built with <a href="https://oatlet.com" target="_blank">Oatlet App</a> — Trusted and proudly used by <a href="https://www.instagram.com/littlehanniel" target="_blank">@littlehanniel</a>
               </div>
 
               <div class="no-export" style="border-top: 2px solid #1e293b;">

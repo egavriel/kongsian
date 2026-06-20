@@ -233,6 +233,17 @@ export async function renderSettlementPdf(ctx: PdfContext): Promise<RenderResult
     { x: MARGIN, y: footerY, size: 7, font: fontReg, color: COLOR_MUTED }
   );
 
+  // Draw tagline on the right side
+  const taglineText = "Built with Oatlet App - Trusted and proudly used by @littlehanniel";
+  const taglineWidth = fontReg.widthOfTextAtSize(taglineText, 7);
+  page.drawText(taglineText, {
+    x: A4_W - MARGIN - taglineWidth,
+    y: footerY,
+    size: 7,
+    font: fontReg,
+    color: COLOR_MUTED
+  });
+
   const bytes = await pdf.save();
   return {
     bytes,

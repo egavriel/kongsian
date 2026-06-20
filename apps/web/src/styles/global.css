@@ -833,6 +833,24 @@ html[data-ui-theme="playful"] .table-wrap h2 {
   color: var(--fg) !important;
 }
 
+/* Tagline Footer Styles */
+.tagline-footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--fg-muted);
+  padding: 32px 16px 48px;
+  border-top: 1.5px dashed var(--line);
+  margin-top: 40px;
+}
+.tagline-footer a {
+  color: var(--fg);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.tagline-footer a:hover {
+  color: var(--accent);
+}
+
 /* Mobile Header optimizations to prevent horizontal overflow */
 @media (max-width: 480px) {
   header.top {
