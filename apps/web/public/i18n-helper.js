@@ -50,8 +50,8 @@
       "nama lengkap & nama bisnis wajib": "Full name and business name are required.",
       "nomor hp tidak valid": "Invalid phone number.",
       "otp terkirim": "OTP sent",
-      "masuk — kongsian": "Login — Kongsian",
-      "daftar — kongsian": "Register — Kongsian",
+      "masuk — oatlet": "Login — Oatlet",
+      "daftar — oatlet": "Register — Oatlet",
 
       // Login page - additional strings
       "pilih kode negara & masukkan nomor tanpa angka 0 di depan.": "Select country code & enter number without leading 0.",
@@ -387,7 +387,7 @@
       "lv. —": "Level —",
       "memuat xp…": "Loading Activity Points...",
       "memuat xp...": "Loading Activity Points...",
-      "peta kongsian (virtual town)": "Virtual Cafe Map",
+      "peta oatlet (virtual town)": "Virtual Cafe Map",
       "menggambar peta…": "Drawing map...",
       "menggambar peta...": "Drawing map...",
       "stok tersisa di partner": "Remaining Stock at Partners",
@@ -472,7 +472,7 @@
       "masuk di sini": "Login here",
       "mau demo langsung?": "Want a live demo?",
       "lihat dashboard brand": "View brand dashboard",
-      "daftar di kongsian": "Register at Kongsian",
+      "daftar di oatlet": "Register at Oatlet",
       "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "We will notify you via WhatsApp within 24 hours. You can log in for now, but the dashboard will be accessible after admin approval.",
 
       // Role Selector and Avatar names
@@ -669,8 +669,8 @@
       "nama lengkap & nama bisnis wajib": "Nama lengkap dan nama bisnis wajib diisi.",
       "nomor hp tidak valid": "Nomor HP tidak valid.",
       "otp terkirim": "OTP terkirim",
-      "masuk — kongsian": "Masuk — Kongsian",
-      "daftar — kongsian": "Daftar — Kongsian",
+      "masuk — oatlet": "Masuk — Oatlet",
+      "daftar — oatlet": "Daftar — Oatlet",
 
       // Login page - additional strings
       "pilih kode negara & masukkan nomor tanpa angka 0 di depan.": "Pilih kode negara & masukkan nomor tanpa angka 0 di depan.",
@@ -1003,7 +1003,7 @@
       "lv. —": "Level —",
       "memuat xp…": "Memuat Poin Keaktifan...",
       "memuat xp...": "Memuat Poin Keaktifan...",
-      "peta kongsian (virtual town)": "Peta Cafe Virtual",
+      "peta oatlet (virtual town)": "Peta Cafe Virtual",
       "menggambar peta…": "Menggambar peta…",
       "menggambar peta...": "Menggambar peta…",
       "stok tersisa di partner": "Stok Tersisa di Partner",
@@ -1086,7 +1086,7 @@
       "masuk di sini": "Masuk di sini",
       "mau demo langsung?": "Mau demo langsung?",
       "lihat dashboard brand": "Lihat dashboard brand",
-      "daftar di kongsian": "Daftar di Kongsian",
+      "daftar di oatlet": "Daftar di Oatlet",
       "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "Kami akan kabari via WA maks. 24 jam. Untuk sekarang Anda bisa login, tapi dashboard akan terbuka setelah admin menyetujui.",
 
       // Role Selector and Avatar names

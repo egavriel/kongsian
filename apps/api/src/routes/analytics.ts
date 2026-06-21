@@ -15,7 +15,7 @@
  *
  * CSV export (Opus X-2 spec):
  *   - Content-Type: text/csv; charset=utf-8
- *   - Content-Disposition: attachment; filename="kongsian-analytics-{range}-{YYYYMMDD-HHMM}.csv"
+ *   - Content-Disposition: attachment; filename="oatlet-analytics-{range}-{YYYYMMDD-HHMM}.csv"
  *   - UTF-8 BOM (\\uFEFF) for Excel mojibake protection
  *   - Quote/escape: any value containing `,`, `"`, `\\n`, or `\\r` is wrapped
  *     in `"` and inner `"` doubled to `""`.
@@ -274,7 +274,7 @@ function csvResponse(range: string, body: string): Response {
     status: 200,
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="kongsian-analytics-${range}-${stamp}.csv"`,
+      "content-disposition": `attachment; filename="oatlet-analytics-${range}-${stamp}.csv"`,
       "cache-control": "private, max-age=0, no-store",
     },
   });

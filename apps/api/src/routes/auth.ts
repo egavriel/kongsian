@@ -19,20 +19,20 @@ import { sendWa } from "../lib/wa-gateway";
 
 const router = new Hono<{ Bindings: Bindings; Variables: { auth: AuthContext } }>();
 
-/** Format the OTP message sent over WhatsApp. Bahasa Indonesia, friendly. */
+/** Format the OTP message sent over WhatsApp. English by default. */
 function buildOtpMessage(code: string, ttlSeconds: number, purpose: string): string {
   const ttlMin = Math.round(ttlSeconds / 60);
   const purposeText =
     purpose === "INVITE"
-      ? "untuk undangan partner Kongsian"
+      ? "for your Oatlet partner invitation"
       : purpose === "RESET"
-      ? "untuk reset akun Kongsian"
-      : "untuk login Kongsian";
+      ? "to reset your Oatlet account"
+      : "to log into Oatlet";
   return (
-    `*[Kongsian]*\n\n` +
-    `Kode OTP kamu ${purposeText}:\n\n` +
+    `*[Oatlet]*\n\n` +
+    `Your OTP code ${purposeText}:\n\n` +
     `*${code}*\n\n` +
-    `Berlaku ${ttlMin} menit. Jangan berikan kode ini ke siapa pun — termasuk tim Kongsian.`
+    `Valid for ${ttlMin} minutes. Do not share this code with anyone — including the Oatlet team.`
   );
 }
 

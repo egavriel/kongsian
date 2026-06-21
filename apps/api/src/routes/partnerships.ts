@@ -59,12 +59,12 @@ function buildInviteMessage(args: {
   const ttlMin = Math.round(args.ttlSeconds / 60);
   const link = `${args.appUrl.replace(/\/+$/, "")}/register?phone=${encodeURIComponent(args.phone)}&role=TENANT`;
   return (
-    `*[${args.brandName}] — Undangan Partner Kongsian*\n\n` +
-    `Halo! Kamu diundang untuk menjadi PIC *${args.cafeName}* di Kongsian.\n\n` +
-    `Tap link ini untuk daftar (nomor kamu sudah terisi):\n${link}\n\n` +
-    `Kode OTP kamu:\n*${args.code}*\n\n` +
-    `Berlaku ${ttlMin} menit. Setelah daftar, kamu bisa langsung catat titipan & closing harian.\n\n` +
-    `Bukan kamu? Abaikan pesan ini.`
+    `*[${args.brandName}] — Oatlet Partner Invitation*\n\n` +
+    `Hello! You have been invited to be the PIC for *${args.cafeName}* on Oatlet.\n\n` +
+    `Tap this link to register (your phone number is pre-filled):\n${link}\n\n` +
+    `Your OTP code:\n*${args.code}*\n\n` +
+    `Valid for ${ttlMin} minutes. Once registered, you can start tracking stock & recording daily closing.\n\n` +
+    `Not you? Please ignore this message.`
   );
 }
 

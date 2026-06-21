@@ -555,7 +555,7 @@ const title = `Analytics — ${APP_NAME}`;
           // Extract filename from Content-Disposition if present.
           const cd = res.headers.get("content-disposition") || "";
           const m = cd.match(/filename="?([^"]+)"?/);
-          const filename = m ? m[1] : "kongsian-analytics.csv";
+          const filename = m ? m[1] : "oatlet-analytics.csv";
           const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
           a.download = filename;

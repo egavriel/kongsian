@@ -98,7 +98,7 @@ export async function renderSettlementPdf(ctx: PdfContext): Promise<RenderResult
   let y = A4_H - MARGIN;
 
   // --- Header ---
-  page.drawText("REKAP SETTLEMENT KONGSIAN", {
+  page.drawText("REKAP SETTLEMENT OATLET", {
     x: MARGIN, y, size: 16, font: fontBold, color: COLOR_HEAD,
   });
   y -= 22;
@@ -229,7 +229,7 @@ export async function renderSettlementPdf(ctx: PdfContext): Promise<RenderResult
     thickness: 0.3, color: COLOR_RULE,
   });
   page.drawText(
-    `Kongsian · ${ctx.settlement.id} · di-generate ${new Date().toISOString().slice(0, 10)}`,
+    `Oatlet · ${ctx.settlement.id} · generated ${new Date().toISOString().slice(0, 10)}`,
     { x: MARGIN, y: footerY, size: 7, font: fontReg, color: COLOR_MUTED }
   );
 
