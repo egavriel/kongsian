@@ -1,11 +1,11 @@
 (function() {
   "use strict";
-  const saved = localStorage.getItem("oatlet_ui_theme") || "default";
+  const saved = localStorage.getItem("oatlet_ui_theme") || "playful";
   document.documentElement.setAttribute("data-ui-theme", saved);
 
   window.OatletTheme = {
     getTheme() {
-      return localStorage.getItem("oatlet_ui_theme") || "default";
+      return localStorage.getItem("oatlet_ui_theme") || "playful";
     },
     setTheme(theme) {
       localStorage.setItem("oatlet_ui_theme", theme);

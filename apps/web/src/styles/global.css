@@ -1,17 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap');
 
 :root {
-  --bg: #0b1220;
-  --bg-soft: #0f172a;
-  --fg: #f1f5f9;
-  --fg-muted: #94a3b8;
-  --brand: #fbbf24;
-  --brand-fg: #0b1220;
-  --accent: #38bdf8;
-  --line: #1e293b;
-  --good: #34d399;
-  --warn: #fbbf24;
-  --bad: #fb7185;
+  /* Oatlet cocoa-night (default / dark theme) */
+  --bg: #1A130D;
+  --bg-soft: #271E17;
+  --fg: #F3EADF;
+  --fg-muted: #B6A595;
+  --brand: #C9A96E;
+  --brand-fg: #2A2019;
+  --accent: #A7B488;
+  --line: #3A2D22;
+  --good: #8FB36A;
+  --warn: #C9A96E;
+  --bad: #D08A6E;
   --radius: 14px;
   --max-w: 1120px;
 }
@@ -19,17 +20,17 @@
 /* Playful Theme Variable Overrides (Harvest Moon & Dr. Stone inspired) */
 html[data-ui-theme="playful"] {
   /* New Dr. Stone Light Theme Palette (Lite UI) */
-  --bg: #f4efe6;         /* Sandy Soil clay background (warm sand) */
-  --bg-soft: #fffdfa;    /* Clean parchment paper for cards */
-  --fg: #3d281c;         /* Deep timber bark brown for readable text */
-  --fg-muted: #7d6556;   /* Soft wood-ash grey-brown */
-  --brand: #e76f51;      /* Stone-fired terracotta clay orange (Primary) */
+  --bg: #FAF4EA;         /* Oatlet warm cream page */
+  --bg-soft: #FFFDF9;    /* Oatlet paper / card surface */
+  --fg: #3A3028;         /* Oatlet cocoa ink */
+  --fg-muted: #7A7068;   /* Oatlet cocoa-500 muted */
+  --brand: #A67C52;      /* Oatlet caramel (primary accent) */
   --brand-fg: #ffffff;
-  --accent: #52b788;     /* Vibrant leaf/grass canopy green (Secondary) */
-  --line: #4e3629;       /* Dark log-outline brown for borders & shadows */
-  --good: #2a9d8f;       /* Emerald river water teal */
-  --warn: #e9c46a;       /* Dried thatch straw gold */
-  --bad: #e76f51;        /* Terracotta red */
+  --accent: #8A9A6B;     /* Oatlet sage (fresh / secondary) */
+  --line: #4A382A;       /* Oatlet dark cocoa outline */
+  --good: #6F8C4E;       /* Oatlet success green */
+  --warn: #C9A96E;       /* Oatlet caramel-400 gold */
+  --bad: #B4584E;        /* Oatlet berry alert */
   --radius: 8px;
 }
 
@@ -75,9 +76,10 @@ section + section { border-top: 1px solid var(--line); }
   margin-bottom: 12px;
 }
 html[data-ui-theme="playful"] .eyebrow {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  letter-spacing: normal;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 h1 { font-size: clamp(36px, 6vw, 56px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em; }
@@ -85,15 +87,17 @@ h2 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0 0 14px; let
 h3 { font-size: 18px; margin: 0 0 8px; }
 
 html[data-ui-theme="playful"] h1 {
-  font-family: 'Press Start 2P', monospace;
-  font-size: clamp(16px, 3.5vw, 24px) !important;
-  line-height: 1.3;
-  letter-spacing: -0.03em;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: clamp(22px, 4vw, 30px) !important;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 html[data-ui-theme="playful"] h2 {
-  font-family: 'Press Start 2P', monospace;
-  font-size: clamp(12px, 3vw, 18px) !important;
-  line-height: 1.3;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: clamp(16px, 3vw, 21px) !important;
+  line-height: 1.25;
 }
 html[data-ui-theme="playful"] h3 {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -133,33 +137,33 @@ html[data-ui-theme="playful"] .btn:active {
   box-shadow: 1px 1px 0px 0px var(--line) !important;
 }
 html[data-ui-theme="playful"] .btn-primary {
-  background: #52b788 !important; /* Leaf/Grass Green background */
+  background: #8A9A6B !important; /* Leaf/Grass Green background */
   color: #ffffff !important;
 }
 html[data-ui-theme="playful"] .btn-primary:hover {
-  background: #409a72 !important;
+  background: #74835A !important;
 }
 html[data-ui-theme="playful"] .btn-accent {
-  background: #e76f51 !important; /* Terracotta clay orange */
+  background: #A67C52 !important; /* Oatlet caramel */
   color: #ffffff !important;
 }
 html[data-ui-theme="playful"] .btn-accent:hover {
-  background: #cf5e42 !important;
+  background: #8B6540 !important;
 }
 html[data-ui-theme="playful"] .btn-danger {
   background: var(--bad) !important;
   color: #ffffff !important;
 }
 html[data-ui-theme="playful"] .btn-danger:hover {
-  background: #cf5e42 !important;
+  background: #9A4A42 !important;
 }
 html[data-ui-theme="playful"] .btn-ghost {
-  background: #d8c3a5 !important; /* Soft sand-wood brown */
+  background: #DEC9A6 !important; /* Soft sand-wood brown */
   color: #3d281c !important;
   border-color: var(--line) !important;
 }
 html[data-ui-theme="playful"] .btn-ghost:hover {
-  background: #c3ae90 !important;
+  background: #CBB488 !important;
 }
 html[data-ui-theme="playful"] .btn-sm {
   padding: 6px 12px !important;
@@ -205,9 +209,10 @@ html[data-ui-theme="playful"] .quest-header-panel:hover {
 
 .card .tag { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brand); font-weight: 700; }
 html[data-ui-theme="playful"] .card .tag {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 7px;
-  letter-spacing: normal;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .muted { color: var(--fg-muted); }
@@ -240,7 +245,7 @@ html[data-ui-theme="playful"] select:focus,
 html[data-ui-theme="playful"] textarea:focus {
   border-color: var(--accent) !important;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(138, 154, 107, 0.15) !important;
 }
 
 /* Quest and level items */
@@ -251,9 +256,10 @@ html[data-ui-theme="playful"] .quest-tracker-icon {
   border-radius: 8px !important;
 }
 html[data-ui-theme="playful"] .quest-tracker-title {
-  font-family: 'Press Start 2P', monospace !important;
-  font-size: 8px !important;
-  color: var(--accent) !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  color: #5E6B41 !important;
 }
 html[data-ui-theme="playful"] .quest-tracker-subtitle {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -263,7 +269,7 @@ html[data-ui-theme="playful"] .quest-tracker-subtitle {
 
 /* HP Bar EXP Bar styling overrides */
 html[data-ui-theme="playful"] .hp-bar-fill {
-  background: linear-gradient(90deg, #52b788 0%, #74c69d 100%) !important;
+  background: linear-gradient(90deg, #8A9A6B 0%, #A7B488 100%) !important;
 }
 
 /* Modal overlays */
@@ -285,16 +291,18 @@ html[data-ui-theme="playful"] header.top {
   background: var(--bg-soft) !important;
 }
 html[data-ui-theme="playful"] .brand-name {
-  font-family: 'Press Start 2P', monospace !important;
-  font-size: 12px !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
   color: var(--fg) !important;
 }
 html[data-ui-theme="playful"] .role-tag {
-  font-family: 'Press Start 2P', monospace !important;
-  font-size: 7px !important;
-  background: rgba(82, 183, 136, 0.1) !important;
-  border: 2px solid rgba(82, 183, 136, 0.3) !important;
-  color: var(--accent) !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  background: rgba(138, 154, 107, 0.14) !important;
+  border: 2px solid rgba(138, 154, 107, 0.34) !important;
+  color: #5E6B41 !important;
 }
 
 /* Tables in Playful theme */
@@ -392,7 +400,7 @@ html[data-ui-theme="playful"] .rpg-stat-sub {
 
 /* Playful Quest Card overrides */
 html[data-ui-theme="playful"] .quest-card {
-  background: #f2cc8f !important; /* Rich harvest wheat / strong sand yellow */
+  background: #E8D2A0 !important; /* Rich harvest wheat / strong sand yellow */
   border: 3px solid var(--line) !important;
   box-shadow: 4px 4px 0px var(--line) !important;
   color: var(--fg) !important;
@@ -422,9 +430,10 @@ html[data-ui-theme="playful"] .quest-icon {
   border-radius: 8px !important;
 }
 html[data-ui-theme="playful"] .quest-xp-badge {
-  font-family: 'Press Start 2P', monospace !important;
-  font-size: 7px !important;
-  padding: 3px 6px !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
   background: var(--bg-soft) !important;
   color: var(--accent) !important;
   border: 2px solid var(--line) !important;
@@ -443,7 +452,7 @@ html[data-ui-theme="playful"] .road-cell {
   color: var(--fg-muted) !important;
 }
 html[data-ui-theme="playful"] .grass-cell {
-  color: #52b788 !important;
+  color: #8A9A6B !important;
   opacity: 0.9 !important;
 }
 html[data-ui-theme="playful"] .building-label {
@@ -486,13 +495,13 @@ html[data-ui-theme="playful"] .pouch-item {
 }
 html[data-ui-theme="playful"] .pouch-item.zero { border-color: var(--bad) !important; background: rgba(231, 111, 81, 0.05) !important; }
 html[data-ui-theme="playful"] .pouch-item.low { border-color: var(--warn) !important; background: rgba(233, 196, 106, 0.05) !important; }
-html[data-ui-theme="playful"] .pouch-item.ok { border-color: var(--accent) !important; background: rgba(82, 183, 136, 0.05) !important; }
+html[data-ui-theme="playful"] .pouch-item.ok { border-color: var(--accent) !important; background: rgba(138, 154, 107, 0.05) !important; }
 
 html[data-ui-theme="playful"] .sku-code {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
   font-weight: 800 !important;
   color: var(--fg) !important;
-  background: #f2cc8f !important;
+  background: #E8D2A0 !important;
   border: 1.5px solid var(--line) !important;
 }
 html[data-ui-theme="playful"] .sku-name {
@@ -508,8 +517,8 @@ html[data-ui-theme="playful"] .stock-badge {
   font-weight: 800 !important;
 }
 html[data-ui-theme="playful"] .stock-badge.zero { background: rgba(231, 111, 81, 0.1) !important; color: var(--bad) !important; border: 1.5px solid var(--bad) !important; }
-html[data-ui-theme="playful"] .stock-badge.low { background: rgba(233, 196, 106, 0.1) !important; color: #b58d1b !important; border: 1.5px solid var(--warn) !important; }
-html[data-ui-theme="playful"] .stock-badge.ok { background: rgba(82, 183, 136, 0.1) !important; color: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
+html[data-ui-theme="playful"] .stock-badge.low { background: rgba(233, 196, 106, 0.1) !important; color: #8B6540 !important; border: 1.5px solid var(--warn) !important; }
+html[data-ui-theme="playful"] .stock-badge.ok { background: rgba(138, 154, 107, 0.1) !important; color: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
 
 html[data-ui-theme="playful"] .stock-progress-container {
   background: rgba(78, 54, 41, 0.1) !important;
@@ -559,11 +568,11 @@ html[data-ui-theme="playful"] .sku-pill {
   color: var(--fg) !important;
 }
 html[data-ui-theme="playful"] .sku-pill:hover {
-  background: #f2cc8f !important;
+  background: #E8D2A0 !important;
 }
 
-html[data-ui-theme="playful"] .badge.active { background: rgba(82, 183, 136, 0.1) !important; color: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
-html[data-ui-theme="playful"] .badge.pending { background: rgba(233, 196, 106, 0.1) !important; color: #b58d1b !important; border: 1.5px solid var(--warn) !important; }
+html[data-ui-theme="playful"] .badge.active { background: rgba(138, 154, 107, 0.1) !important; color: var(--accent) !important; border: 1.5px solid var(--accent) !important; }
+html[data-ui-theme="playful"] .badge.pending { background: rgba(233, 196, 106, 0.1) !important; color: #8B6540 !important; border: 1.5px solid var(--warn) !important; }
 html[data-ui-theme="playful"] .badge.suspended { background: rgba(231, 111, 81, 0.1) !important; color: var(--bad) !important; border: 1.5px solid var(--bad) !important; }
 
 html[data-ui-theme="playful"] .badge.legendary { background: #faedcd !important; color: #7f5539 !important; border: 2px solid var(--line) !important; }
@@ -642,7 +651,7 @@ html[data-ui-theme="playful"] .nb-item:hover {
   background: rgba(78, 54, 41, 0.05) !important;
 }
 html[data-ui-theme="playful"] .nb-item.unread {
-  background: rgba(82, 183, 136, 0.08) !important;
+  background: rgba(138, 154, 107, 0.08) !important;
 }
 html[data-ui-theme="playful"] .nb-title {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -706,20 +715,22 @@ html[data-ui-theme="playful"] .live-preview-container {
   box-shadow: none !important;
 }
 html[data-ui-theme="playful"] .preview-tag {
-  background: var(--brand) !important; /* Terracotta Orange */
+  background: var(--brand) !important; /* Oatlet caramel */
   color: #ffffff !important;
   border: 2px solid var(--line) !important;
-  font-family: 'Press Start 2P', monospace !important;
-  font-size: 7px !important;
-  top: -11px !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  top: -12px !important;
 }
 
 /* Rarity badges overrides in playful mode */
 html[data-ui-theme="playful"] .rarity-badge {
-  font-family: 'Press Start 2P', monospace !important;
-  font-size: 7px !important;
-  padding: 4px 6px !important;
-  border-radius: 4px !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
   border: 2px solid var(--line) !important;
 }
 html[data-ui-theme="playful"] .rarity-badge.common { background: #e9ecef !important; color: #495057 !important; }
@@ -766,7 +777,7 @@ html[data-ui-theme="playful"] :global(.sk-label .name) {
 html[data-ui-theme="playful"] .sk-label .code,
 html[data-ui-theme="playful"] :global(.sk-label .code) {
   color: var(--fg) !important;
-  background: #f2cc8f !important;
+  background: #E8D2A0 !important;
   border: 1.5px solid var(--line) !important;
   padding: 1px 4px;
   border-radius: 4px;
@@ -787,7 +798,7 @@ html[data-ui-theme="playful"] :global(.sk-row input) {
 }
 html[data-ui-theme="playful"] .stepper .step-btn,
 html[data-ui-theme="playful"] :global(.stepper .step-btn) {
-  background: #d8c3a5 !important; /* soft log brown */
+  background: #DEC9A6 !important; /* soft log brown */
   border: 2px solid var(--line) !important;
   color: var(--fg) !important;
   font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -795,7 +806,7 @@ html[data-ui-theme="playful"] :global(.stepper .step-btn) {
 }
 html[data-ui-theme="playful"] .stepper .step-btn:hover:not(:disabled),
 html[data-ui-theme="playful"] :global(.stepper .step-btn:hover:not(:disabled)) {
-  background: #c3ae90 !important;
+  background: #CBB488 !important;
   color: var(--fg) !important;
 }
 
@@ -872,3 +883,197 @@ html[data-ui-theme="playful"] .table-wrap h2 {
   }
 }
 
+
+
+/* ===== Oatlet reskin — polish for elements not covered by the original playful overrides ===== */
+html[data-ui-theme="playful"] .xp-bar-fill {
+  background: linear-gradient(90deg, var(--brand) 0%, var(--warn) 100%) !important;
+}
+html[data-ui-theme="playful"] .xp-bar-container {
+  background: rgba(74, 56, 42, 0.10) !important;
+  border-color: var(--line) !important;
+}
+html[data-ui-theme="playful"] .level-badge {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  font-family: 'Fredoka', sans-serif !important;
+  font-weight: 700 !important;
+}
+html[data-ui-theme="playful"] .avatar-edit-badge { background: var(--brand) !important; border-color: var(--bg-soft) !important; }
+html[data-ui-theme="playful"] .avatar-circle { background: #fff !important; border-color: var(--line) !important; }
+html[data-ui-theme="playful"] .avatar-circle:hover { border-color: var(--brand) !important; }
+html[data-ui-theme="playful"] h1 { color: var(--fg) !important; }
+html[data-ui-theme="playful"] .char-title,
+html[data-ui-theme="playful"] .greet,
+html[data-ui-theme="playful"] .xp-text { color: var(--fg-muted) !important; }
+html[data-ui-theme="playful"] .partner-icon { background: rgba(166, 124, 82, 0.10) !important; border: 1px solid rgba(166, 124, 82, 0.25) !important; }
+html[data-ui-theme="playful"] .sku-name { color: var(--fg) !important; }
+html[data-ui-theme="playful"] .section-header-rpg h2,
+html[data-ui-theme="playful"] .collapsible-header h2,
+html[data-ui-theme="playful"] .action-section-title { color: var(--fg-muted) !important; }
+html[data-ui-theme="playful"] .logout { color: var(--fg-muted) !important; }
+html[data-ui-theme="playful"] .logout:hover { color: var(--bad) !important; }
+html[data-ui-theme="playful"] .search-icon,
+html[data-ui-theme="playful"] .sisa-toggle-icon,
+html[data-ui-theme="playful"] .toggle-btn { color: var(--fg-muted) !important; }
+
+
+/* ===================================================================
+   Oatlet reskin — header logo mark (oat grain before brand name)
+   =================================================================== */
+.brand-name { display: inline-flex !important; align-items: center; gap: 9px; }
+.brand-name::before {
+  content: "";
+  width: 20px; height: 26px; flex: none;
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2040%2052'%3E%3Cpath%20d%3D'M20%203%20C29%2014%2029%2038%2020%2049%20C11%2038%2011%2014%2020%203%20Z'%20fill%3D'%23A67C52'%2F%3E%3Cg%20fill%3D'none'%20stroke%3D'%23FBF5EA'%20stroke-width%3D'2.2'%20stroke-linecap%3D'round'%3E%3Cpath%20d%3D'M20%2011%20Q21.5%2027%2020%2043'%2F%3E%3Cpath%20d%3D'M20%2020%20Q15%2018%2011%2022'%2F%3E%3Cpath%20d%3D'M20%2020%20Q25%2018%2029%2022'%2F%3E%3Cpath%20d%3D'M20%2031%20Q15%2029%2011%2033'%2F%3E%3Cpath%20d%3D'M20%2031%20Q25%2029%2029%2033'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center / contain no-repeat;
+}
+
+/* ===================================================================
+   Oatlet cocoa-night — default (dark) theme retint
+   Recolours the dashboards' hard-coded slate surfaces to warm cocoa.
+   =================================================================== */
+html[data-ui-theme="default"] body { background: radial-gradient(circle at top, #1E1610 0%, #120C07 100%) !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] header.top { background: rgba(18,12,7,0.85) !important; border-bottom-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .brand-name { color: #F8F1E7 !important; }
+html[data-ui-theme="default"] a { color: #C9A96E !important; }
+html[data-ui-theme="default"] .rpg-card { background: #2A2019 !important; border-color: #3A2D22 !important; box-shadow: 4px 4px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .rpg-card:hover { border-color: #4A3A2C !important; box-shadow: 6px 6px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .rpg-profile { background: linear-gradient(135deg, #2F241C 0%, #241B14 100%) !important; }
+html[data-ui-theme="default"] .avatar-circle { background: #1C150F !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .avatar-edit-badge { background: #C9A96E !important; border-color: #2A2019 !important; }
+html[data-ui-theme="default"] .char-title,
+html[data-ui-theme="default"] .greet,
+html[data-ui-theme="default"] .xp-text,
+html[data-ui-theme="default"] .rpg-stat-lbl,
+html[data-ui-theme="default"] .rpg-stat-sub,
+html[data-ui-theme="default"] .quest-desc,
+html[data-ui-theme="default"] .sku-price,
+html[data-ui-theme="default"] .partner .meta,
+html[data-ui-theme="default"] .section-header-rpg h2,
+html[data-ui-theme="default"] .collapsible-header h2,
+html[data-ui-theme="default"] .action-section-title { color: #B6A595 !important; }
+html[data-ui-theme="default"] h1,
+html[data-ui-theme="default"] .rpg-stat-val,
+html[data-ui-theme="default"] .quest-title,
+html[data-ui-theme="default"] .partner-name,
+html[data-ui-theme="default"] .sku-name,
+html[data-ui-theme="default"] .partner .name { color: #F3EADF !important; }
+html[data-ui-theme="default"] .level-badge { background: #C9A96E !important; color: #2A2019 !important; }
+html[data-ui-theme="default"] .xp-bar-container { background: rgba(255,255,255,0.06) !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .xp-bar-fill { background: linear-gradient(90deg, #C9A96E 0%, #A7B488 100%) !important; }
+html[data-ui-theme="default"] .rpg-stat-box { background: #241B14 !important; border-color: #3A2D22 !important; box-shadow: 3px 3px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .rpg-stat-box:hover { border-color: #4A3A2C !important; box-shadow: 4px 4px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .rpg-stat-icon { background: #1C150F !important; border-color: #4A3A2C !important; }
+html[data-ui-theme="default"] .town-viewport { background: radial-gradient(circle at center, #2A2019 0%, #1C150F 100%) !important; border-color: #3A2D22 !important; box-shadow: 4px 4px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .building-label { background: #1C150F !important; color: #E8DDCF !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .search-input { background: #241B14 !important; border-color: #3A2D22 !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] .search-input:focus { border-color: #C9A96E !important; }
+html[data-ui-theme="default"] .filter-tabs { background: #241B14 !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .filter-tab { color: #B6A595 !important; }
+html[data-ui-theme="default"] .filter-tab.active { background: #C9A96E !important; color: #2A2019 !important; box-shadow: 2px 2px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .sisa-header { border-bottom-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .partner-icon { background: rgba(201,169,110,0.10) !important; border-color: rgba(201,169,110,0.22) !important; }
+html[data-ui-theme="default"] .pouch-item { background: #1C150F !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .pouch-item.ok { border-color: #8FB36A !important; }
+html[data-ui-theme="default"] .pouch-item.low { border-color: #C9A96E !important; }
+html[data-ui-theme="default"] .pouch-item.zero { border-color: #D08A6E !important; }
+html[data-ui-theme="default"] .sku-code { color: #C9A96E !important; background: rgba(201,169,110,0.10) !important; border-color: rgba(201,169,110,0.22) !important; }
+html[data-ui-theme="default"] .stock-badge.ok { background: rgba(143,179,106,0.12) !important; color: #A7C77E !important; border-color: rgba(143,179,106,0.25) !important; }
+html[data-ui-theme="default"] .stock-badge.low { background: rgba(201,169,110,0.12) !important; color: #D8BE86 !important; border-color: rgba(201,169,110,0.25) !important; }
+html[data-ui-theme="default"] .stock-badge.zero { background: rgba(208,138,110,0.12) !important; color: #E2A487 !important; border-color: rgba(208,138,110,0.25) !important; }
+html[data-ui-theme="default"] .stock-progress-container { background: rgba(255,255,255,0.05) !important; }
+html[data-ui-theme="default"] .stock-progress-bar.ok { background: #8FB36A !important; }
+html[data-ui-theme="default"] .stock-progress-bar.low { background: #C9A96E !important; }
+html[data-ui-theme="default"] .quest-card { background: #2A2019 !important; border-color: #3A2D22 !important; box-shadow: 3px 3px 0 0 #0C0805 !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] .quest-card:hover { border-color: #C9A96E !important; box-shadow: 4px 4px 0 0 #0C0805 !important; }
+html[data-ui-theme="default"] .quest-icon { background: #1C150F !important; border-color: #4A3A2C !important; }
+html[data-ui-theme="default"] .quest-xp-badge { background: rgba(167,180,136,0.14) !important; color: #B7C49A !important; border-color: rgba(167,180,136,0.28) !important; }
+html[data-ui-theme="default"] .partner { background: #1C150F !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .partner:hover { border-color: #4A3A2C !important; }
+html[data-ui-theme="default"] .sku-pill { background: #1C150F !important; border-color: #3A2D22 !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] .sku-pill:hover { border-color: #C9A96E !important; }
+html[data-ui-theme="default"] .badge.active { background: rgba(143,179,106,0.12) !important; color: #A7C77E !important; border-color: rgba(143,179,106,0.25) !important; }
+html[data-ui-theme="default"] .badge.pending { background: rgba(201,169,110,0.12) !important; color: #D8BE86 !important; border-color: rgba(201,169,110,0.25) !important; }
+html[data-ui-theme="default"] .badge.suspended { background: rgba(208,138,110,0.12) !important; color: #E2A487 !important; border-color: rgba(208,138,110,0.25) !important; }
+html[data-ui-theme="default"] .empty { background: rgba(42,32,25,0.5) !important; border-color: #3A2D22 !important; color: #B6A595 !important; }
+html[data-ui-theme="default"] .rpg-log-viewport { background: #15100B !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .combat-row { color: #B6A595 !important; }
+html[data-ui-theme="default"] .log-entity { color: #F3EADF !important; }
+html[data-ui-theme="default"] .log-time { color: #8A7A6B !important; }
+html[data-ui-theme="default"] .kbd { background: #1C150F !important; border-color: #3A2D22 !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] .tagline-footer { border-top-color: #3A2D22 !important; color: #B6A595 !important; }
+html[data-ui-theme="default"] .tagline-footer a { color: #F3EADF !important; }
+html[data-ui-theme="default"] .theme-toggle-btn { background: #2A2019 !important; border-color: #3A2D22 !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] .theme-toggle-btn:hover { border-color: #C9A96E !important; }
+html[data-ui-theme="default"] .role-tag { background: rgba(201,169,110,0.12) !important; color: #D8BE86 !important; border-color: rgba(201,169,110,0.25) !important; }
+html[data-ui-theme="default"] .logout { color: #B6A595 !important; }
+html[data-ui-theme="default"] .logout:hover { color: #D08A6E !important; }
+
+
+/* ===================================================================
+   Oatlet reskin — shared forms, banners & per-page extras
+   (login / register / tenant dashboard). Covers classes the pages
+   hard-code inline, in BOTH themes, so every screen stays on-palette.
+   =================================================================== */
+
+/* ---------- Oatlet LIGHT (playful) ---------- */
+html[data-ui-theme="playful"] .eyebrow { color: var(--brand) !important; }
+html[data-ui-theme="playful"] .back,
+html[data-ui-theme="playful"] .small,
+html[data-ui-theme="playful"] .muted,
+html[data-ui-theme="playful"] .sub,
+html[data-ui-theme="playful"] .card p,
+html[data-ui-theme="playful"] .wrap > .card p { color: var(--fg-muted) !important; }
+html[data-ui-theme="playful"] .country-select { background: #fffdfa !important; border: 2.5px solid var(--line) !important; color: var(--fg) !important; font-weight: 700; }
+html[data-ui-theme="playful"] .country-select:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(138,154,107,0.18) !important; outline: none; }
+html[data-ui-theme="playful"] .info { background: rgba(138,154,107,0.12) !important; color: #5E6B41 !important; border: 1.5px solid rgba(138,154,107,0.30) !important; }
+html[data-ui-theme="playful"] .dev-code { background: #fffdfa !important; border: 1.5px dashed var(--brand) !important; color: var(--brand) !important; }
+html[data-ui-theme="playful"] .step2 { border-top-color: var(--line) !important; }
+html[data-ui-theme="playful"] .block-modal { background: rgba(61,40,28,0.45) !important; }
+html[data-ui-theme="playful"] .block-card { background: var(--bg-soft) !important; border: 3px solid var(--line) !important; box-shadow: 6px 6px 0 0 var(--line) !important; border-radius: 8px !important; }
+html[data-ui-theme="playful"] .block-card .msg { color: var(--fg-muted) !important; }
+html[data-ui-theme="playful"] .task-card { background: linear-gradient(135deg, rgba(166,124,82,0.14), rgba(166,124,82,0.05)) !important; border: 3px solid var(--line) !important; box-shadow: 4px 4px 0 0 var(--line) !important; border-radius: 8px !important; }
+html[data-ui-theme="playful"] .task-card .tt { color: var(--fg) !important; }
+html[data-ui-theme="playful"] .task-card .desc { color: var(--fg-muted) !important; }
+html[data-ui-theme="playful"] .task-card .deadline { color: var(--brand) !important; }
+html[data-ui-theme="playful"] .task-card.done { background: linear-gradient(135deg, rgba(138,154,107,0.16), rgba(138,154,107,0.05)) !important; border-color: var(--line) !important; }
+html[data-ui-theme="playful"] .task-card.done .tt { color: #5E6B41 !important; }
+html[data-ui-theme="playful"] .sku-row .code { color: var(--brand) !important; }
+html[data-ui-theme="playful"] .sku-row .name { color: var(--fg) !important; }
+html[data-ui-theme="playful"] .sku-row .price { color: var(--fg-muted) !important; }
+
+/* ---------- Oatlet COCOA-NIGHT (default / dark) ---------- */
+html[data-ui-theme="default"] .card { background: #2A2019 !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .eyebrow { color: #C9A96E !important; }
+html[data-ui-theme="default"] p,
+html[data-ui-theme="default"] .sub,
+html[data-ui-theme="default"] .small,
+html[data-ui-theme="default"] .muted,
+html[data-ui-theme="default"] .back { color: #B6A595 !important; }
+html[data-ui-theme="default"] input,
+html[data-ui-theme="default"] .country-select,
+html[data-ui-theme="default"] textarea,
+html[data-ui-theme="default"] select { background: #1C150F !important; border-color: #3A2D22 !important; color: #F3EADF !important; }
+html[data-ui-theme="default"] input:focus,
+html[data-ui-theme="default"] .country-select:focus,
+html[data-ui-theme="default"] select:focus { border-color: #C9A96E !important; box-shadow: 0 0 0 3px rgba(201,169,110,0.18) !important; outline: none; }
+html[data-ui-theme="default"] .btn-primary { background: #C9A96E !important; color: #2A2019 !important; }
+html[data-ui-theme="default"] .btn-primary:hover { background: #B8965A !important; }
+html[data-ui-theme="default"] .btn-ghost { color: #F3EADF !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .btn-ghost:hover { border-color: #B6A595 !important; }
+html[data-ui-theme="default"] .info { background: rgba(167,180,136,0.12) !important; color: #B7C49A !important; border-color: rgba(167,180,136,0.30) !important; }
+html[data-ui-theme="default"] .dev-code { background: #1C150F !important; border: 1.5px dashed #C9A96E !important; color: #C9A96E !important; }
+html[data-ui-theme="default"] .step2 { border-top-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .block-modal { background: rgba(18,12,7,0.85) !important; }
+html[data-ui-theme="default"] .block-card { background: #2A2019 !important; border-color: #C9A96E !important; }
+html[data-ui-theme="default"] .block-card .msg { color: #B6A595 !important; }
+html[data-ui-theme="default"] .task-card { background: linear-gradient(135deg, rgba(201,169,110,0.16), rgba(201,169,110,0.05)) !important; border-color: #C9A96E !important; }
+html[data-ui-theme="default"] .task-card .desc { color: #CFC0B0 !important; }
+html[data-ui-theme="default"] .task-card .deadline { color: #C9A96E !important; }
+html[data-ui-theme="default"] .task-card.done { background: linear-gradient(135deg, rgba(143,179,106,0.16), rgba(143,179,106,0.05)) !important; border-color: #8FB36A !important; }
+html[data-ui-theme="default"] .task-card.done .tt { color: #A7C77E !important; }
+html[data-ui-theme="default"] .sku-row { background: #1C150F !important; border-color: #3A2D22 !important; }
+html[data-ui-theme="default"] .sku-row .code { color: #C9A96E !important; }
+html[data-ui-theme="default"] .sku-row .name { color: #F3EADF !important; }
+html[data-ui-theme="default"] .sku-row .price,
+html[data-ui-theme="default"] .partner .meta { color: #B6A595 !important; }
