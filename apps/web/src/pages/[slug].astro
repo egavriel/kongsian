@@ -196,15 +196,15 @@ const title = brandInfo ? `${brandInfo.brand.name} — ${APP_NAME}` : `${APP_NAM
             const cta = document.getElementById("primary-cta");
             if (role === "BRAND" && loggedBrandId === brandId) {
               text.textContent = "Kamu owner brand ini";
-              cta.textContent = "Buka Brand Dashboard";
+              cta.textContent = "Buka Dashboard";
               cta.href = "/dashboard/brand";
             } else if (role === "BRAND") {
               text.textContent = "Kamu login sebagai brand lain";
-              cta.textContent = "Buka Brand Dashboard kamu";
+              cta.textContent = "Buka Dashboard kamu";
               cta.href = "/dashboard/brand";
             } else if (role === "TENANT" || role === "BOTH") {
               text.textContent = "Kamu login sebagai cafe partner";
-              cta.textContent = "Buka Cafe Dashboard";
+              cta.textContent = "Buka Dashboard";
               cta.href = "/dashboard/tenant";
             }
           } catch (e) {

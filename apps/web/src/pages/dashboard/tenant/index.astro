@@ -3,7 +3,7 @@ import { APP_NAME } from "@kongsian/shared/constants";
 import { API_BASE_URL } from "../../../lib/api";
 import NotificationBell from "../../../components/NotificationBell.astro";
 import "../../../styles/global.css";
-const title = `Tenant Dashboard — ${APP_NAME}`;
+const title = `Dashboard — ${APP_NAME}`;
 ---
 <!doctype html>
 <html lang="id">
@@ -100,7 +100,7 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
       </header>
       <main>
         <p class="greet" id="greet">Halo, …</p>
-        <h1 id="tenant-name">Tenant Dashboard</h1>
+        <h1 id="tenant-name">Dashboard</h1>
         <p class="sub" id="date-line"></p>
 
         <div id="task-card" class="task-card">
@@ -186,7 +186,7 @@ const title = `Tenant Dashboard — ${APP_NAME}`;
         }
         const { tenant: tenantData, partnerships, skus } = me.data;
         document.getElementById("greet").textContent = `${window.t('Halo')}, ${tenantData.name || "Tenant"}`;
-        document.getElementById("tenant-name").textContent = tenantData.name || "Tenant Dashboard";
+        document.getElementById("tenant-name").textContent = tenantData.name || "Dashboard";
 
         // Partners
         const pEl = document.getElementById("partners");

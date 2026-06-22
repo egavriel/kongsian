@@ -4,7 +4,7 @@
   const DICTIONARY = {
     en: {
       // Global Header & Shared
-      "brand dashboard": "Brand Dashboard",
+      "brand dashboard": "Dashboard",
       "kembali": "Back",
       "keluar": "Logout",
       "memuat": "Loading",
@@ -453,7 +453,7 @@
       "aktif": "ACTIVE",
       "akun tenant tidak ditemukan.": "Tenant account not found.",
       "login ulang": "Login again",
-      "tenant dashboard": "Tenant Dashboard",
+      "tenant dashboard": "Dashboard",
 
       // Landing/Home & Back button additional translations
       "← kembali": "← Back",
@@ -471,7 +471,7 @@
       "sudah punya akun?": "Already have an account?",
       "masuk di sini": "Login here",
       "mau demo langsung?": "Want a live demo?",
-      "lihat dashboard brand": "View brand dashboard",
+      "lihat dashboard brand": "View Dashboard",
       "daftar di oatlet": "Register at Oatlet",
       "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "We will notify you via WhatsApp within 24 hours. You can log in for now, but the dashboard will be accessible after admin approval.",
 
@@ -488,7 +488,7 @@
       "waffle rogue": "Waffle Rogue",
 
       // Brand Dashboard additional
-      "dashboard brand": "Brand Dashboard",
+      "dashboard brand": "Dashboard",
       "item terjual": "items sold",
 
       // Settlements details
@@ -622,8 +622,8 @@
       "export pdf": "Ekspor PDF",
       "export png": "Ekspor PNG",
       // Global Header & Shared
-      "brand dashboard": "Dashboard Brand",
-      "tenant dashboard": "Dashboard Tenant",
+      "brand dashboard": "Dashboard",
+      "tenant dashboard": "Dashboard",
       "kembali": "Kembali",
       "keluar": "Keluar",
       "memuat": "Memuat",
@@ -1085,7 +1085,7 @@
       "sudah punya akun?": "Sudah punya akun?",
       "masuk di sini": "Masuk di sini",
       "mau demo langsung?": "Mau demo langsung?",
-      "lihat dashboard brand": "Lihat dashboard brand",
+      "lihat dashboard brand": "Lihat Dashboard",
       "daftar di oatlet": "Daftar di Oatlet",
       "kami akan kabari via wa max 1x24 jam. untuk sekarang kamu bisa login, tapi dashboard akan terbuka setelah admin approve.": "Kami akan kabari via WA maks. 24 jam. Untuk sekarang Anda bisa login, tapi dashboard akan terbuka setelah admin menyetujui.",
 
@@ -1102,7 +1102,7 @@
       "waffle rogue": "Waffle Rogue",
 
       // Brand Dashboard additional
-      "dashboard brand": "Dashboard Brand",
+      "dashboard brand": "Dashboard",
       "item terjual": "item terjual",
 
       // Settlements details
