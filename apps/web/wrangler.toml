@@ -6,7 +6,7 @@ pages_build_output_dir = "./dist"
 # === D1 binding (Kongsian database) ===
 [[d1_databases]]
 binding = "kongsian_db"
-database_name = "kongsian-db"
+database_name = "kongsian-db-apac"
 database_id = "477704de-7334-46aa-8b70-4ee8cfbbad3e"
 migrations_dir = "../../packages/db/migrations"
 

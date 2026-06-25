@@ -204,7 +204,7 @@ async function main() {
     console.error(
       "[seed] --remote mode: this script targets the local SQLite for now.\n" +
         "       For remote D1, run the generated SQL via:\n" +
-        "         pnpm --filter @kongsian/db db:generate-sql | wrangler d1 execute kongsian-db --remote --file=-"
+        "         pnpm --filter @kongsian/db db:generate-sql | wrangler d1 execute kongsian-db-apac --remote --file=-"
     );
     process.exit(1);
   }
