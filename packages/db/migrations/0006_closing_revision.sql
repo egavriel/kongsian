@@ -1,0 +1,1 @@
+ALTER TABLE `settlements` ADD `regenerated_at` integer;

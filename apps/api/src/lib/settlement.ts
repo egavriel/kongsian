@@ -90,6 +90,112 @@ function lastCompletedWeek(now: Date): { weekStart: string; weekEnd: string } {
   return { weekStart, weekEnd };
 }
 
+/**
+ * Compute aggregated totals (per-SKU lines + grand totals + revenue split) for
+ * one (partnership, week). Pure read + arithmetic — no writes. Used by both
+ * generateSettlements (for initial draft creation) and
+ * regenerateSettlementForPartnershipWeek (for upserting an existing DRAFT).
+ *
+ * Returns null if no SUBMITTED/REVISED/LOCKED closings exist for that week,
+ * or if all closing lines have zero terjual (nothing to settle).
+ */
+async function computeSettlementForPartnershipWeek(
+  db: DbClient,
+  partnershipId: string,
+  weekStart: string,
+  weekEnd: string
+): Promise<{
+  totalTerjual: number;
+  totalOmzetIdr: number;
+  brandShareIdr: number;
+  tenantShareIdr: number;
+  linePayloads: Array<{ skuId: string; qtyTerjual: number; omzetIdr: number }>;
+} | null> {
+  // 3. Find SUBMITTED, REVISED, or LOCKED closings in the week.
+  // REVISED is included because a brand-owner correction after submission
+  // flips status to REVISED but the corrected totals must still feed into
+  // the weekly aggregation.
+  const closings = await db
+    .select({ id: dailyClosings.id })
+    .from(dailyClosings)
+    .where(
+      and(
+        eq(dailyClosings.partnershipId, partnershipId),
+        inArray(dailyClosings.status, ["SUBMITTED", "REVISED", "LOCKED"]),
+        gte(dailyClosings.closingDate, weekStart),
+        lte(dailyClosings.closingDate, weekEnd)
+      )
+    );
+
+  if (closings.length === 0) return null;
+
+  // 4. Aggregate per SKU
+  const lineRows = await db
+    .select({
+      skuId: dailyClosingLines.skuId,
+      terjual: sum(dailyClosingLines.terjual),
+    })
+    .from(dailyClosingLines)
+    .where(
+      inArray(
+        dailyClosingLines.dailyClosingId,
+        closings.map((c) => c.id)
+      )
+    )
+    .groupBy(dailyClosingLines.skuId);
+
+  const skuTotals = lineRows
+    .map((r) => ({ skuId: r.skuId, qty: Number(r.terjual ?? 0) }))
+    .filter((r) => r.qty !== 0);
+
+  if (skuTotals.length === 0) return null;
+
+  // 5. Resolve effective prices
+  const skuIds = skuTotals.map((s) => s.skuId);
+  const skuRows = await db
+    .select({
+      id: skus.id,
+      priceIdr: skus.priceIdr,
+      priceOverride: partnershipSkus.priceOverrideIdr,
+    })
+    .from(skus)
+    .leftJoin(
+      partnershipSkus,
+      and(
+        eq(partnershipSkus.skuId, skus.id),
+        eq(partnershipSkus.partnershipId, partnershipId)
+      )
+    )
+    .where(inArray(skus.id, skuIds));
+
+  const priceMap = new Map(skuRows.map((r) => [r.id, r.priceOverride ?? r.priceIdr]));
+
+  // 6. Compute totals
+  let totalTerjual = 0;
+  let totalOmzetIdr = 0;
+  const linePayloads: Array<{ skuId: string; qtyTerjual: number; omzetIdr: number }> = [];
+  for (const t of skuTotals) {
+    const price = priceMap.get(t.skuId) ?? 0;
+    const omzet = t.qty * price;
+    totalTerjual += t.qty;
+    totalOmzetIdr += omzet;
+    linePayloads.push({ skuId: t.skuId, qtyTerjual: t.qty, omzetIdr: omzet });
+  }
+
+  // 7. Revenue split — load partnership for the BPS
+  const [p] = await db
+    .select()
+    .from(partnerships)
+    .where(eq(partnerships.id, partnershipId))
+    .limit(1);
+  if (!p) return null;
+  const brandBps = p.revenueSplitBrandBps;
+  const brandShareIdr = Math.floor((totalOmzetIdr * brandBps) / 10000);
+  const tenantShareIdr = totalOmzetIdr - brandShareIdr;
+
+  return { totalTerjual, totalOmzetIdr, brandShareIdr, tenantShareIdr, linePayloads };
+}
+
 export async function generateSettlements(
   env: Bindings,
   options: GenerateOptions = {}
@@ -123,20 +229,14 @@ export async function generateSettlements(
 
   for (const p of targetPartnerships) {
     try {
-      // 3. Find SUBMITTED or LOCKED closings in the week
-      const closings = await db
-        .select({ id: dailyClosings.id })
-        .from(dailyClosings)
-        .where(
-          and(
-            eq(dailyClosings.partnershipId, p.id),
-            inArray(dailyClosings.status, ["SUBMITTED", "LOCKED"]),
-            gte(dailyClosings.closingDate, week.weekStart),
-            lte(dailyClosings.closingDate, week.weekEnd)
-          )
-        );
+      const computed = await computeSettlementForPartnershipWeek(
+        db,
+        p.id,
+        week.weekStart,
+        week.weekEnd
+      );
 
-      if (closings.length === 0) {
+      if (!computed) {
         result.skipped.push({
           partnershipId: p.id,
           weekStart: week.weekStart,
@@ -144,75 +244,6 @@ export async function generateSettlements(
         });
         continue;
       }
-
-      // 4. Aggregate per SKU
-      // effective_price = partnershipSkus.priceOverrideIdr ?? skus.priceIdr
-      // totalTerjual[sku] = SUM(daily_closing_lines.terjual)
-      // totalOmzet[sku] = totalTerjual[sku] * effective_price
-      const lineRows = await db
-        .select({
-          skuId: dailyClosingLines.skuId,
-          terjual: sum(dailyClosingLines.terjual),
-        })
-        .from(dailyClosingLines)
-        .where(
-          inArray(
-            dailyClosingLines.dailyClosingId,
-            closings.map((c) => c.id)
-          )
-        )
-        .groupBy(dailyClosingLines.skuId);
-
-      // Filter zero-qty
-      const skuTotals = lineRows
-        .map((r) => ({ skuId: r.skuId, qty: Number(r.terjual ?? 0) }))
-        .filter((r) => r.qty !== 0);
-
-      if (skuTotals.length === 0) {
-        result.skipped.push({
-          partnershipId: p.id,
-          weekStart: week.weekStart,
-          reason: "NO_LINES",
-        });
-        continue;
-      }
-
-      // 5. Resolve effective prices
-      const skuIds = skuTotals.map((s) => s.skuId);
-      const skuRows = await db
-        .select({
-          id: skus.id,
-          priceIdr: skus.priceIdr,
-          priceOverride: partnershipSkus.priceOverrideIdr,
-        })
-        .from(skus)
-        .leftJoin(
-          partnershipSkus,
-          and(
-            eq(partnershipSkus.skuId, skus.id),
-            eq(partnershipSkus.partnershipId, p.id)
-          )
-        )
-        .where(inArray(skus.id, skuIds));
-
-      const priceMap = new Map(skuRows.map((r) => [r.id, r.priceOverride ?? r.priceIdr]));
-
-      // 6. Compute totals
-      let totalTerjual = 0;
-      let totalOmzetIdr = 0;
-      const linePayloads: Array<{ skuId: string; qtyTerjual: number; omzetIdr: number }> = [];
-      for (const t of skuTotals) {
-        const price = priceMap.get(t.skuId) ?? 0;
-        const omzet = t.qty * price;
-        totalTerjual += t.qty;
-        totalOmzetIdr += omzet;
-        linePayloads.push({ skuId: t.skuId, qtyTerjual: t.qty, omzetIdr: omzet });
-      }
-
-      // 7. Revenue split
-      const brandBps = p.revenueSplitBrandBps;
-      const brandShareIdr = Math.floor((totalOmzetIdr * brandBps) / 10000);
-      const tenantShareIdr = totalOmzetIdr - brandShareIdr;
 
       // 8. Insert settlement + lines. Catch unique-violation (uniqPartnershipWeek)
       // → skipped ALREADY_GENERATED.
@@ -223,16 +254,16 @@ export async function generateSettlements(
           partnershipId: p.id,
           weekStartDate: week.weekStart,
           weekEndDate: week.weekEnd,
-          totalTerjual,
-          totalOmzetIdr,
-          brandShareIdr,
-          tenantShareIdr,
+          totalTerjual: computed.totalTerjual,
+          totalOmzetIdr: computed.totalOmzetIdr,
+          brandShareIdr: computed.brandShareIdr,
+          tenantShareIdr: computed.tenantShareIdr,
           status: "DRAFT",
           generatedAt: now,
         });
 
         await db.insert(settlementLines).values(
-          linePayloads.map((l) => ({
+          computed.linePayloads.map((l) => ({
             id: crypto.randomUUID(),
             settlementId,
             skuId: l.skuId,
@@ -246,10 +277,10 @@ export async function generateSettlements(
           partnershipId: p.id,
           weekStart: week.weekStart,
           weekEnd: week.weekEnd,
-          totalTerjual,
-          totalOmzetIdr,
-          brandShareIdr,
-          tenantShareIdr,
+          totalTerjual: computed.totalTerjual,
+          totalOmzetIdr: computed.totalOmzetIdr,
+          brandShareIdr: computed.brandShareIdr,
+          tenantShareIdr: computed.tenantShareIdr,
         });
       } catch (err: any) {
         // D1/SQLite unique violation: message contains "UNIQUE constraint failed"
@@ -274,4 +305,116 @@ export async function generateSettlements(
   }
 
   return result;
+}
+
+/**
+ * Upsert an existing DRAFT settlement for one (partnership, week). Called from
+ * the brand-side /revise endpoint when a closing correction changes the week's
+ * totals. Refuses to touch settlements that have progressed past DRAFT
+ * (PENDING_BRAND / BRAND_APPROVED / PAID / DISPUTED).
+ *
+ * Behavior:
+ *   - No existing settlement for that week → no-op (returns "no_settlement").
+ *   - Existing settlement, status DRAFT → recompute totals, update row, replace
+ *     settlement_lines.
+ *   - Existing settlement, status past DRAFT → throws (caller should have
+ *     rejected the request earlier via the SETTLEMENT_LOCKED guard).
+ *
+ * Returns the refreshed settlement record on success.
+ */
+export async function regenerateSettlementForPartnershipWeek(
+  env: Bindings,
+  partnershipId: string,
+  weekStartDate: string,
+  nowSec?: number
+): Promise<{
+  settlementId: string;
+  partnershipId: string;
+  weekStart: string;
+  weekEnd: string;
+  totalTerjual: number;
+  totalOmzetIdr: number;
+  brandShareIdr: number;
+  tenantShareIdr: number;
+  status: string;
+}> {
+  const db = getDb(env.kongsian_db);
+  const now = nowSec ?? Math.floor(Date.now() / 1000);
+  const weekEnd = addDays(weekStartDate, 6);
+
+  const [existing] = await db
+    .select()
+    .from(settlements)
+    .where(
+      and(
+        eq(settlements.partnershipId, partnershipId),
+        eq(settlements.weekStartDate, weekStartDate)
+      )
+    )
+    .limit(1);
+
+  if (!existing) {
+    // Caller expected an existing settlement. Could be a race — settlement
+    // was deleted between the revise guard check and now. Throw so caller
+    // surfaces this clearly.
+    throw new Error("NO_EXISTING_SETTLEMENT");
+  }
+
+  if (existing.status !== "DRAFT") {
+    throw new Error(`SETTLEMENT_NOT_DRAFT:${existing.status}`);
+  }
+
+  const computed = await computeSettlementForPartnershipWeek(
+    db,
+    partnershipId,
+    weekStartDate,
+    weekEnd
+  );
+
+  // If the week now has no closings (extreme case — all revised to empty),
+  // delete the settlement so it doesn't show stale numbers.
+  if (!computed) {
+    await db.delete(settlements).where(eq(settlements.id, existing.id));
+    await db
+      .delete(settlementLines)
+      .where(eq(settlementLines.settlementId, existing.id));
+    throw new Error("NO_CLOSINGS_REMAIN");
+  }
+
+  // Update totals + replace lines.
+  await db
+    .update(settlements)
+    .set({
+      totalTerjual: computed.totalTerjual,
+      totalOmzetIdr: computed.totalOmzetIdr,
+      brandShareIdr: computed.brandShareIdr,
+      tenantShareIdr: computed.tenantShareIdr,
+      regeneratedAt: now,
+    })
+    .where(eq(settlements.id, existing.id));
+
+  // Delete old lines + insert new (no unique constraint on lines, so this is
+  // safer than trying to upsert per-SKU).
+  await db.delete(settlementLines).where(eq(settlementLines.settlementId, existing.id));
+  await db.insert(settlementLines).values(
+    computed.linePayloads.map((l) => ({
+      id: crypto.randomUUID(),
+      settlementId: existing.id,
+      skuId: l.skuId,
+      qtyTerjual: l.qtyTerjual,
+      omzetIdr: l.omzetIdr,
+    }))
+  );
+
+  return {
+    settlementId: existing.id,
+    partnershipId,
+    weekStart: weekStartDate,
+    weekEnd,
+    totalTerjual: computed.totalTerjual,
+    totalOmzetIdr: computed.totalOmzetIdr,
+    brandShareIdr: computed.brandShareIdr,
+    tenantShareIdr: computed.tenantShareIdr,
+    status: "DRAFT",
+  };
 }

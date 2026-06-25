@@ -43,6 +43,13 @@
       "when": 1781767599588,
       "tag": "0005_shallow_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1782386924102,
+      "tag": "0006_closing_revision",
+      "breakpoints": true
     }
   ]
 }

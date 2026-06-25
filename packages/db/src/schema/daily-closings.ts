@@ -5,9 +5,11 @@ import { users } from "./users";
 
 /**
  * DAILY_CLOSING
- * One per (partnership, date) (unique). status: OPEN → SUBMITTED → LOCKED.
- * Submitted_at null until SUBMITTED. After SUBMITTED, only ADJUSTMENT rows
- * are allowed for that (partnership, date) (I9).
+ * One per (partnership, date) (unique). status: OPEN → SUBMITTED → REVISED (one
+ * or more times) → LOCKED (terminal, when settlement for that week is PAID).
+ * Submitted_at null until SUBMITTED. After SUBMITTED, only ADJUSTMENT rows are
+ * allowed for that (partnership, date) (I9) — but a /revise endpoint can create
+ * compensating TERJUAL_CORRECTION movements and flip status to REVISED.
  */
 export const dailyClosings = sqliteTable(
   "daily_closings",
@@ -17,7 +19,7 @@ export const dailyClosings = sqliteTable(
       .notNull()
       .references(() => partnerships.id),
     closingDate: text("closing_date").notNull(),
-    status: text("status", { enum: ["OPEN", "SUBMITTED", "LOCKED"] })
+    status: text("status", { enum: ["OPEN", "SUBMITTED", "LOCKED", "REVISED"] })
       .notNull()
       .default("OPEN"),
     submittedByUserId: text("submitted_by_user_id").references(() => users.id),

@@ -31,8 +31,11 @@ import {
   brands,
   tenants,
   tenantMemberships,
+  users,
   auditLog,
   disputes,
+  settlements,
+  settlementLines,
 } from "@kongsian/db";
 import { authMiddleware, type AuthContext } from "../lib/auth";
 import { computeSisaSistem, computeSisaSistemBatch } from "../lib/stock";
@@ -813,5 +816,315 @@ brandClosings.post("/:brandId/closings/:id/dispute", async (c) => {
   const [dispute] = await db.select().from(disputes).where(eq(disputes.id, disputeId)).limit(1);
   return c.json({ ok: true, data: { dispute } });
 });
+
+// ---------------------------------------------------------------------------
+// POST /v1/brands/:brandId/closings/:id/revise
+//
+// Brand-side correction of a SUBMITTED closing. Used when a mistake is caught
+// after submission (e.g. wrong SKU composition, mis-typed quantity). The
+// original submission is preserved as the audit trail; we add compensating
+// TERJUAL_CORRECTION stock_movements, update the daily_closing_lines, flip the
+// closing to REVISED, and re-trigger settlement regeneration for the affected
+// week.
+//
+// Auth: brand owner of the closing's brand. PLATFORM_ADMIN also allowed
+// (logged as such for forensics).
+//
+// Constraints:
+//   - closing.status must be SUBMITTED or REVISED (OPEN closings should use
+//     the PUT endpoints; LOCKED closings cannot be revised because the week's
+//     settlement is PAID).
+//   - Settlement for the week must not be BRAND_APPROVED or PAID.
+//   - reason ≥ 10 chars (audit discipline).
+// ---------------------------------------------------------------------------
+const ReviseClosingSchema = z.object({
+  reason: z.string().min(10).max(500),
+  corrections: z
+    .array(
+      z
+        .object({
+          /** Existing line id. Optional — omit if you're adding a NEW SKU line. */
+          closingLineId: z.string().min(1).optional(),
+          /** SKU id. Required if adding a new line; if updating existing, derived
+           *  from closingLineId but accepted as a cross-check. */
+          skuId: z.string().min(1).optional(),
+          /** New terjual count (>= 0). To remove a line entirely, set terjual: 0. */
+          terjual: z.number().int().min(0),
+          /** Set true to delete the existing line (used when reducing SKU list). */
+          removeLine: z.boolean().optional(),
+        })
+        .refine(
+          (c) => c.closingLineId !== undefined || c.skuId !== undefined,
+          { message: "Either closingLineId or skuId must be provided" }
+        )
+    )
+    .min(1),
+});
+
+brandClosings.post("/:brandId/closings/:id/revise", async (c) => {
+  const { userId } = c.get("auth");
+  const { brandId, id } = c.req.param();
+  const db = getDb(c.env.kongsian_db);
+
+  // 1. Auth — brand owner OR platform admin (admin override logged below)
+  const [brand] = await db.select().from(brands).where(eq(brands.id, brandId)).limit(1);
+  if (!brand) return c.json({ ok: false, error: { code: "BRAND_NOT_FOUND" } }, 404);
+
+  let actorRole: "BRAND" | "ADMIN" = "BRAND";
+  if (brand.userId !== userId) {
+    // Allow platform admin override
+    const [actor] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!actor || actor.globalRole !== "PLATFORM_ADMIN") {
+      return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+    }
+    actorRole = "ADMIN";
+  }
+
+  // 2. Validate body
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = ReviseClosingSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { ok: false, error: { code: "INVALID_INPUT", issues: parsed.error.flatten() } },
+      400
+    );
+  }
+  const { reason, corrections } = parsed.data;
+
+  // 3. Load closing + verify it belongs to this brand
+  const [closing] = await db.select().from(dailyClosings).where(eq(dailyClosings.id, id)).limit(1);
+  if (!closing) return c.json({ ok: false, error: { code: "CLOSING_NOT_FOUND" } }, 404);
+
+  const [partnership] = await db
+    .select()
+    .from(partnerships)
+    .where(and(eq(partnerships.id, closing.partnershipId), eq(partnerships.brandId, brandId)))
+    .limit(1);
+  if (!partnership) return c.json({ ok: false, error: { code: "FORBIDDEN" } }, 403);
+
+  // 4. Status guard
+  if (closing.status !== "SUBMITTED" && closing.status !== "REVISED") {
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "INVALID_STATE",
+          message: `Closing status is ${closing.status}. Only SUBMITTED or REVISED closings can be revised. Use PUT /terjual for OPEN closings.`,
+        },
+      },
+      409
+    );
+  }
+
+  // 5. Settlement guard — refuse if the week's settlement is already past DRAFT
+  const weekStart = await computeWeekStart(closing.closingDate);
+  const [existingSettlement] = await db
+    .select()
+    .from(settlements)
+    .where(
+      and(
+        eq(settlements.partnershipId, closing.partnershipId),
+        eq(settlements.weekStartDate, weekStart)
+      )
+    )
+    .limit(1);
+  if (existingSettlement && (existingSettlement.status === "BRAND_APPROVED" || existingSettlement.status === "PAID")) {
+    return c.json(
+      {
+        ok: false,
+        error: {
+          code: "SETTLEMENT_LOCKED",
+          message: `Settlement for week ${weekStart} is ${existingSettlement.status}. Contact admin to unlock before revising.`,
+        },
+      },
+      409
+    );
+  }
+
+  // 6. Apply each correction
+  const now = Math.floor(Date.now() / 1000);
+  const applied: Array<{ skuId: string; beforeTerjual: number; afterTerjual: number; movementId: string }> = [];
+
+  for (const correction of corrections) {
+    // Resolve target line + SKU
+    let targetSkuId: string;
+    let existingLine: typeof dailyClosingLines.$inferSelect | undefined;
+
+    if (correction.closingLineId) {
+      const [line] = await db
+        .select()
+        .from(dailyClosingLines)
+        .where(
+          and(
+            eq(dailyClosingLines.id, correction.closingLineId),
+            eq(dailyClosingLines.dailyClosingId, closing.id)
+          )
+        )
+        .limit(1);
+      if (!line) {
+        return c.json(
+          { ok: false, error: { code: "LINE_NOT_FOUND", closingLineId: correction.closingLineId } },
+          404
+        );
+      }
+      existingLine = line;
+      targetSkuId = line.skuId;
+    } else if (correction.skuId) {
+      // New SKU line — verify the SKU is registered for this partnership
+      const [psRow] = await db
+        .select()
+        .from(partnershipSkus)
+        .where(
+          and(
+            eq(partnershipSkus.partnershipId, closing.partnershipId),
+            eq(partnershipSkus.skuId, correction.skuId)
+          )
+        )
+        .limit(1);
+      if (!psRow) {
+        return c.json(
+          { ok: false, error: { code: "SKU_NOT_IN_PARTNERSHIP", skuId: correction.skuId } },
+          400
+        );
+      }
+      targetSkuId = correction.skuId;
+    } else {
+      // Should be caught by the zod refine() above
+      continue;
+    }
+
+    const beforeTerjual = existingLine?.terjual ?? 0;
+    const afterTerjual = correction.removeLine ? 0 : correction.terjual;
+    const signedQty = -Math.abs(afterTerjual); // TERJUAL is always negative in stock_movements
+    const idem = `terjual-${closing.partnershipId}-${closing.closingDate}-${targetSkuId}`;
+
+    // 6a. Compensating stock_movement (TERJUAL_CORRECTION) — preserves audit
+    // trail and points back to the original via corrects_movement_id.
+    const [originalMovement] = await db
+      .select()
+      .from(stockMovements)
+      .where(eq(stockMovements.idempotencyKey, idem))
+      .limit(1);
+
+    const newMovementId = crypto.randomUUID();
+    if (afterTerjual === 0) {
+      // Closing out the line entirely — insert a reversal movement (qty = -before)
+      await db.insert(stockMovements).values({
+        id: newMovementId,
+        partnershipId: closing.partnershipId,
+        skuId: targetSkuId,
+        movementDate: closing.closingDate,
+        kind: "TERJUAL_CORRECTION",
+        qty: -beforeTerjual, // Positive delta — undoes the negative terjual
+        reason: `Closing revision: line removed. Original reason: ${reason.slice(0, 200)}`,
+        submittedByUserId: userId,
+        correctsMovementId: originalMovement?.id ?? null,
+        submittedAt: now,
+        idempotencyKey: `revise-${newMovementId}-reversal`,
+      });
+    } else {
+      await db.insert(stockMovements).values({
+        id: newMovementId,
+        partnershipId: closing.partnershipId,
+        skuId: targetSkuId,
+        movementDate: closing.closingDate,
+        kind: "TERJUAL_CORRECTION",
+        qty: signedQty,
+        reason: `Closing revision: ${beforeTerjual} → ${afterTerjual}. Reason: ${reason.slice(0, 200)}`,
+        submittedByUserId: userId,
+        correctsMovementId: originalMovement?.id ?? null,
+        submittedAt: now,
+        idempotencyKey: `revise-${newMovementId}`,
+      });
+    }
+
+    // 6b. Upsert daily_closing_line
+    if (existingLine) {
+      if (correction.removeLine || afterTerjual === 0) {
+        await db.delete(dailyClosingLines).where(eq(dailyClosingLines.id, existingLine.id));
+      } else {
+        await db
+          .update(dailyClosingLines)
+          .set({ terjual: afterTerjual })
+          .where(eq(dailyClosingLines.id, existingLine.id));
+      }
+    } else {
+      // New line for a previously-absent SKU
+      await db.insert(dailyClosingLines).values({
+        id: crypto.randomUUID(),
+        dailyClosingId: closing.id,
+        skuId: targetSkuId,
+        terjual: afterTerjual,
+        sisaFisik: 0,
+        sisaSistem: 0,
+        selisih: 0,
+      });
+    }
+
+    applied.push({
+      skuId: targetSkuId,
+      beforeTerjual,
+      afterTerjual,
+      movementId: newMovementId,
+    });
+  }
+
+  // 7. Flip closing to REVISED
+  await db
+    .update(dailyClosings)
+    .set({ status: "REVISED" })
+    .where(eq(dailyClosings.id, closing.id));
+
+  // 8. Audit log
+  await db.insert(auditLog).values({
+    id: crypto.randomUUID(),
+    userId,
+    action: actorRole === "ADMIN" ? "CLOSING_REVISED_ADMIN" : "CLOSING_REVISED",
+    entityType: "daily_closing",
+    entityId: closing.id,
+    beforeJson: JSON.stringify({ status: closing.status }),
+    afterJson: JSON.stringify({ status: "REVISED", corrections: applied, reason }),
+    ip: c.req.header("cf-connecting-ip") ?? null,
+    userAgent: c.req.header("user-agent") ?? null,
+    createdAt: now,
+  });
+
+  // 9. Re-trigger settlement regeneration for the affected week.
+  // Best-effort: if settlement regen fails, the closing is still revised and
+  // the settlement will be stale. Surface a warning rather than 500.
+  let settlementStatus: "regenerated" | "no_settlement_yet" | "regen_failed" = "no_settlement_yet";
+  if (existingSettlement) {
+    try {
+      const { regenerateSettlementForPartnershipWeek } = await import("../lib/settlement");
+      await regenerateSettlementForPartnershipWeek(c.env, closing.partnershipId, weekStart, now);
+      settlementStatus = "regenerated";
+    } catch (e) {
+      settlementStatus = "regen_failed";
+      // Log the failure but don't fail the request — the closing revision is the primary outcome.
+      console.error(`[revise] settlement regen failed for partnership=${closing.partnershipId} week=${weekStart}:`, e);
+    }
+  }
+
+  return c.json({
+    ok: true,
+    data: {
+      closingId: closing.id,
+      status: "REVISED",
+      corrections: applied,
+      reason,
+      settlementStatus,
+      weekStart,
+    },
+  });
+});
+
+/** Compute Monday of the ISO week containing the given date (YYYY-MM-DD). */
+function computeWeekStart(date: string): string {
+  const d = new Date(date + "T00:00:00Z");
+  const day = d.getUTCDay(); // 0=Sun..6=Sat
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
 
 export { tenantClosings, brandClosings };
