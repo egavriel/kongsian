@@ -20,8 +20,8 @@ enabled = true
 # === D1 binding (Kongsian database) ===
 [[d1_databases]]
 binding = "kongsian_db"
-database_name = "kongsian-db"
-database_id = "94a52c2f-af08-4642-b477-4edc2251f52b"
+database_name = "kongsian-db-apac"
+database_id = "477704de-7334-46aa-8b70-4ee8cfbbad3e"
 migrations_dir = "../../packages/db/migrations"
 
 # === R2 binding (Kongsian media: titip/tarik photos, dispute photos, payment proof, PDF cache) ===
@@ -75,8 +75,8 @@ SESSION_TTL_SECONDS = "2592000"
 
 [[env.dev.d1_databases]]
 binding = "kongsian_db"
-database_name = "kongsian-db"
-database_id = "94a52c2f-af08-4642-b477-4edc2251f52b"
+database_name = "kongsian-db-apac"
+database_id = "477704de-7334-46aa-8b70-4ee8cfbbad3e"
 migrations_dir = "../../packages/db/migrations"
 
 [[env.dev.r2_buckets]]

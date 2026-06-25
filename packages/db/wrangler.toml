@@ -4,6 +4,6 @@ compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "kongsian-db"
-database_id = "94a52c2f-af08-4642-b477-4edc2251f52b"
+database_name = "kongsian-db-apac"
+database_id = "477704de-7334-46aa-8b70-4ee8cfbbad3e"
 migrations_dir = "./migrations"
