@@ -36,6 +36,7 @@ export const settlements = sqliteTable(
     generatedAt: integer("generated_at")
       .notNull()
       .default(sql`(unixepoch())`),
+    regeneratedAt: integer("regenerated_at"),
   },
   (t) => ({
     uniqPartnershipWeek: uniqueIndex("uniq_settlement_pw").on(t.partnershipId, t.weekStartDate),
